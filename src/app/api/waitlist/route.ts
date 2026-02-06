@@ -117,13 +117,16 @@ export async function POST(request: NextRequest) {
         to: email.trim().toLowerCase(),
         subject: "You're on Joy's waitlist",
         html: `
-          <div style="font-family: Georgia, serif; color: #1E1E1E; max-width: 560px; line-height: 1.7;">
-            <p>Hi,</p>
-            <p>Thanks for signing up to Joy's waitlist. You'll be among the first to know when we launch in April.</p>
-            <p><strong>Meet our first feature, Sort.</strong><br/>It's one place for your work and life where you can share what's on your plate, make sense of it, and build a day that works for you - without adding more noise.</p>
-            <p>We're building this carefully and intentionally. If you have questions, ideas, or thoughts along the way, you're always welcome to reach out at <a href="mailto:hello@feeljoy.ai" style="color: #272682;">hello@feeljoy.ai</a>. We read everything and value what you think.</p>
-            <p>We'll be in touch soon.</p>
-            <p>Calvin & Jessie<br/>Co-founders, <a href="https://feeljoy.ai" style="color: #272682;">Joy</a></p>
+          <div style="font-family: Georgia, serif; color: #1E1E1E; width: 100%; max-width: 600px; line-height: 1.8; padding: 20px;">
+            <p style="margin: 0 0 20px 0;">Hi,</p>
+            <p style="margin: 0 0 20px 0;">Thanks for signing up to Joy's waitlist. You'll be among the first to know when we launch in April.</p>
+            <p style="margin: 0 0 20px 0;"><strong>Meet our first feature, Sort.</strong><br/>It's one place for your work and life where you can share what's on your plate, make sense of it, and build a day that works for you - without adding more noise.</p>
+            <p style="margin: 0 0 20px 0;">We're building this carefully and intentionally. If you have questions, ideas, or thoughts along the way, you're always welcome to reach out at <a href="mailto:hello@feeljoy.ai" style="color: #272682;">hello@feeljoy.ai</a>. We read everything and value what you think.</p>
+            <p style="margin: 0 0 20px 0;">We'll be in touch soon.</p>
+            <p style="margin: 0 0 30px 0;">Calvin & Jessie<br/>Co-founders</p>
+            <a href="https://feeljoy.ai" style="display: inline-block;">
+              <img src="https://feeljoy.ai/images/joy-logo.png" alt="Joy" width="80" style="width: 80px; height: auto;" />
+            </a>
           </div>
         `,
       });
