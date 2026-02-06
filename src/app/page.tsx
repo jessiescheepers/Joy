@@ -380,7 +380,7 @@ export default function Home() {
             <section id="section2" ref={section2Ref} className="relative mt-10 md:mt-0 min-h-[calc(100vh-120px)] flex flex-col snap-section">
               {/* H1 */}
               <div className="px-5 pt-10 md:px-0 md:pt-10 scroll-reveal-heading">
-                <h1 className="font-[800] text-[40px] leading-[40px] tracking-[0.8px] text-black md:text-[60px] md:leading-[60px]">
+                <h1 className="font-[800] text-[40px] leading-[44px] tracking-[0.8px] text-black md:text-[60px] md:leading-[60px]">
                   You don&apos;t need two systems<br className="hidden md:inline" />{' '}for one life.
                 </h1>
               </div>
