@@ -280,7 +280,7 @@ export default function Home() {
               {/* Sub-text */}
               <div className="px-5 py-[10px] md:p-0">
                 <h2 className="font-[400] text-[20px] leading-[26px] tracking-[0.8px] text-[var(--color-primary)] md:text-[30px] md:leading-[38px] md:tracking-normal md:mb-[20px] lg:text-[45px] lg:leading-[55px] lg:mb-[38px]">
-                  Reclaim the 2.5 hours you&apos;re losing<br className="hidden md:inline" /> to context-switching every day
+                  Your energy is finite.<br className="hidden md:inline" /> Joy gives your brain one place to think.
                 </h2>
               </div>
 
