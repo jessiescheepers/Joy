@@ -1,8 +1,6 @@
 "use client";
 
-import { useState } from "react";
 import JoyLogo from "../components/JoyLogo";
-import ScaffoldLine from "../components/ScaffoldLine";
 
 const principles = [
   {
@@ -43,204 +41,189 @@ const principles = [
   },
 ];
 
+const navItems = [
+  { label: "home", href: "/", orb: "/images/orbs/orb-home.png" },
+  { label: "glow", href: "/#glow", orb: "/images/orbs/orb-glow.png" },
+  { label: "about", href: "/#about", orb: "/images/orbs/orb-about.png" },
+  { label: "contact", href: "/#contact", orb: "/images/orbs/orb-contact.png" },
+];
+
+const footerItems = [
+  { label: "privacy policy", href: "/privacy-policy.pdf", orb: "/images/orbs/orb-privacy.png", external: true },
+  { label: "linkedin", href: "https://www.linkedin.com/company/feeljoy/", orb: "/images/orbs/orb-linkedin.png", external: true },
+  { label: "joy code", href: "/joy-code", orb: "/images/orbs/orb-joycode.png", external: false },
+  { label: "waitlist", href: "/#hero", orb: "/images/orbs/orb-waitlist.png", external: false },
+];
+
 export default function JoyCode() {
-  const [menuOpen, setMenuOpen] = useState(false);
-
   return (
-    <div className="relative mx-auto max-w-[1440px] min-h-screen snap-container">
-      {/* Background layers - fixed behind everything */}
-      <div className="fixed inset-0 z-0 max-w-[1440px] mx-auto">
-        <div className="sunset-gradient absolute inset-0" />
-        <div className="noise-overlay" />
-        {/* Background artwork - mobile */}
-        <div className="md:hidden absolute bottom-0 left-0 right-0 pointer-events-none overflow-hidden" style={{ height: '30%' }}>
-          <div className="absolute left-[-15%] right-[-15%]" style={{ width: '130%', top: '0' }}>
-            <img
-              src="/images/background-artwork.png"
-              alt=""
-              className="w-full h-auto opacity-50"
-            />
-          </div>
-        </div>
-        {/* Background artwork - desktop */}
-        <div
-          className="hidden md:block absolute bottom-0 left-0 right-0 pointer-events-none"
-          style={{
-            height: '80%',
-            backgroundImage: 'url(/images/background-artwork.png)',
-            backgroundSize: '150% auto',
-            backgroundPosition: 'center top',
-            backgroundRepeat: 'no-repeat',
-            opacity: 0.5,
-          }}
-        />
-      </div>
-
-      {/* Vertical scaffold line - fixed, centered with content container */}
-      <div className="fixed inset-0 max-w-[1440px] mx-auto z-[11] pointer-events-none hidden md:block">
-        <div data-scaffold-vertical className="absolute top-0 bottom-0 left-[230px] w-px bg-[rgba(39,38,130,0.15)]" />
-      </div>
+    <div className="relative min-h-screen">
+      {/* Full-page watercolour background */}
+      <div
+        className="fixed inset-0 z-0"
+        style={{
+          backgroundImage: "url(/images/watercolour-bg.png)",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      />
+      {/* Orb background */}
+      <div
+        className="fixed pointer-events-none"
+        style={{
+          top: "50%",
+          left: "0",
+          transform: "translate(-50%, -50%)",
+          width: "240vw",
+          height: "240vw",
+          opacity: 0.3,
+          zIndex: 1,
+          backgroundImage: "url(/images/orb-bg.png)",
+          backgroundSize: "contain",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "center",
+          maskImage: "radial-gradient(circle, black 40%, transparent 70%)",
+          WebkitMaskImage: "radial-gradient(circle, black 40%, transparent 70%)",
+        }}
+      />
+      <div className="noise-overlay fixed inset-0 z-[2]" />
 
       {/* Page content */}
-      <div className="relative z-[2]">
-        {/* Sticky Header + Mobile CTA wrapper */}
-        <div className="sticky top-0 z-[10]">
-          <header className="px-[30px] pt-10 pb-0 md:px-10 md:pt-8 md:pb-0 bg-[#DFE0E7] relative overflow-hidden">
-            <div className="noise-overlay !z-0" />
-            <div className="relative z-[1] flex flex-wrap items-center gap-y-9 md:flex-nowrap md:justify-between pb-4">
-              <a href="/">
-                <JoyLogo width={121} height={63} />
-              </a>
-              <div className="flex-grow" />
+      <div className="relative z-[3]">
 
-              {/* Hamburger - mobile only, gradient glow when open */}
-              <button
-                className={`md:hidden relative w-[30px] h-[24px] flex flex-col justify-between cursor-pointer rounded-[6px] p-[3px] transition-all duration-300 ${menuOpen ? 'btn-shimmer bg-white/30 shadow-[0px_2px_10px_rgba(0,0,0,0.1)]' : ''}`}
-                onClick={() => setMenuOpen(!menuOpen)}
-                aria-label="Menu"
-              >
-                <span className="block w-full h-[3px] bg-[var(--color-primary)] rounded" />
-                <span className="block w-full h-[3px] bg-[var(--color-primary)] rounded" />
-                <span className="block w-full h-[3px] bg-[var(--color-primary)] rounded" />
-              </button>
-
-              {/* Mobile nav dropdown */}
-              {menuOpen && (
-                <nav className="md:hidden w-full flex flex-col gap-4 pt-4 px-[30px]">
-                  <a href="/" className="lowercase font-[400] text-[18px] text-[var(--color-primary-60)] flex items-center gap-3 relative pl-[25px]" onClick={() => setMenuOpen(false)}>
-                    <span className="w-[8px] h-[8px] rounded-full border border-[var(--color-primary-60)] inline-block absolute left-0" />
-                    home
-                  </a>
-                  <a href="/#about" className="lowercase font-[400] text-[18px] text-[var(--color-primary-60)] flex items-center gap-3 relative pl-[25px]" onClick={() => setMenuOpen(false)}>
-                    <span className="w-[8px] h-[8px] rounded-full border border-[var(--color-primary-60)] inline-block absolute left-0" />
-                    about
-                  </a>
-                  <a href="/#contact" className="lowercase font-[400] text-[18px] text-[var(--color-primary-60)] flex items-center gap-3 relative pl-[25px]" onClick={() => setMenuOpen(false)}>
-                    <span className="w-[8px] h-[8px] rounded-full border border-[var(--color-primary-60)] inline-block absolute left-0" />
-                    contact
-                  </a>
-                </nav>
-              )}
-
-              {/* Desktop early access CTA */}
+        {/* ═══ TOP NAV ═══ */}
+        <nav
+          className="sticky top-0 z-50 px-6 py-4 md:px-12 lg:px-20"
+          style={{ background: "transparent" }}
+        >
+          <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
+            {navItems.map((item) => (
               <a
-                href="/#hero"
-                className="btn-shimmer hidden md:inline-block lowercase md:w-auto md:px-8 md:py-3 md:bg-white md:rounded-[15px] text-[var(--color-primary)] font-[600] md:text-[18px] md:leading-normal md:tracking-normal md:shadow-[0px_4px_20px_rgba(0,0,0,0.25)] hover:opacity-90 transition-opacity"
+                key={item.label}
+                href={item.href}
+                className="flex items-center gap-2 md:gap-3 transition-all duration-300 hover:opacity-70"
+                style={{ fontFamily: "var(--font-literata)" }}
               >
-                early access
+                <img
+                  src={item.orb}
+                  alt=""
+                  className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 rounded-full object-cover orb-spin"
+                />
+                <span className="text-sm md:text-lg lg:text-xl tracking-[0.8px] text-black">
+                  {item.label}
+                </span>
               </a>
-            </div>
-            <div className="relative z-[1] w-full h-px bg-[rgba(39,38,130,0.15)]" />
-          </header>
-          {/* Mobile early access CTA - outside header so shadow isn't clipped */}
-          <a
-            href="/#hero"
-            className="btn-shimmer md:hidden block lowercase w-full py-3 bg-[#DFE0E7] text-[var(--color-primary)] font-[800] text-[20px] leading-[30px] tracking-[1px] text-center shadow-[0px_4px_20px_rgba(0,0,0,0.5)] hover:opacity-90 transition-opacity"
-            style={{ clipPath: 'inset(0px -50px -50px -50px)' }}
-          >
-            early access
-          </a>
-        </div>
-
-        {/* Page Content: Sidebar + Main */}
-        <div className="flex flex-row md:gap-16 md:px-10">
-          {/* Left Sidebar Navigation - desktop only */}
-          <nav className="hidden md:flex w-[200px] flex-col gap-[37px] pt-[90px] pl-[30px] sticky top-[120px] self-start h-fit" style={{ fontFamily: 'var(--font-literata)' }}>
-            <a
-              href="/"
-              className="lowercase font-[400] text-[24px] leading-[30px] tracking-[0.8px] text-[rgba(30,30,30,0.6)] flex items-center gap-3 hover:text-black/80 transition-colors relative"
-            >
-              <span className="w-[10px] h-[10px] rounded-full border border-[rgba(30,30,30,0.6)] inline-block absolute -left-[25px]" />
-              home
-            </a>
-            <a
-              href="/#about"
-              className="lowercase font-[400] text-[24px] leading-[30px] tracking-[0.8px] text-[rgba(30,30,30,0.6)] flex items-center gap-3 hover:text-black/80 transition-colors relative"
-            >
-              <span className="w-[10px] h-[10px] rounded-full border border-[rgba(30,30,30,0.6)] inline-block absolute -left-[25px]" />
-              about
-            </a>
-            <a
-              href="/#contact"
-              className="lowercase font-[400] text-[24px] leading-[30px] tracking-[0.8px] text-[rgba(30,30,30,0.6)] flex items-center gap-3 hover:text-black/80 transition-colors relative"
-            >
-              <span className="w-[10px] h-[10px] rounded-full border border-[rgba(30,30,30,0.6)] inline-block absolute -left-[25px]" />
-              contact
-            </a>
-          </nav>
-
-          {/* Main Content */}
-          <main className="flex flex-col flex-grow justify-start p-5 md:pt-[60px] md:pl-[40px] md:pr-0 md:pb-20 md:max-w-[1128px]">
-            {/* H1 - The Joy Code */}
-            <div className="px-5 pt-5 md:px-0 md:pt-0">
-              <h1 className="font-[800] text-[40px] leading-[40px] tracking-[0.8px] text-black md:text-[70px] md:leading-[70px]">
-                The Joy Code
-              </h1>
-            </div>
-
-            {/* H1 divider */}
-            <ScaffoldLine desktopOnly />
-
-            {/* Intro paragraph */}
-            <div className="px-5 py-6 md:px-0 md:max-w-[700px]">
-              <p
-                className="font-[400] text-[24px] leading-[50px] tracking-[0.8px] text-[#1E1E1E] text-left md:text-justify"
-                style={{ fontFamily: 'var(--font-literata)' }}
-              >
-                Joy is being built in a time of real change in how humans live and work. Humans are adaptable, social, creative, and capable of great things. But the systems around us don&apos;t always support this. Too often, they treat people like resources to be managed rather than humans to be supported.
-              </p>
-              <p
-                className="font-[400] text-[24px] leading-[50px] tracking-[0.8px] text-[#1E1E1E] text-left md:text-justify mt-6"
-                style={{ fontFamily: 'var(--font-literata)' }}
-              >
-                The Joy Code exists to make clear what Joy is for, what it protects, and what it will not do. It applies to customers, community members, and anyone passing through. Anyone can hold us accountable to it.
-              </p>
-            </div>
-
-            {/* Principles */}
-            {principles.map((principle, index) => (
-              <div key={index}>
-                {/* Scaffold divider */}
-                <ScaffoldLine />
-
-                <div className="px-5 py-6 md:px-0 md:max-w-[700px]">
-                  <h2 className="font-[800] text-[28px] leading-[36px] tracking-[0.8px] text-[#1E1E1E] mb-4 md:text-[40px] md:leading-[50px] md:mb-6">
-                    {principle.heading}
-                  </h2>
-                  <p
-                    className="font-[400] text-[24px] leading-[50px] tracking-[0.8px] text-[#1E1E1E] text-left md:text-justify"
-                    style={{ fontFamily: 'var(--font-literata)' }}
-                  >
-                    {principle.body}
-                  </p>
-                </div>
-              </div>
             ))}
+          </div>
+        </nav>
 
-            {/* Final scaffold divider */}
-            <ScaffoldLine />
+        {/* ═══ CONTENT ═══ */}
+        <main className="max-w-[500px] mx-auto px-6 py-16 md:py-24">
+          {/* Joy logo */}
+          <div className="mb-8 md:mb-12">
+            <JoyLogo width={160} height={84} />
+          </div>
 
-            {/* Closing statement */}
-            <div className="px-5 py-6 md:px-0 md:max-w-[700px]">
-              <p
-                className="font-[800] text-[28px] leading-[36px] tracking-[0.8px] text-[#1E1E1E] md:text-[40px] md:leading-[50px]"
+          {/* H1 */}
+          <h1
+            className="text-[28px] md:text-[50px] lg:text-[60px] leading-[1.12] tracking-[0.8px] mb-[20px] text-black"
+            style={{ fontFamily: "var(--font-cooper)", fontWeight: 800 }}
+          >
+            the joy code
+          </h1>
+
+          {/* Intro */}
+          <div
+            className="text-[12px] md:text-[14px] lg:text-[18px] leading-[1.75] tracking-[1px] text-black mb-12 md:mb-16"
+            style={{ fontFamily: "var(--font-literata)", fontWeight: 400 }}
+          >
+            <p className="mb-6 md:mb-8">
+              Joy is being built in a time of real change in how humans live and work. Humans are adaptable, social, creative, and capable of great things. But the systems around us don&apos;t always support this. Too often, they treat people like resources to be managed rather than humans to be supported.
+            </p>
+            <p>
+              The Joy Code exists to make clear what Joy is for, what it protects, and what it will not do. It applies to customers, community members, and anyone passing through. Anyone can hold us accountable to it.
+            </p>
+          </div>
+
+          {/* Principles */}
+          {principles.map((principle, index) => (
+            <div key={index} className="mb-12 md:mb-16">
+              <h2
+                className="text-[20px] md:text-[28px] lg:text-[34px] leading-[1.2] tracking-[0.8px] mb-4 md:mb-6 text-black"
+                style={{ fontFamily: "var(--font-cooper)", fontWeight: 800 }}
               >
-                The Joy Code exists to protect what makes us human, even as the world around us changes.
+                {principle.heading}
+              </h2>
+              <p
+                className="text-[12px] md:text-[14px] lg:text-[18px] leading-[1.75] tracking-[1px] text-black"
+                style={{ fontFamily: "var(--font-literata)", fontWeight: 400 }}
+              >
+                {principle.body}
               </p>
             </div>
+          ))}
 
-            {/* Footer links */}
-            <div className="px-5 py-6 md:px-0 md:pt-[30px] md:pb-[40px]">
-              <p className="font-[400] text-[16px] leading-[24px] tracking-[1px] text-[#1E1E1E]/60 text-center mb-6">Joy 2026</p>
-              <div className="flex flex-col gap-1 font-[400] text-[22px] leading-[36px] tracking-[1px] text-[#1E1E1E]">
-                <a href="https://www.linkedin.com/company/feeljoy/" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">LinkedIn</a>
-                <a href="/privacy-policy.pdf" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">Privacy Policy</a>
-                <a href="/joy-code" className="font-[500] hover:opacity-70 transition-opacity">Joy Code</a>
-              </div>
-            </div>
-          </main>
-        </div>
+          {/* Closing statement */}
+          <p
+            className="text-[20px] md:text-[28px] lg:text-[34px] leading-[1.2] tracking-[0.8px] text-black mb-16 md:mb-24"
+            style={{ fontFamily: "var(--font-cooper)", fontWeight: 800 }}
+          >
+            The Joy Code exists to protect what makes us human, even as the world around us changes.
+          </p>
+        </main>
+
       </div>
+
+      {/* ═══ FOOTER ═══ */}
+      <footer
+        className="fixed bottom-0 left-0 right-0 z-[4] px-6 py-4 md:px-12 lg:px-20"
+        style={{ background: "transparent" }}
+      >
+        <div className="max-w-[1400px] mx-auto flex flex-wrap items-center justify-center gap-6 md:gap-10 lg:justify-between">
+          {footerItems.slice(0, 2).map((item) => (
+            <a
+              key={item.label}
+              href={item.href}
+              {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+              className="flex items-center gap-2 md:gap-3 hover:opacity-70 transition-opacity"
+              style={{ fontFamily: "var(--font-literata)" }}
+            >
+              <img
+                src={item.orb}
+                alt=""
+                className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 rounded-full object-cover orb-spin"
+              />
+              <span className="text-sm md:text-lg lg:text-xl tracking-[0.8px] text-black">
+                {item.label}
+              </span>
+            </a>
+          ))}
+
+          <div>
+            <JoyLogo width={60} height={32} />
+          </div>
+
+          {footerItems.slice(2).map((item) => (
+            <a
+              key={item.label}
+              href={item.href}
+              {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+              className="flex items-center gap-2 md:gap-3 hover:opacity-70 transition-opacity"
+              style={{ fontFamily: "var(--font-literata)" }}
+            >
+              <img
+                src={item.orb}
+                alt=""
+                className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 rounded-full object-cover orb-spin"
+              />
+              <span className="text-sm md:text-lg lg:text-xl tracking-[0.8px] text-black">
+                {item.label}
+              </span>
+            </a>
+          ))}
+        </div>
+      </footer>
     </div>
   );
 }

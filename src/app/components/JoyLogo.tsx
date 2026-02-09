@@ -5,10 +5,11 @@ export default function JoyLogo({ width = 121, height = 63 }: { width?: number; 
     <svg
       width={width}
       height={height}
-      viewBox="-5 -5 230 120"
+      viewBox="-5 -10 230 125"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-label="Joy logo"
+      style={{ overflow: "visible" }}
     >
       {/* J */}
       <g className="joy-letter-j">

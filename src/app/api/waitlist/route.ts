@@ -53,11 +53,6 @@ export async function POST(request: NextRequest) {
 
     const { name, email, newsletter } = await request.json();
 
-    // Validate required fields
-    if (!name || typeof name !== "string" || name.trim().length === 0) {
-      return NextResponse.json({ error: "Name is required" }, { status: 400 });
-    }
-
     if (!email || typeof email !== "string") {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
@@ -87,7 +82,7 @@ export async function POST(request: NextRequest) {
 
     // Insert into Supabase
     const { error: dbError } = await supabase.from("waitlist").insert({
-      name: name.trim(),
+      name: name ? name.trim() : null,
       email: email.trim().toLowerCase(),
       newsletter_optin: Boolean(newsletter),
       city,
