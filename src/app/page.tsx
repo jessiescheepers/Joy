@@ -321,7 +321,7 @@ export default function Home() {
                   : "w-[320px] h-[500px] md:w-[380px] lg:w-[420px] border-0 rounded-[22px]"
                 }
                 style={glowExpanded
-                  ? { overflow: "hidden", background: "transparent", width: "min(90vw, 480px)", height: "calc(100vh - 80px)", maxHeight: 680, display: "block" }
+                  ? { overflow: "hidden", background: "transparent", width: "min(100vw, 480px)", height: "calc(100dvh - 70px)", display: "block" }
                   : { overflow: "hidden", display: "block", marginLeft: -23, marginTop: -13 }
                 }
               />

@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, email, newsletter } = await request.json();
+    const { email } = await request.json();
 
     if (!email || typeof email !== "string") {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
@@ -82,9 +82,7 @@ export async function POST(request: NextRequest) {
 
     // Insert into Supabase
     const { error: dbError } = await supabase.from("waitlist").insert({
-      name: name ? name.trim() : null,
       email: email.trim().toLowerCase(),
-      newsletter_optin: Boolean(newsletter),
       city,
       country,
       ip,
