@@ -14,6 +14,11 @@ export default function Home() {
 
   const [glowExpanded, setGlowExpanded] = useState(false);
   const [glowName, setGlowName] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile(window.matchMedia("(max-width: 768px)").matches);
+  }, []);
 
   // Waitlist form state
   const [formEmail, setFormEmail] = useState("");
@@ -113,7 +118,7 @@ export default function Home() {
 
         {/* ═══ TOP NAV ═══ */}
         <nav
-          className="sticky top-0 z-50 px-6 py-4 md:px-12 lg:px-20"
+          className={`sticky top-0 z-50 px-6 py-4 md:px-12 lg:px-20 transition-opacity duration-300 ${glowExpanded ? "opacity-0 pointer-events-none" : ""}`}
           style={{ background: "transparent" }}
         >
           <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
@@ -293,17 +298,18 @@ export default function Home() {
             {/* Right column — single iframe container, CSS toggles inline↔fullscreen */}
             <div
               className={glowExpanded
-                ? "fixed inset-0 z-[100]"
+                ? "fixed inset-0 z-[100] flex flex-col items-center justify-center"
                 : "flex-shrink-0 relative lg:-mt-[80px] w-[280px] h-[480px] md:w-[340px] lg:w-[380px] rounded-[24px] overflow-hidden shimmer-border"
               }
+              onClick={!glowExpanded && isMobile ? () => setGlowExpanded(true) : undefined}
               style={glowExpanded
                 ? { backgroundImage: "url(/images/glow-fullscreen-bg.png)", backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat" }
-                : { boxShadow: "0px 4px 60px rgba(0, 0, 0, 0.25)", padding: 3 }
+                : { boxShadow: "0px 4px 60px rgba(0, 0, 0, 0.25)", padding: 3, cursor: isMobile ? "pointer" : undefined }
               }
             >
               {/* Fullscreen header */}
               {glowExpanded && (
-                <div className="flex flex-col items-center py-1">
+                <div className="flex flex-col items-center py-1 shrink-0">
                   <JoyLogo width={70} height={37} />
                   <p className="text-[16px] md:text-[20px] tracking-[1px] text-black" style={{ fontFamily: "var(--font-cooper)", fontWeight: 800 }}>
                     daily glow
@@ -321,8 +327,8 @@ export default function Home() {
                   : "w-[320px] h-[500px] md:w-[380px] lg:w-[420px] border-0 rounded-[22px]"
                 }
                 style={glowExpanded
-                  ? { overflow: "hidden", background: "transparent", width: "min(100vw, 480px)", height: "calc(100dvh - 70px)", display: "block" }
-                  : { overflow: "hidden", display: "block", marginLeft: -23, marginTop: -13 }
+                  ? { overflow: "hidden", background: "transparent", width: "min(90vw, 480px)", height: "min(calc(100dvh - 100px), 680px)", display: "block", borderRadius: 24 }
+                  : { overflow: "hidden", display: "block", marginLeft: -23, marginTop: -13, pointerEvents: isMobile ? "none" : undefined }
                 }
               />
 

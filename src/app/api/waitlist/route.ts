@@ -82,7 +82,9 @@ export async function POST(request: NextRequest) {
 
     // Insert into Supabase
     const { error: dbError } = await supabase.from("waitlist").insert({
+      name: "",
       email: email.trim().toLowerCase(),
+      newsletter_optin: false,
       city,
       country,
       ip,
