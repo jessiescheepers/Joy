@@ -42,103 +42,85 @@ const principles = [
 ];
 
 const navItems = [
-  { label: "home", href: "/", orb: "/images/orbs/orb-home.png" },
-  { label: "glow", href: "/#glow", orb: "/images/orbs/orb-glow.png" },
-  { label: "about", href: "/#about", orb: "/images/orbs/orb-about.png" },
-  { label: "contact", href: "/#contact", orb: "/images/orbs/orb-contact.png" },
+  { label: "home", href: "/" },
+  { label: "glow", href: "/#glow" },
+  { label: "how it works", href: "/#how" },
+  { label: "about", href: "/#about" },
+  { label: "contact", href: "/#contact" },
 ];
 
 const footerItems = [
-  { label: "privacy policy", href: "/privacy-policy.pdf", orb: "/images/orbs/orb-privacy.png", external: true },
-  { label: "linkedin", href: "https://www.linkedin.com/company/feeljoy/", orb: "/images/orbs/orb-linkedin.png", external: true },
-  { label: "joy code", href: "/joy-code", orb: "/images/orbs/orb-joycode.png", external: false },
-  { label: "waitlist", href: "/#hero", orb: "/images/orbs/orb-waitlist.png", external: false },
+  { label: "privacy policy", href: "/privacy-policy.pdf", external: true },
+  { label: "linkedin", href: "https://www.linkedin.com/company/feeljoy/", external: true },
+  { label: "joy code", href: "/joy-code", external: false },
 ];
 
 export default function JoyCode() {
   return (
     <div className="relative min-h-screen">
-      {/* Full-page watercolour background */}
-      <div
-        className="fixed inset-0 z-0"
-        style={{
-          backgroundImage: "url(/images/watercolour-bg.png)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-        }}
-      />
-      {/* Orb background */}
-      <div
-        className="fixed pointer-events-none"
-        style={{
-          top: "50%",
-          left: "0",
-          transform: "translate(-50%, -50%)",
-          width: "240vw",
-          height: "240vw",
-          opacity: 0.3,
-          zIndex: 1,
-          backgroundImage: "url(/images/orb-bg.png)",
-          backgroundSize: "contain",
-          backgroundRepeat: "no-repeat",
-          backgroundPosition: "center",
-          maskImage: "radial-gradient(circle, black 40%, transparent 70%)",
-          WebkitMaskImage: "radial-gradient(circle, black 40%, transparent 70%)",
-        }}
-      />
       <div className="noise-overlay fixed inset-0 z-[2]" />
 
       {/* Page content */}
       <div className="relative z-[3]">
 
-        {/* ═══ TOP NAV ═══ */}
+        {/* ═══ TOP NAV — glass morphism ═══ */}
         <nav
-          className="sticky top-0 z-50 px-6 py-4 md:px-12 lg:px-20"
-          style={{ background: "transparent" }}
+          className="fixed top-0 left-0 right-0 z-50 px-6 md:px-12 h-16 flex items-center justify-between"
+          style={{
+            background: "rgba(8,11,20,0.6)",
+            backdropFilter: "blur(40px) saturate(1.8)",
+            WebkitBackdropFilter: "blur(40px) saturate(1.8)",
+            borderBottom: "1px solid var(--border)",
+          }}
         >
-          <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
+          <a href="/" className="relative">
+            <JoyLogo width={50} height={26} color="#FFFFFF" />
+            <span
+              className="absolute -top-0.5 -right-2.5 w-[7px] h-[7px] rounded-full"
+              style={{
+                background: "var(--glow-moon)",
+                boxShadow: "0 0 12px var(--glow-moon), 0 0 30px rgba(250,248,232,0.3)",
+                animation: "breathe 3s ease-in-out infinite",
+              }}
+            />
+          </a>
+
+          <div className="flex items-center gap-6 md:gap-8">
             {navItems.map((item) => (
               <a
                 key={item.label}
                 href={item.href}
-                className="flex items-center gap-2 md:gap-3 transition-all duration-300 hover:opacity-70"
-                style={{ fontFamily: "var(--font-literata)" }}
+                className="nav-link text-xs md:text-sm tracking-wide transition-colors duration-300 text-[var(--text-secondary)] hover:text-[var(--text)]"
+                style={{ fontFamily: "var(--font-display)", fontWeight: 400 }}
               >
-                <img
-                  src={item.orb}
-                  alt=""
-                  className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 rounded-full object-cover orb-spin"
-                />
-                <span className="text-sm md:text-lg lg:text-xl tracking-[0.8px] text-black">
-                  {item.label}
-                </span>
+                {item.label}
               </a>
             ))}
           </div>
         </nav>
 
         {/* ═══ CONTENT ═══ */}
-        <main className="max-w-[500px] mx-auto px-6 py-16 md:py-24">
+        <main className="max-w-[600px] mx-auto px-6 pt-32 pb-32">
           {/* Joy logo */}
-          <div className="mb-8 md:mb-12">
-            <JoyLogo width={160} height={84} />
+          <div className="mb-10 md:mb-14 relative inline-flex">
+            <JoyLogo width={120} height={63} color="#FFFFFF" />
+            <span className="absolute -top-2 -right-5 w-4 h-4 section-orb" />
           </div>
 
           {/* H1 */}
           <h1
-            className="text-[28px] md:text-[50px] lg:text-[60px] leading-[1.12] tracking-[0.8px] mb-[20px] text-black"
-            style={{ fontFamily: "var(--font-cooper)", fontWeight: 800 }}
+            className="mb-8"
+            style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1.4rem, 3.5vw, 2.4rem)", letterSpacing: "-0.02em", color: "var(--text)" }}
           >
             the joy code
           </h1>
 
           {/* Intro */}
           <div
-            className="text-[12px] md:text-[14px] lg:text-[18px] leading-[1.75] tracking-[1px] text-black mb-12 md:mb-16"
-            style={{ fontFamily: "var(--font-literata)", fontWeight: 400 }}
+            className="leading-[1.75] tracking-wide mb-16"
+            style={{ fontFamily: "var(--font-body)", fontWeight: 300, color: "var(--text-secondary)", fontSize: "clamp(0.9rem, 1.5vw, 1.05rem)" }}
           >
-            <p className="mb-6 md:mb-8">
+            <p className="mb-6">
               Joy is being built in a time of real change in how humans live and work. Humans are adaptable, social, creative, and capable of great things. But the systems around us don&apos;t always support this. Too often, they treat people like resources to be managed rather than humans to be supported.
             </p>
             <p>
@@ -148,16 +130,16 @@ export default function JoyCode() {
 
           {/* Principles */}
           {principles.map((principle, index) => (
-            <div key={index} className="mb-12 md:mb-16">
+            <div key={index} className="mb-14 md:mb-18">
               <h2
-                className="text-[20px] md:text-[28px] lg:text-[34px] leading-[1.2] tracking-[0.8px] mb-4 md:mb-6 text-black"
-                style={{ fontFamily: "var(--font-cooper)", fontWeight: 800 }}
+                className="mb-4 md:mb-6"
+                style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1rem, 2.5vw, 1.6rem)", letterSpacing: "-0.01em", color: "var(--text)" }}
               >
                 {principle.heading}
               </h2>
               <p
-                className="text-[12px] md:text-[14px] lg:text-[18px] leading-[1.75] tracking-[1px] text-black"
-                style={{ fontFamily: "var(--font-literata)", fontWeight: 400 }}
+                className="leading-[1.75] tracking-wide"
+                style={{ fontFamily: "var(--font-body)", fontWeight: 300, color: "var(--text-secondary)", fontSize: "clamp(0.9rem, 1.5vw, 1.05rem)" }}
               >
                 {principle.body}
               </p>
@@ -166,8 +148,8 @@ export default function JoyCode() {
 
           {/* Closing statement */}
           <p
-            className="text-[20px] md:text-[28px] lg:text-[34px] leading-[1.2] tracking-[0.8px] text-black mb-16 md:mb-24"
-            style={{ fontFamily: "var(--font-cooper)", fontWeight: 800 }}
+            className="mb-24"
+            style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1rem, 2.5vw, 1.6rem)", letterSpacing: "-0.01em", color: "var(--text)" }}
           >
             The Joy Code exists to protect what makes us human, even as the world around us changes.
           </p>
@@ -177,51 +159,25 @@ export default function JoyCode() {
 
       {/* ═══ FOOTER ═══ */}
       <footer
-        className="fixed bottom-0 left-0 right-0 z-[4] px-6 py-4 md:px-12 lg:px-20"
-        style={{ background: "transparent" }}
+        className="fixed bottom-0 left-0 right-0 z-[4] px-6 py-4 md:px-12"
+        style={{ borderTop: "1px solid var(--border)", background: "rgba(8,11,20,0.6)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
       >
         <div className="max-w-[1400px] mx-auto flex flex-wrap items-center justify-center gap-6 md:gap-10 lg:justify-between">
-          {footerItems.slice(0, 2).map((item) => (
+          {footerItems.map((item) => (
             <a
               key={item.label}
               href={item.href}
               {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-              className="flex items-center gap-2 md:gap-3 hover:opacity-70 transition-opacity"
-              style={{ fontFamily: "var(--font-literata)" }}
+              className="text-xs md:text-sm tracking-wide transition-colors duration-300"
+              style={{ fontFamily: "var(--font-display)", color: "var(--text-tertiary)" }}
             >
-              <img
-                src={item.orb}
-                alt=""
-                className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 rounded-full object-cover orb-spin"
-              />
-              <span className="text-sm md:text-lg lg:text-xl tracking-[0.8px] text-black">
-                {item.label}
-              </span>
+              {item.label}
             </a>
           ))}
 
-          <div>
-            <JoyLogo width={60} height={32} />
-          </div>
-
-          {footerItems.slice(2).map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-              className="flex items-center gap-2 md:gap-3 hover:opacity-70 transition-opacity"
-              style={{ fontFamily: "var(--font-literata)" }}
-            >
-              <img
-                src={item.orb}
-                alt=""
-                className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 rounded-full object-cover orb-spin"
-              />
-              <span className="text-sm md:text-lg lg:text-xl tracking-[0.8px] text-black">
-                {item.label}
-              </span>
-            </a>
-          ))}
+          <span className="text-xs" style={{ fontFamily: "var(--font-display)", color: "var(--text-tertiary)" }}>
+            &copy; 2026 Joy
+          </span>
         </div>
       </footer>
     </div>

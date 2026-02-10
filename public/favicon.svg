@@ -1,24 +1,29 @@
 <svg width="1000" height="1000" viewBox="0 0 1000 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g filter="url(#filter0_n_207_535)">
-<path d="M0 150C0 67.1573 67.1573 0 150 0H850C932.843 0 1000 67.1573 1000 150V850C1000 932.843 932.843 1000 850 1000H150C67.1573 1000 0 932.843 0 850V150Z" fill="#EEEEE6"/>
-</g>
-<path d="M483.729 206.545C593.467 204.414 672.21 278.989 716.664 324.501C727.73 335.83 740.18 345.583 752.576 356.529C764.923 367.432 777.08 379.413 787.244 394.994C807.61 426.214 819.791 471.594 810.237 551.209C800.644 631.156 752.935 687.069 700.447 724.275C647.979 761.467 590.605 780.069 561.305 785.397C502.887 796.019 431.586 802.396 334.854 751.373C286.436 725.833 235.897 679.027 208.086 618.614C180.247 558.14 175.207 484.072 217.785 404.238C260.176 324.756 299.217 275.818 341.448 246.51C383.724 217.17 429.041 207.607 483.729 206.545ZM497.467 441.562C486.569 441.773 477.39 443.677 468.808 449.61C460.269 455.513 452.476 465.299 444.097 480.95C435.529 496.953 436.53 511.871 442.157 524.048C447.756 536.162 457.905 545.52 467.635 550.633C486.989 560.802 501.319 559.532 512.97 557.422C518.665 556.39 532.386 554.182 545.153 548.276C557.906 542.377 570.087 532.603 572.054 516.276C573.966 500.404 570.801 489.335 565.959 481.076C561.168 472.904 554.717 467.514 550.463 463.176C545.936 458.559 538.164 453.066 528.835 448.779C519.499 444.489 508.485 441.349 497.467 441.562Z" fill="black"/>
-<defs>
-<filter id="filter0_n_207_535" x="0" y="0" width="1000" height="1000" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-<feFlood flood-opacity="0" result="BackgroundImageFix"/>
-<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
-<feTurbulence type="fractalNoise" baseFrequency="1 1" stitchTiles="stitch" numOctaves="3" result="noise" seed="7057" />
-<feColorMatrix in="noise" type="luminanceToAlpha" result="alphaNoise" />
-<feComponentTransfer in="alphaNoise" result="coloredNoise1">
-<feFuncA type="discrete" tableValues="1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 "/>
-</feComponentTransfer>
-<feComposite operator="in" in2="shape" in="coloredNoise1" result="noise1Clipped" />
-<feFlood flood-color="rgba(234, 215, 184, 0.25)" result="color1Flood" />
-<feComposite operator="in" in2="noise1Clipped" in="color1Flood" result="color1" />
-<feMerge result="effect1_noise_207_535">
-<feMergeNode in="shape" />
-<feMergeNode in="color1" />
-</feMerge>
-</filter>
-</defs>
+  <!-- Dark rounded background -->
+  <rect width="1000" height="1000" rx="200" fill="#080B14"/>
+
+  <!-- Outer glow layers -->
+  <radialGradient id="outerGlow" cx="500" cy="500" r="380" gradientUnits="userSpaceOnUse">
+    <stop offset="0%" stop-color="#E8B46A" stop-opacity="0.2"/>
+    <stop offset="40%" stop-color="#D4A0A8" stop-opacity="0.1"/>
+    <stop offset="70%" stop-color="#89B4DC" stop-opacity="0.05"/>
+    <stop offset="100%" stop-color="#080B14" stop-opacity="0"/>
+  </radialGradient>
+  <circle cx="500" cy="500" r="380" fill="url(#outerGlow)"/>
+
+  <!-- Mid glow -->
+  <radialGradient id="midGlow" cx="500" cy="500" r="200" gradientUnits="userSpaceOnUse">
+    <stop offset="0%" stop-color="#FAF5E0" stop-opacity="0.25"/>
+    <stop offset="50%" stop-color="#E8B46A" stop-opacity="0.12"/>
+    <stop offset="100%" stop-color="#E8B46A" stop-opacity="0"/>
+  </radialGradient>
+  <circle cx="500" cy="500" r="200" fill="url(#midGlow)"/>
+
+  <!-- Core orb — solid moon glow -->
+  <radialGradient id="coreOrb" cx="480" cy="480" r="90" gradientUnits="userSpaceOnUse">
+    <stop offset="0%" stop-color="#FFFFFF" stop-opacity="1"/>
+    <stop offset="40%" stop-color="#FAF5E0" stop-opacity="0.95"/>
+    <stop offset="100%" stop-color="#E8B46A" stop-opacity="0.6"/>
+  </radialGradient>
+  <circle cx="500" cy="500" r="90" fill="url(#coreOrb)"/>
 </svg>
