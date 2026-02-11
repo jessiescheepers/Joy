@@ -12,9 +12,6 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "Joy",
   description: "Designed for human success, not constant strain",
-  icons: {
-    icon: "/favicon.svg",
-  },
   other: {
     "theme-color": "#080B14",
   },
