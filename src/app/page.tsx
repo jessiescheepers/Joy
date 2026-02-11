@@ -272,14 +272,6 @@ export default function Home() {
               </span>
             </h1>
 
-            {/* Sub-text */}
-            <p
-              className="animate-hero-sub mt-[38px] max-w-[400px] leading-[1.6] tracking-wide"
-              style={{ fontFamily: "var(--font-body)", fontWeight: 300, color: "var(--text-secondary)", fontSize: "clamp(0.8rem, 1.6vw, 1.04rem)" }}
-            >
-              Your energy is finite.<br />Joy gives your brain one place to think.
-            </p>
-
             {/* Waitlist form */}
             <form
               id="waitlist"
