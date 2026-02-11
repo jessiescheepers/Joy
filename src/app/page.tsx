@@ -688,11 +688,11 @@ export default function Home() {
               className="reveal-section leading-[1.1] tracking-[-0.025em] mb-8"
               style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1rem, 2.5vw, 1.8rem)" }}
             >
-              The <em className="text-gradient-cool" style={{ fontStyle: "italic" }}>vision</em>
+              Joy&apos;s <em className="text-gradient-cool" style={{ fontStyle: "italic" }}>vision</em>
             </h2>
             <div className="reveal-section text-sm md:text-base leading-[1.85] tracking-wide" style={{ color: "var(--text-secondary)", fontWeight: 300 }}>
               <p className="mb-6">
-                Joy is here to end the stalemate between tired employees and under-pressure businesses. Not by asking people to do more, but by building a system that works the way people actually work.
+                Joy is here to end the stalemate between tired employees and under-pressure businesses. Not by asking people to do more, but by building a system around people that mirrors their daily capacity.
               </p>
               <p>
                 A person is one being. Work and life happen in the same brain, the same body, the same 24 hours. It&apos;s time our tools reflected that.
