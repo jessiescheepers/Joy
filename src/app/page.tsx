@@ -266,9 +266,9 @@ export default function Home() {
               className="tracking-[-0.03em] mb-0"
               style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1.1rem, 2.8vw, 2.2rem)", letterSpacing: "-0.02em", lineHeight: "calc(1.02em + 5px)" }}
             >
-              <span className="block animate-hero-1">Build better days;</span>
+              <span className="block animate-hero-1">You don&apos;t need more time.</span>
               <span className="block animate-hero-2">
-                <em className="text-gradient" style={{ fontStyle: "italic" }}>at work and in life</em>
+                You need more <em className="text-gradient" style={{ fontStyle: "italic" }}>breathing space</em>.
               </span>
             </h1>
 
@@ -405,13 +405,9 @@ export default function Home() {
               className="text-sm md:text-base leading-[1.75] tracking-wide"
               style={{ color: "var(--text-secondary)", fontWeight: 300 }}
             >
-              When was the last time you checked in with yourself?
+              When was the last time you actually checked in with yourself? Your Daily Glow takes ten seconds. Energy, stress, mood, capacity. A colour, not a score. See where you&apos;re really at, and let Joy sort your day around it.
               <br /><br />
-              Not your inbox. Not your calendar. You.
-              <br />
-              Your Daily Glow takes 30 seconds and shows you what&apos;s in the tank. Energy, mood, stress, the whole picture.
-              <br /><br />
-              See where you&apos;re really at. Then build your day around it.
+              Share your Glow with the people who matter. Let your colleagues or loved ones know what kind of day you&apos;re having.
             </p>
           </div>
 
@@ -519,17 +515,20 @@ export default function Home() {
               className="reveal-section leading-[1.1] tracking-[-0.025em] mb-8"
               style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1rem, 2.5vw, 1.8rem)" }}
             >
-              The problem isn&apos;t time. It&apos;s <em className="text-gradient" style={{ fontStyle: "italic" }}>energy</em>.
+              The problem isn&apos;t time. It&apos;s <em className="text-gradient" style={{ fontStyle: "italic" }}>capacity</em>.
             </h2>
             <div className="reveal-section text-sm md:text-base leading-[1.85] tracking-wide" style={{ color: "var(--text-secondary)", fontWeight: 300 }}>
               <p className="mb-6">
-                Life today is a lot. Between doing meaningful work and building a full personal life, we&apos;re stretched thin. 52% of the workforce now reports feeling burnt out.
+                52% of the workforce reports feeling burnt out, yet 82% have no system for managing their day at all. Not at work. Not in life. Nowhere.
               </p>
               <p className="mb-6">
-                But this isn&apos;t a time management problem. You&apos;re one person living work and life at once, and every tool you use pretends otherwise. At work, your friends message you about dinner. At home, you&apos;re thinking about a deadline while making it. The constant switching between separate tools, separate systems, separate headspaces costs more energy than you realise.
+                And the tools that do exist only make it worse. Your calendar knows your meetings but not your energy. Your to-do list knows your tasks but not your limits. Nothing connects the two lives you&apos;re already living in one brain, one body, one day.
+              </p>
+              <p className="mb-6">
+                So you overcommit. You context-switch. You push through. And the cost isn&apos;t just productivity. It&apos;s the things that actually matter: the side project that never starts, the workout that keeps slipping, the dinner you&apos;re at but not really present for.
               </p>
               <p>
-                That&apos;s what Joy is here to fix.
+                Joy is one system for work and life that builds around your capacity. It learns when you&apos;re stretched, adapts when you&apos;re not, and sorts your day so that what matters most gets your best energy. Not more planning. More breathing space.
               </p>
             </div>
           </div>
@@ -543,10 +542,10 @@ export default function Home() {
           <div className="max-w-[900px] mx-auto">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-12 md:gap-8">
               {[
-                { stat: "52%", label: "of the workforce reports feeling burnt out" },
-                { stat: "2.5h", label: "lost every day to context-switching" },
-                { stat: "151h", label: "of focus lost yearly to personal admin" },
-                { stat: "82%", label: "of employees at risk of burnout" },
+                { stat: "82%", label: "of people have no system for managing their day at all" },
+                { stat: "2.5h", label: "lost every day to context-switching between work and life" },
+                { stat: "151h", label: "of focus lost every year to personal admin during work" },
+                { stat: "52%", label: "of the workforce now reports feeling burnt out" },
               ].map((item, i) => (
                 <div key={i} className="text-center reveal-section">
                   <p
@@ -585,13 +584,13 @@ export default function Home() {
               className="reveal-section text-center text-sm md:text-base leading-[1.75] tracking-wide mb-16"
               style={{ color: "var(--text-secondary)", fontWeight: 300 }}
             >
-              Joy doesn&apos;t add to your workload. It sorts through it.
+              Joy doesn&apos;t add to your workload. It makes space for it.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-10">
               {[
-                { step: "01 · Glow", heading: "Check in", body: "Each morning, Joy asks four quick questions: energy, load, mood, and stress. This gives you your Glow. Not a score. A true read on where you're at today, and what that means for how to build your day." },
-                { step: "02 · Sort", heading: "Sort your day", body: "Joy organises your tasks into Set (non-negotiables) and Flex (moveable), across both work and life. Your Glow guides the day ahead, so when you're in the flow you take advantage of it, and when you've had a rough night's sleep you take it more gently." },
-                { step: "03 · Remind", heading: "Your brain has breathing space", body: "Joy takes your brain dump and reminds you of what\u2019s on your plate. It helps you get it done, without carrying mental reminders around with you.\n\nAnd finally, a place that will actually remind you of your people\u2019s birthdays." },
+                { step: "01 · Glow", heading: "Check in", body: "Each morning, Joy asks four quick questions: energy, load, mood, and stress. Ten seconds, and you have your Glow. Not a score, a colour. It shows you where you\u2019re at today, and sorts your day around your actual capacity." },
+                { step: "02 · Sort", heading: "Sort your day", body: "Joy organises your day across work and life. In the flow? Joy leans you into it. Rough night? Joy lightens your day. One day, one system, sorted." },
+                { step: "03 · Remind", heading: "Free up your mind", body: "Joy holds everything you need to remember so you don\u2019t have to. Tasks, deadlines, birthdays, all the things you carry around in your head. Less mental load, more breathing space." },
               ].map((item, i) => (
                 <div key={i} className="reveal-section">
                   <span
@@ -648,7 +647,7 @@ export default function Home() {
                   className="text-sm leading-[1.85] tracking-wide"
                   style={{ color: "var(--text-secondary)", fontWeight: 300 }}
                 >
-                  One place for everything on your plate, work and life. No more scattered tabs, forgotten reminders, or that nagging feeling you&apos;ve missed something. Build towards flow on good days. Be supported on harder ones. See your patterns over time and understand what helps you thrive.
+                  One place for everything on your plate, work and life. Joy sorts your day around your capacity, so you build towards flow on good days and get supported on harder ones. Over time, you start to see your patterns and understand what helps you thrive.
                 </p>
               </div>
               <div className="reveal-section">
@@ -662,13 +661,13 @@ export default function Home() {
                   className="text-gradient-warm mb-4"
                   style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(0.85rem, 1.5vw, 1rem)" }}
                 >
-                  Real data. Every day. No survey required.
+                  Energised people. Real-time signal.
                 </p>
                 <p
                   className="text-sm leading-[1.85] tracking-wide"
                   style={{ color: "var(--text-secondary)", fontWeight: 300 }}
                 >
-                  When your people use Joy, you get something unprecedented: a real-time, daily pulse of how your organisation is actually doing. Aggregated. Anonymous. Honest. Spot shifts early, before they become crises. Give leaders data they can trust and act on. And nobody has to fill in a survey to make it happen.
+                  When your people use Joy, they get their energy back. That means more creativity, sharper problem-solving, and higher engagement at work. And with Glow, you get an aggregated, anonymous daily signal on how your organisation is actually doing. Real-time, quantifiable data that shows you when you&apos;re thriving, and honest signal when things hit a speed wobble.
                 </p>
               </div>
             </div>
@@ -693,7 +692,7 @@ export default function Home() {
             </h2>
             <div className="reveal-section text-sm md:text-base leading-[1.85] tracking-wide" style={{ color: "var(--text-secondary)", fontWeight: 300 }}>
               <p className="mb-6">
-                Joy is here to end the stalemate between tired employees and under-pressure businesses. To help people thrive in all parts of their lives. To build better days, at work and in life.
+                Joy is here to end the stalemate between tired employees and under-pressure businesses. Not by asking people to do more, but by building a system that works the way people actually work.
               </p>
               <p>
                 A person is one being. Work and life happen in the same brain, the same body, the same 24 hours. It&apos;s time our tools reflected that.
