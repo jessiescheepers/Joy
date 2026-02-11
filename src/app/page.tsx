@@ -655,7 +655,7 @@ export default function Home() {
                   className="text-gradient-warm mb-4"
                   style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(0.85rem, 1.5vw, 1rem)" }}
                 >
-                  Energised people. Real-time signal.
+                  Not another pulse survey. A tool that helps your people thrive, and proves it.
                 </p>
                 <p
                   className="text-sm leading-[1.85] tracking-wide"
