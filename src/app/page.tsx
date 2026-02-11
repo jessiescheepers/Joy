@@ -661,7 +661,7 @@ export default function Home() {
                   className="text-sm leading-[1.85] tracking-wide"
                   style={{ color: "var(--text-secondary)", fontWeight: 300 }}
                 >
-                  When your people use Joy, they get their energy back. That means more creativity, sharper problem-solving, and higher engagement at work. And with Glow, you get an aggregated, anonymous daily signal on how your organisation is actually doing. Real-time, quantifiable data that shows you when you&apos;re thriving, and honest signal when things hit a speed wobble.
+                  When your people use Joy, they get their energy back. That means more creativity, sharper problem-solving, and higher engagement at work. And with Glow, you get an aggregated, anonymous daily signal on how your organisation is actually doing. Real-time, quantifiable data that shows you when you&apos;re thriving, and an honest signal when things hit a speed wobble.
                 </p>
               </div>
             </div>
