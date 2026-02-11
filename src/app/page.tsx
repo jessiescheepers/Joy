@@ -507,6 +507,8 @@ export default function Home() {
 
         {/* ═══ PROBLEM SECTION ═══ */}
         <section
+          id="how"
+          ref={howRef}
           className="py-24 md:py-32 px-6 md:px-12 lg:px-20"
           style={{ borderTop: "1px solid var(--border)" }}
         >
@@ -568,8 +570,6 @@ export default function Home() {
 
         {/* ═══ HOW IT WORKS SECTION ═══ */}
         <section
-          id="how"
-          ref={howRef}
           className="py-24 md:py-32 px-6 md:px-12 lg:px-20"
           style={{ borderTop: "1px solid var(--border)" }}
         >
@@ -619,6 +619,8 @@ export default function Home() {
 
         {/* ═══ FOR WHO SECTION ═══ */}
         <section
+          id="about"
+          ref={aboutRef}
           className="py-24 md:py-32 px-6 md:px-12 lg:px-20"
           style={{ borderTop: "1px solid var(--border)" }}
         >
@@ -676,8 +678,6 @@ export default function Home() {
 
         {/* ═══ ABOUT / VISION SECTION ═══ */}
         <section
-          id="about"
-          ref={aboutRef}
           className="py-24 md:py-32 px-6 md:px-12 lg:px-20 relative"
           style={{ borderTop: "1px solid var(--border)" }}
         >
