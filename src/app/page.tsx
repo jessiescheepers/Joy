@@ -14,6 +14,7 @@ export default function Home() {
   const [glowExpanded, setGlowExpanded] = useState(false);
   const [glowName, setGlowName] = useState("");
   const [isMobile, setIsMobile] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setIsMobile(window.matchMedia("(max-width: 768px)").matches);
@@ -164,8 +165,8 @@ export default function Home() {
             />
           </a>
 
-          {/* Links right — with gradient underline */}
-          <div className="flex items-center gap-6 md:gap-8">
+          {/* Desktop links */}
+          <div className="hidden md:flex items-center gap-6 md:gap-8">
             {navItems.map((item) => {
               const isActive = activeSection === item.id;
               return (
@@ -183,7 +184,7 @@ export default function Home() {
             })}
             <a
               href="#hero"
-              className="hidden md:inline-flex px-5 py-2 rounded-full text-xs font-medium tracking-wide transition-all duration-300 hover:shadow-[0_0_30px_rgba(224,160,173,0.35)] relative overflow-hidden"
+              className="px-5 py-2 rounded-full text-xs font-medium tracking-wide transition-all duration-300 hover:shadow-[0_0_30px_rgba(224,160,173,0.35)] relative overflow-hidden"
               style={{
                 fontFamily: "var(--font-display)",
                 background: "var(--text)",
@@ -193,7 +194,48 @@ export default function Home() {
               early access
             </a>
           </div>
+
+          {/* Mobile hamburger */}
+          <button
+            className="md:hidden w-10 h-10 flex items-center justify-center"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            <div className="flex flex-col gap-[5px]">
+              <span className={`block w-5 h-[1.5px] bg-white transition-all duration-300 ${mobileMenuOpen ? "rotate-45 translate-y-[6.5px]" : ""}`} />
+              <span className={`block w-5 h-[1.5px] bg-white transition-all duration-300 ${mobileMenuOpen ? "opacity-0" : ""}`} />
+              <span className={`block w-5 h-[1.5px] bg-white transition-all duration-300 ${mobileMenuOpen ? "-rotate-45 -translate-y-[6.5px]" : ""}`} />
+            </div>
+          </button>
         </nav>
+
+        {/* ═══ MOBILE MENU OVERLAY ═══ */}
+        <div
+          className={`fixed inset-0 z-40 md:hidden transition-all duration-300 ${mobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+          style={{ background: "rgba(8,11,20,0.95)", backdropFilter: "blur(40px)", WebkitBackdropFilter: "blur(40px)" }}
+        >
+          <div className="flex flex-col items-center justify-center h-full gap-8">
+            {navItems.map((item) => (
+              <a
+                key={item.id}
+                href={item.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-lg tracking-wide transition-colors duration-300"
+                style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: activeSection === item.id ? "var(--text)" : "var(--text-secondary)" }}
+              >
+                {item.label}
+              </a>
+            ))}
+            <a
+              href="#hero"
+              onClick={() => setMobileMenuOpen(false)}
+              className="mt-4 px-7 py-3 rounded-full text-sm font-medium tracking-wide"
+              style={{ fontFamily: "var(--font-display)", background: "var(--text)", color: "var(--bg)" }}
+            >
+              early access
+            </a>
+          </div>
+        </div>
 
         {/* ═══ HERO SECTION ═══ */}
         <section
@@ -501,7 +543,7 @@ export default function Home() {
           <div className="max-w-[900px] mx-auto">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-12 md:gap-8">
               {[
-                { stat: "52%", label: "of the workforce reports burnout" },
+                { stat: "52%", label: "of the workforce reports feeling burnt out" },
                 { stat: "2.5h", label: "lost every day to context-switching" },
                 { stat: "151h", label: "of focus lost yearly to personal admin" },
                 { stat: "82%", label: "of employees at risk of burnout" },
@@ -797,33 +839,43 @@ export default function Home() {
         className={`fixed bottom-0 left-0 right-0 z-[4] px-6 py-4 md:px-12 transition-opacity duration-300 ${glowExpanded ? "opacity-0 pointer-events-none" : ""}`}
         style={{ borderTop: "1px solid var(--border)", background: "rgba(8,11,20,0.6)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
       >
-        <div className="max-w-[1400px] mx-auto flex flex-wrap items-center justify-center gap-6 md:gap-10 lg:justify-between">
-          <a href="/privacy-policy.pdf" target="_blank" rel="noopener noreferrer" className="text-xs md:text-sm tracking-wide transition-colors duration-300" style={{ fontFamily: "var(--font-display)", color: "var(--text-tertiary)" }}>
-            privacy policy
-          </a>
-          <a href="https://www.linkedin.com/company/feeljoy/" target="_blank" rel="noopener noreferrer" className="text-xs md:text-sm tracking-wide transition-colors duration-300" style={{ fontFamily: "var(--font-display)", color: "var(--text-tertiary)" }}>
-            linkedin
-          </a>
-
-          {/* Center Joy logo with breathing orb */}
-          <div className={`relative inline-flex transition-opacity duration-300 ${activeSection === "glow" || activeSection === "about" ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
-            <JoyLogo width={40} height={21} color="#FFFFFF" />
-            <span
-              className="absolute -top-0.5 -right-1.5 w-[5px] h-[5px] rounded-full"
-              style={{
-                background: "var(--glow-moon)",
-                boxShadow: "0 0 8px var(--glow-moon), 0 0 20px rgba(250,248,232,0.3)",
-                animation: "breathe 3s ease-in-out infinite",
-              }}
-            />
+        <div className="max-w-[1400px] mx-auto">
+          {/* Mobile: links centered */}
+          <div className="flex flex-wrap items-center justify-center gap-4 md:hidden">
+            {footerItems.map((item) => (
+              <a
+                key={item.label}
+                href={item.href}
+                {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                className="text-xs tracking-wide transition-colors duration-300"
+                style={{ fontFamily: "var(--font-display)", color: "var(--text-tertiary)" }}
+              >
+                {item.label}
+              </a>
+            ))}
+            <span className="text-xs" style={{ fontFamily: "var(--font-display)", color: "var(--text-tertiary)" }}>
+              &copy; 2026 Joy
+            </span>
           </div>
 
-          <a href="/joy-code" className="text-xs md:text-sm tracking-wide transition-colors duration-300" style={{ fontFamily: "var(--font-display)", color: "var(--text-tertiary)" }}>
-            joy code
-          </a>
-          <span className="text-xs" style={{ fontFamily: "var(--font-display)", color: "var(--text-tertiary)" }}>
-            &copy; 2026 Joy
-          </span>
+          {/* Desktop: single row */}
+          <div className="hidden md:flex items-center justify-between gap-10">
+            {footerItems.map((item) => (
+              <a
+                key={item.label}
+                href={item.href}
+                {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                className="text-xs md:text-sm tracking-wide transition-colors duration-300"
+                style={{ fontFamily: "var(--font-display)", color: "var(--text-tertiary)" }}
+              >
+                {item.label}
+              </a>
+            ))}
+
+            <span className="text-xs" style={{ fontFamily: "var(--font-display)", color: "var(--text-tertiary)" }}>
+              &copy; 2026 Joy
+            </span>
+          </div>
         </div>
       </footer>
     </div>
