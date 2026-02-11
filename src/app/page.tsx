@@ -397,7 +397,7 @@ export default function Home() {
               className="text-sm md:text-base leading-[1.75] tracking-wide"
               style={{ color: "var(--text-secondary)", fontWeight: 300 }}
             >
-              When was the last time you actually checked in with yourself? Your Daily Glow takes ten seconds. Energy, stress, mood, capacity. A colour, not a score. See where you&apos;re really at, and let Joy sort your day around it.
+              When was the last time you actually checked in with yourself? Your Daily Glow takes ten seconds. Energy, stress, mood, load.
               <br /><br />
               Share your Glow with the people who matter. Let your colleagues or loved ones know what kind of day you&apos;re having.
             </p>
