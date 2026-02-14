@@ -8,6 +8,7 @@ declare global {
 
 import { useState, useEffect, useRef } from "react";
 import JoyLogo from "./components/JoyLogo";
+import OrbSystem from "./components/OrbSystem";
 
 export default function Home() {
   const [activeSection, setActiveSection] = useState<string>("home");
@@ -36,7 +37,6 @@ export default function Home() {
   const auroraRef = useRef<HTMLDivElement>(null);
   const scrollBarRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLButtonElement>(null);
-  const heroOrbsRef = useRef<HTMLDivElement>(null);
   const glowCardRef = useRef<HTMLDivElement>(null);
   const glowAuraRef = useRef<HTMLDivElement>(null);
 
@@ -50,8 +50,8 @@ export default function Home() {
           else visibleSections.delete(entry.target.id);
         });
         if (visibleSections.has("contact")) setActiveSection("contact");
-        else if (visibleSections.has("about")) setActiveSection("about");
-        else if (visibleSections.has("how")) setActiveSection("how");
+        else if (visibleSections.has("vision")) setActiveSection("about");
+        else if (visibleSections.has("sort")) setActiveSection("how");
         else if (visibleSections.has("glow")) setActiveSection("glow");
         else if (visibleSections.has("hero")) setActiveSection("home");
       },
@@ -92,11 +92,6 @@ export default function Home() {
       if (auroraRef.current) {
         auroraRef.current.style.transform = `translate(${e.clientX - 300}px, ${e.clientY - 300}px)`;
       }
-      if (heroOrbsRef.current) {
-        const px = (e.clientX / window.innerWidth - 0.5) * 2;
-        const py = (e.clientY / window.innerHeight - 0.5) * 2;
-        heroOrbsRef.current.style.transform = `translate(${px * 20}px, ${py * 15}px)`;
-      }
     };
     window.addEventListener("mousemove", handleMouse);
     return () => window.removeEventListener("mousemove", handleMouse);
@@ -117,8 +112,8 @@ export default function Home() {
   const navItems: { id: string; label: string; href: string }[] = [
     { id: "home", label: "home", href: "#hero" },
     { id: "glow", label: "glow", href: "#glow" },
-    { id: "how", label: "how it works", href: "#how" },
-    { id: "about", label: "about", href: "#about" },
+    { id: "how", label: "sort", href: "#sort" },
+    { id: "about", label: "about", href: "#vision" },
     { id: "contact", label: "contact", href: "#contact" },
   ];
 
@@ -139,6 +134,33 @@ export default function Home() {
       {/* Noise overlay */}
       <div className="noise-overlay fixed inset-0 z-[2]" />
 
+      {/* Ambient side glows — warm left, cool right */}
+      <div className="fixed inset-0 pointer-events-none z-[1]" style={{ overflow: "hidden" }}>
+        <div style={{
+          position: "absolute",
+          top: "20%",
+          left: "-15%",
+          width: "50vw",
+          height: "60vh",
+          borderRadius: "50%",
+          background: "radial-gradient(ellipse, rgba(232,180,106,0.06) 0%, rgba(212,160,168,0.02) 40%, transparent 70%)",
+          filter: "blur(80px)",
+        }} />
+        <div style={{
+          position: "absolute",
+          top: "30%",
+          right: "-15%",
+          width: "50vw",
+          height: "60vh",
+          borderRadius: "50%",
+          background: "radial-gradient(ellipse, rgba(137,180,220,0.06) 0%, rgba(168,196,224,0.02) 40%, transparent 70%)",
+          filter: "blur(80px)",
+        }} />
+      </div>
+
+      {/* Orb narrative system — scroll-driven transforms */}
+      <OrbSystem glowExpanded={glowExpanded} />
+
       {/* Page content */}
       <div className="relative z-[3]">
 
@@ -146,6 +168,7 @@ export default function Home() {
         <nav
           className={`fixed top-0 left-0 right-0 z-50 px-6 md:px-12 h-16 flex items-center justify-between transition-opacity duration-300 ${glowExpanded ? "opacity-0 pointer-events-none" : ""}`}
           style={{
+            opacity: glowExpanded ? undefined : 0.7,
             background: "rgba(8,11,20,0.6)",
             backdropFilter: "blur(40px) saturate(1.8)",
             WebkitBackdropFilter: "blur(40px) saturate(1.8)",
@@ -243,34 +266,39 @@ export default function Home() {
           ref={heroRef}
           className="min-h-screen flex flex-col items-center justify-center px-6 py-16 text-center relative overflow-hidden"
         >
-          {/* Floating glow orbs — parallax wrapper (responds to mouse on desktop) */}
-          <div
-            ref={heroOrbsRef}
-            className="absolute inset-0 pointer-events-none"
-            style={{ transition: "transform 0.4s ease-out", willChange: "transform" }}
-          >
-            <div className="absolute rounded-full" style={{ width: 600, height: 600, background: "radial-gradient(circle, rgba(232,180,106,0.18) 0%, transparent 70%)", top: "10%", left: "-5%", filter: "blur(100px)", animation: "orbit1 20s ease-in-out infinite" }} />
-            <div className="absolute rounded-full" style={{ width: 500, height: 500, background: "radial-gradient(circle, rgba(137,180,220,0.14) 0%, transparent 70%)", bottom: "5%", right: "-5%", filter: "blur(100px)", animation: "orbit2 25s ease-in-out infinite" }} />
-            <div className="absolute rounded-full" style={{ width: 400, height: 400, background: "radial-gradient(circle, rgba(212,154,72,0.10) 0%, transparent 70%)", top: "40%", left: "50%", transform: "translateX(-50%)", filter: "blur(100px)", animation: "orbit3 18s ease-in-out infinite" }} />
-          </div>
-
           <div className="w-full max-w-[900px] mx-auto flex flex-col items-center relative z-10">
-            {/* Joy Logo — with breathing orb */}
+            {/* Joy Logo */}
             <div className="mb-[42px] md:mb-[54px] animate-hero-1 relative inline-flex">
               <JoyLogo width={80} height={42} color="#FFFFFF" />
-              <span className="absolute -top-1.5 -right-3.5 w-3 h-3 section-orb" />
             </div>
 
-            {/* H1 — Instrument Serif with gradient italic */}
+            {/* H1 — with prismatic gradient + ambient glow */}
             <h1
-              className="tracking-[-0.03em] mb-0"
-              style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1.1rem, 2.8vw, 2.2rem)", letterSpacing: "-0.02em", lineHeight: "calc(1.02em + 5px)" }}
+              className="tracking-[-0.03em] mb-[10px] animate-hero-1"
+              style={{
+                fontFamily: "var(--font-display)",
+                fontWeight: 300,
+                fontSize: "clamp(1.1rem, 2.8vw, 2.2rem)",
+                letterSpacing: "-0.02em",
+                lineHeight: "calc(1.02em + 5px)",
+                textShadow: "0 0 44px rgba(212,165,116,0.3), 0 0 84px rgba(212,165,116,0.1)",
+              }}
             >
-              <span className="block animate-hero-1">You don&apos;t need more time.</span>
-              <span className="block animate-hero-2">
-                You need more <em className="text-gradient" style={{ fontStyle: "italic" }}>breathing space</em>.
-              </span>
+              OS for{" "}
+              <em className="hero-accent" data-text="human success" style={{ fontStyle: "italic" }}>human success</em>
             </h1>
+            <p
+              className="animate-hero-2 tracking-wide"
+              style={{
+                fontFamily: "var(--font-display)",
+                fontWeight: 300,
+                fontSize: "clamp(0.85rem, 1.5vw, 1.05rem)",
+                color: "var(--text-secondary)",
+                textShadow: "0 0 34px rgba(212,165,116,0.2)",
+              }}
+            >
+              Your work, your life, your one OS
+            </p>
 
             {/* Waitlist form */}
             <form
@@ -369,7 +397,21 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ═══ GLOW SECTION ═══ */}
+        {/* ═══ BRIDGE ═══ */}
+        <section
+          id="bridge"
+          className="py-20 md:py-28 px-6 md:px-12 lg:px-20 text-center"
+          style={{ borderTop: "1px solid var(--border)" }}
+        >
+          <p
+            className="reveal-section max-w-[600px] mx-auto"
+            style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(0.95rem, 2vw, 1.4rem)", color: "var(--text-secondary)", letterSpacing: "-0.01em", lineHeight: "calc(1.4em + 4px)" }}
+          >
+            Every productivity tool starts with output.<br />We start somewhere else:<br /><em className="text-gradient-pulse" data-text="if humans succeed, productivity follows." style={{ fontStyle: "italic" }}>if humans succeed, productivity follows.</em><br />Here&apos;s how we&apos;ll make that happen.
+          </p>
+        </section>
+
+        {/* ═══ INTERACTIVE / GLOW SECTION ═══ */}
         <section
           id="glow"
           ref={glowRef}
@@ -385,25 +427,23 @@ export default function Home() {
             glowAuraRef.current.style.opacity = (intensity * 0.5).toString();
           }}
         >
-          {/* Centered text — invites you into the card */}
-          <div className="max-w-[520px] mx-auto mb-12 md:mb-16 reveal-section">
-            <h2
-              className="leading-[1.1] tracking-[-0.025em] mb-6"
-              style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1rem, 2.5vw, 1.8rem)" }}
+          {/* Framing text */}
+          <div className="max-w-[600px] mx-auto mb-12 md:mb-16 reveal-section">
+            <h1
+              className="leading-[1.3] tracking-[-0.02em] mb-4"
+              style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1rem, 2.5vw, 1.6rem)", color: "var(--text-secondary)" }}
             >
-              Check in with <em className="text-gradient-warm" style={{ fontStyle: "italic" }}>yourself</em>
-            </h2>
+              An urgent barrier to human success is work:life energy lost.<br />We want to <em className="text-gradient-warm" style={{ fontStyle: "italic" }}>reclaim it</em>.
+            </h1>
             <p
-              className="text-sm md:text-base leading-[1.75] tracking-wide"
-              style={{ color: "var(--text-secondary)", fontWeight: 300 }}
+              className="mt-4 text-xs md:text-sm tracking-wide"
+              style={{ fontFamily: "var(--font-body)", fontStyle: "italic", color: "var(--text-tertiary)" }}
             >
-              When was the last time you actually checked in with yourself? Your Daily Glow takes ten seconds. Energy, stress, mood, load.
-              <br /><br />
-              Share your Glow with the people who matter. Let your colleagues or loved ones know what kind of day you&apos;re having.
+              Check in (energy, mood, stress, load) &rarr; brain dump your day<br />&rarr; Joy builds a day with the energy you&apos;ve got
             </p>
           </div>
 
-          {/* Fortune Teller Card — centered below text */}
+          {/* Fortune Teller Card */}
           {glowExpanded ? (
             <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center" style={{ background: "var(--bg)" }}>
               <div className="flex flex-col items-center py-1 shrink-0">
@@ -422,7 +462,6 @@ export default function Home() {
               <button
                 onClick={() => {
                   setGlowExpanded(false);
-                  // Re-trigger reveal animations on glow section after exiting fullscreen
                   setTimeout(() => {
                     document.querySelectorAll("#glow .reveal-section").forEach((el) => el.classList.add("visible"));
                   }, 50);
@@ -486,7 +525,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* Nudge below card */}
+          {/* CTA below card */}
           {!glowExpanded && (
             <p
               className="mt-10 text-xs md:text-sm tracking-wide reveal-section"
@@ -497,217 +536,182 @@ export default function Home() {
           )}
         </section>
 
-        {/* ═══ PROBLEM SECTION ═══ */}
+        {/* ═══ VISION SECTION ═══ */}
         <section
-          id="how"
-          ref={howRef}
-          className="py-24 md:py-32 px-6 md:px-12 lg:px-20"
+          id="vision"
+          ref={aboutRef}
+          className="py-24 md:py-32 px-6 md:px-12 lg:px-20 relative"
           style={{ borderTop: "1px solid var(--border)" }}
         >
-          <div className="max-w-[700px] mx-auto text-center">
+          {/* Subtle background glow */}
+          <div className="absolute pointer-events-none" style={{ top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 700, height: 400, background: "radial-gradient(ellipse, rgba(232,180,106,0.06) 0%, transparent 60%)" }} />
+          <div className="max-w-[660px] mx-auto text-center relative z-10">
             <h2
-              className="reveal-section leading-[1.1] tracking-[-0.025em] mb-8"
+              className="reveal-section leading-[1.1] tracking-[-0.025em] mb-4"
               style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1rem, 2.5vw, 1.8rem)" }}
             >
-              The problem isn&apos;t time. It&apos;s <em className="text-gradient" style={{ fontStyle: "italic" }}>capacity</em>.
+              <em className="text-gradient" style={{ fontStyle: "italic" }}>Human success</em>. That&apos;s the mission.
             </h2>
             <div className="reveal-section text-sm md:text-base leading-[1.85] tracking-wide" style={{ color: "var(--text-secondary)", fontWeight: 300 }}>
               <p className="mb-6">
-                52% of the workforce reports feeling burnt out, yet 82% have no system for managing their day at all. Not at work. Not in life. Nowhere.
+                To us, human success is simple. It&apos;s being able to do it all, and still have something left for yourself. For the things that make you, you.
               </p>
               <p className="mb-6">
-                And the tools that do exist only make it worse. Your calendar knows your meetings but not your energy. Your to-do list knows your tasks but not your limits. Nothing connects the two lives you&apos;re already living in one brain, one body, one day.
+                Today, that&apos;s harder than it should be. Energy leaks across every boundary of modern life. Between work and home. Between tasks and tools. Between what you&apos;re asked to deliver and what you need to stay whole. Billions of hours of human potential, lost to friction that nobody designed a solution for.
               </p>
               <p className="mb-6">
-                So you overcommit. You context-switch. You push through. And the cost isn&apos;t just productivity. It&apos;s the things that actually matter: the side project that never starts, the workout that keeps slipping, the dinner you&apos;re at but not really present for.
+                We&apos;re building that solution. An operating system that reclaims lost energy across work, home, and everything between, so that it can go where it matters. Toward creativity. Innovation. Connection. Toward the things only humans can do, and the life you actually want to live.
+              </p>
+              <p className="mb-6">
+                Hard days, lighter. Great days, better. Less time on the small frustrations. More time on what makes us human.
               </p>
               <p>
-                Joy is one system for work and life that builds around your capacity. It learns when you&apos;re stretched, adapts when you&apos;re not, and sorts your day so that what matters most gets your best energy. Not more planning. More breathing space.
+                That&apos;s not a product vision. It&apos;s a mission. And we&apos;re just getting started.
               </p>
             </div>
           </div>
         </section>
 
-        {/* ═══ STATS SECTION ═══ */}
+        {/* ═══ SORT SECTION ═══ */}
         <section
+          id="sort"
+          ref={howRef}
           className="py-24 md:py-32 px-6 md:px-12 lg:px-20"
           style={{ borderTop: "1px solid var(--border)" }}
         >
-          <div className="max-w-[900px] mx-auto">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-12 md:gap-8">
+          <div className="max-w-[660px] mx-auto text-center">
+            <h2
+              className="reveal-section leading-[1.15] tracking-[-0.025em] mb-8"
+              style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1rem, 2.5vw, 1.8rem)" }}
+            >
+              The first thing we&apos;re solving?<br />The way we manage <em className="text-gradient-cool" style={{ fontStyle: "italic" }}>work and life</em> today.
+            </h2>
+
+            <div className="reveal-section text-sm md:text-base leading-[1.85] tracking-wide mb-12" style={{ color: "var(--text-secondary)", fontWeight: 300 }}>
+              <p>
+                Every day, you split yourself across calendars, task lists, and a dozen apps that don&apos;t talk to each other. You carry the mental load of work and life as two separate systems, constantly context-switching between them. That&apos;s where the energy goes, and why we end up zoning out on the couch after work instead of taking up pottery.
+              </p>
+            </div>
+
+            {/* Stats grid — the orb fractures behind these */}
+            <div id="sort-stats" className="grid grid-cols-2 md:grid-cols-4 gap-12 md:gap-8 mb-16 max-w-[800px] mx-auto">
               {[
                 { stat: "82%", label: "of people have no system for managing their day at all" },
                 { stat: "2.5h", label: "lost every day to context-switching between work and life" },
                 { stat: "151h", label: "of focus lost every year to personal admin during work" },
                 { stat: "52%", label: "of the workforce now reports feeling burnt out" },
               ].map((item, i) => (
-                <div key={i} className="text-center reveal-section">
+                <div key={i} className="text-center reveal-section stat-item">
                   <p
-                    className="text-gradient-warm mb-3"
-                    style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(2rem, 5vw, 3.5rem)", letterSpacing: "-0.03em" }}
+                    className="mb-3"
+                    style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1.8rem, 4vw, 2.8rem)", letterSpacing: "-0.03em", color: "#FFFFFF" }}
                   >
                     {item.stat}
                   </p>
                   <p
                     className="text-sm leading-[1.6] tracking-wide max-w-[240px] mx-auto"
-                    style={{ color: "var(--text-secondary)", fontWeight: 300 }}
+                    style={{ color: "var(--text-tertiary)", fontWeight: 300 }}
                   >
                     {item.label}
                   </p>
                 </div>
               ))}
             </div>
-          </div>
-        </section>
 
-        {/* ═══ HOW IT WORKS SECTION ═══ */}
-        <section
-          className="py-24 md:py-32 px-6 md:px-12 lg:px-20"
-          style={{ borderTop: "1px solid var(--border)" }}
-        >
-          <div className="max-w-[800px] mx-auto">
-            <h2
-              className="reveal-section text-center leading-[1.1] tracking-[-0.025em] mb-16"
-              style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1rem, 2.5vw, 1.8rem)" }}
-            >
-              How <em className="text-gradient-cool" style={{ fontStyle: "italic" }}>Joy</em> works
-            </h2>
-            <p
-              className="reveal-section text-center text-sm md:text-base leading-[1.75] tracking-wide mb-16"
-              style={{ color: "var(--text-secondary)", fontWeight: 300 }}
-            >
-              Joy doesn&apos;t add to your workload. It makes space for it.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-10">
-              {[
-                { step: "01 · Glow", heading: "Check in", body: "Each morning, Joy asks four quick questions: energy, load, mood, and stress. Ten seconds, and you have your Glow. Not a score, a colour. It shows you where you\u2019re at today, and sorts your day around your actual capacity." },
-                { step: "02 · Sort", heading: "Sort your day", body: "Joy organises your day across work and life. In the flow? Joy leans you into it. Rough night? Joy lightens your day. One day, one system, sorted." },
-                { step: "03 · Remind", heading: "Free up your mind", body: "Joy holds everything you need to remember so you don\u2019t have to. Tasks, deadlines, birthdays, all the things you carry around in your head. Less mental load, more breathing space." },
-              ].map((item, i) => (
-                <div key={i} className="reveal-section">
-                  <span
-                    className="block mb-4 text-gradient-warm"
-                    style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "0.85rem", letterSpacing: "0.08em" }}
-                  >
-                    {item.step}
-                  </span>
-                  <h3
-                    className="mb-3"
-                    style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: "clamp(0.95rem, 1.8vw, 1.15rem)", color: "var(--text)" }}
-                  >
-                    {item.heading}
-                  </h3>
-                  <p
-                    className="text-sm leading-[1.75] tracking-wide"
-                    style={{ color: "var(--text-secondary)", fontWeight: 300, whiteSpace: "pre-line" }}
-                  >
-                    {item.body}
-                  </p>
-                </div>
-              ))}
+            <div id="sort-solution" className="reveal-section text-sm md:text-base leading-[1.85] tracking-wide" style={{ color: "var(--text-secondary)", fontWeight: 300 }}>
+              <p className="mb-6">
+                Sort is Joy&apos;s first feature. It takes your energy, your tasks, your commitments, work and life, and builds a day around what you&apos;ve actually got, and remembers what&apos;s on your plate so you don&apos;t have to. Not another to-do list. A refreshed schedule built around the human you are today.
+              </p>
+              <p
+                className="text-gradient-warm"
+                style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: "clamp(0.85rem, 1.5vw, 1rem)" }}
+              >
+                Launching 2026. Be first in line.
+              </p>
             </div>
           </div>
         </section>
 
-        {/* ═══ FOR WHO SECTION ═══ */}
+        {/* ═══ FOR LEADERS SECTION ═══ */}
         <section
-          id="about"
-          ref={aboutRef}
+          id="leaders"
           className="py-24 md:py-32 px-6 md:px-12 lg:px-20"
           style={{ borderTop: "1px solid var(--border)" }}
         >
-          <div className="max-w-[800px] mx-auto">
+          <div className="max-w-[660px] mx-auto text-center">
             <h2
-              className="reveal-section text-center leading-[1.1] tracking-[-0.025em] mb-16"
+              className="reveal-section leading-[1.15] tracking-[-0.025em] mb-8"
               style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1rem, 2.5vw, 1.8rem)" }}
             >
-              Built for <em className="text-gradient" style={{ fontStyle: "italic" }}>you</em>. Useful for everyone.
+              Built for your people. <em className="text-gradient-warm" style={{ fontStyle: "italic" }}>Signal for you</em>.
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-16 md:gap-12">
-              <div className="reveal-section">
-                <h3
-                  className="mb-2"
-                  style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: "clamp(0.95rem, 1.8vw, 1.15rem)", color: "var(--text)" }}
-                >
-                  For you
-                </h3>
-                <p
-                  className="text-gradient-warm mb-4"
-                  style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(0.85rem, 1.5vw, 1rem)" }}
-                >
-                  Get your energy back
-                </p>
-                <p
-                  className="text-sm leading-[1.85] tracking-wide"
-                  style={{ color: "var(--text-secondary)", fontWeight: 300 }}
-                >
-                  One place for everything on your plate, work and life. Joy sorts your day around your capacity, so you build towards flow on good days and get supported on harder ones. Over time, you start to see your patterns and understand what helps you thrive.
-                </p>
-              </div>
-              <div className="reveal-section">
-                <h3
-                  className="mb-2"
-                  style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: "clamp(0.95rem, 1.8vw, 1.15rem)", color: "var(--text)" }}
-                >
-                  For companies
-                </h3>
-                <p
-                  className="text-gradient-warm mb-4"
-                  style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(0.85rem, 1.5vw, 1rem)" }}
-                >
-                  Not another pulse survey. A tool that helps your people thrive, and proves it.
-                </p>
-                <p
-                  className="text-sm leading-[1.85] tracking-wide"
-                  style={{ color: "var(--text-secondary)", fontWeight: 300 }}
-                >
-                  When your people use Joy, they get their energy back. That means more creativity, sharper problem-solving, and higher engagement at work. And with Glow, you get an aggregated, anonymous daily signal on how your organisation is actually doing. Real-time, quantifiable data that shows you when you&apos;re thriving, and an honest signal when things hit a speed wobble.
-                </p>
-              </div>
+            <div className="reveal-section text-sm md:text-base leading-[1.85] tracking-wide" style={{ color: "var(--text-secondary)", fontWeight: 300 }}>
+              <p className="mb-6">
+                What if you could actually see how your people are doing? Not from a quarterly survey. Not from the hard work of asking around. From a tool your team chose to use because it helps them. Real signal on company energy, every day. The company you always said you wanted to build, where people-first and high-performing aren&apos;t a trade-off. Where you finally have the infrastructure to make both true.
+              </p>
+              <p className="mb-6">
+                When your team uses Sort to manage their days, you start to see what&apos;s really happening. Where energy drops. What&apos;s clogging the week. Which ways of working are helping and which are quietly burning people out. Not because you asked. Because the tool they love using told you.
+              </p>
+              <p>
+                No surveys. No surveillance. Just the signal that a great leader has always wished they had.
+              </p>
             </div>
           </div>
         </section>
 
-        {/* ═══ ABOUT / VISION SECTION ═══ */}
+        {/* ═══ FOUNDERS SECTION ═══ */}
         <section
-          className="py-24 md:py-32 px-6 md:px-12 lg:px-20 relative"
+          id="founders"
+          className="py-24 md:py-32 px-6 md:px-12 lg:px-20"
           style={{ borderTop: "1px solid var(--border)" }}
         >
-          {/* Subtle background glow */}
-          <div className="absolute pointer-events-none" style={{ top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 700, height: 400, background: "radial-gradient(ellipse, rgba(137,180,220,0.06) 0%, transparent 60%)" }} />
-          <div className="max-w-[600px] mx-auto text-center relative z-10">
+          <div className="max-w-[660px] mx-auto text-center">
             <h2
               className="reveal-section leading-[1.1] tracking-[-0.025em] mb-8"
               style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1rem, 2.5vw, 1.8rem)" }}
             >
-              Joy&apos;s <em className="text-gradient-cool" style={{ fontStyle: "italic" }}>vision</em>
+              Who&apos;s <em className="text-gradient-cool" style={{ fontStyle: "italic" }}>building</em> this
             </h2>
             <div className="reveal-section text-sm md:text-base leading-[1.85] tracking-wide" style={{ color: "var(--text-secondary)", fontWeight: 300 }}>
               <p className="mb-6">
-                Joy is here to end the stalemate between tired employees and under-pressure businesses. Not by asking people to do more, but by building a system around people that mirrors their daily capacity.
+                Jessie spent 7 years as a People Leader, most as Head of People, building some of Europe&apos;s most exciting scaleups. She became known in the space for building people-first cultures that actually perform. After years of solving it with duct tape and good intentions, she decided to build the infrastructure that should have existed all along.
+              </p>
+              <p className="mb-6">
+                Calvin spent 4 years in People Tech, designing and building the infrastructure for teams at scale. The systems behind the culture. After years of building tools that were never designed around the people using them,
+                <br />he decided to build one that was.
+              </p>
+              <p className="mb-6">
+                They met at Pleo, where they worked together for 4 years solving this problem from the inside. Joy is what happens when they decided to solve it for everyone.
               </p>
               <p>
-                A person is one being. Work and life happen in the same brain, the same body, the same 24 hours. It&apos;s time our tools reflected that.
+                The paradox between people-first and high-performing isn&apos;t inevitable. It&apos;s a design problem. And we&apos;re committed to building you the tools that finally solve it, so that you can do whatever you&apos;re best at doing.
               </p>
             </div>
           </div>
         </section>
 
-        {/* ═══ FINAL CTA SECTION ═══ */}
+        {/* ═══ FINAL CTA / CLOSER SECTION ═══ */}
         <section
+          id="closer"
           className="py-24 md:py-32 px-6 md:px-12 lg:px-20 text-center relative"
           style={{ borderTop: "1px solid var(--border)" }}
         >
           <div className="absolute pointer-events-none" style={{ top: 0, left: "50%", transform: "translateX(-50%)", width: 900, height: 500, background: "radial-gradient(ellipse, rgba(232,180,106,0.06) 0%, transparent 55%)" }} />
           <div className="max-w-[500px] mx-auto relative z-10">
             <h2
-              className="reveal-section leading-[1.1] tracking-[-0.025em] mb-6"
+              className="reveal-section leading-[1.1] tracking-[-0.025em] mb-4"
               style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1.1rem, 2.8vw, 2rem)" }}
             >
-              Ready to build <em className="text-gradient-warm" style={{ fontStyle: "italic" }}>better days</em>?
+              What are you best at <em className="text-gradient-warm" style={{ fontStyle: "italic" }}>doing</em>?
             </h2>
+            <p
+              className="reveal-section text-sm md:text-base tracking-wide mb-8"
+              style={{ color: "var(--text-secondary)", fontWeight: 300 }}
+            >
+              We&apos;re building Joy so you can do more of it.
+            </p>
 
-            {/* Secondary waitlist form */}
+            {/* Waitlist form */}
             <form
               className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-[420px] mx-auto"
               onSubmit={async (e) => {
@@ -777,7 +781,7 @@ export default function Home() {
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
                   </span>
-                ) : formStatus === "joined" ? "joined!" : "get early access"}
+                ) : formStatus === "joined" ? "joined!" : "be first in line"}
               </button>
             </form>
             {formError && (
@@ -828,7 +832,7 @@ export default function Home() {
       {/* ═══ FOOTER ═══ */}
       <footer
         className={`fixed bottom-0 left-0 right-0 z-[4] px-6 py-4 md:px-12 transition-opacity duration-300 ${glowExpanded ? "opacity-0 pointer-events-none" : ""}`}
-        style={{ borderTop: "1px solid var(--border)", background: "rgba(8,11,20,0.6)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
+        style={{ opacity: glowExpanded ? undefined : 0.7, borderTop: "1px solid var(--border)", background: "rgba(8,11,20,0.6)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
       >
         <div className="max-w-[1400px] mx-auto">
           {/* Mobile: links centered */}
@@ -872,3 +876,5 @@ export default function Home() {
     </div>
   );
 }
+
+

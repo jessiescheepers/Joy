@@ -78,21 +78,40 @@ body {
 
 /* Gradient text utility — moonrise horizon */
 .text-gradient {
-  background: linear-gradient(135deg, var(--glow-amber), var(--glow-rose), var(--glow-lavender));
+  background: linear-gradient(135deg, #E89050, #D4A0C0, #9878C8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
+.text-gradient-pulse {
+  position: relative;
+  display: inline-block;
+  color: #FFFFFF;
+  -webkit-text-fill-color: #FFFFFF;
+}
+
+.text-gradient-pulse::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #E89050, #D4A0C0, #9878C8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  opacity: 0;
+  animation: hero-text-shine 5s ease-in-out infinite;
+}
+
 .text-gradient-warm {
-  background: linear-gradient(135deg, var(--glow-honey), var(--glow-amber), var(--glow-rose));
+  background: linear-gradient(135deg, #D8C878, #E89050, #D07050);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .text-gradient-cool {
-  background: linear-gradient(135deg, var(--glow-sky), var(--glow-periwinkle), var(--glow-lavender));
+  background: linear-gradient(135deg, #6890D0, #60B8A8, #9878C8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -146,6 +165,64 @@ body {
 @keyframes orbit3 {
   0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.8; }
   50% { transform: translateX(-50%) scale(1.3); opacity: 0.4; }
+}
+
+/* Hero orb — breathing life + light pulse */
+@keyframes hero-orb-breathe {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.025); opacity: 0.7; }
+}
+
+/* Hero accent — white base, gradient shines through at heart peak */
+.hero-accent {
+  position: relative;
+  display: inline-block;
+  color: #FFFFFF;
+  -webkit-text-fill-color: #FFFFFF;
+}
+
+.hero-accent::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #D8C878, #E89050, #D07050);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  opacity: 0;
+  animation: hero-text-shine 9s ease-in-out infinite;
+}
+
+@keyframes hero-text-shine {
+  0%, 25% { opacity: 0.3; }
+  40%, 60% { opacity: 1; }
+  75%, 100% { opacity: 0.3; }
+}
+
+/* Inner light — the orb's heart */
+@keyframes hero-orb-heart {
+  0%, 100% { opacity: 0.7; transform: scale(0.95); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+/* Glow swell — ambient light breathes with the heart */
+@keyframes hero-orb-glow-swell {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+@keyframes hero-orb-drift {
+  0%, 100% { transform: translate(0, 0); }
+  33% { transform: translate(4px, -3px); }
+  66% { transform: translate(-3px, 4px); }
+}
+
+@keyframes hero-orb-rotate {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(90deg); }
+  50% { transform: rotate(180deg); }
+  75% { transform: rotate(270deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* Breathing dot on nav logo */
@@ -474,3 +551,43 @@ body {
     opacity: 0.8;
   }
 }
+
+/* ═══ Orb Narrative System ═══ */
+
+.orb-primary,
+.orb-satellite,
+.mini-orb,
+.orb-fragment {
+  will-change: transform, opacity;
+}
+
+/* Hide secondary orbs via CSS until GSAP takes over — prevents flash on load */
+.orb-satellite,
+.mini-orb,
+.orb-fragment {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Prefers reduced motion — skip ScrollTrigger transforms, keep static breathing */
+@media (prefers-reduced-motion: reduce) {
+  .orb-primary,
+  .orb-satellite,
+  .mini-orb {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .orb-primary img,
+  .orb-satellite img,
+  .mini-orb img {
+    animation: none !important;
+  }
+
+  .orb-primary > div,
+  .orb-satellite > div {
+    animation: none !important;
+  }
+}
+
+
