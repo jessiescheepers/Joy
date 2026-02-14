@@ -162,7 +162,7 @@ export default function Home() {
       <OrbSystem glowExpanded={glowExpanded} />
 
       {/* Page content */}
-      <div className="relative z-[3]">
+      <div className="relative z-[5]">
 
         {/* ═══ TOP NAV — glass morphism ═══ */}
         <nav
@@ -433,7 +433,7 @@ export default function Home() {
               className="leading-[1.3] tracking-[-0.02em] mb-4"
               style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1rem, 2.5vw, 1.6rem)", color: "var(--text-secondary)" }}
             >
-              An urgent barrier to human success is work:life energy lost.<br />We want to <em className="text-gradient-warm" style={{ fontStyle: "italic" }}>reclaim it</em>.
+              An urgent barrier to human success<br />is work:life energy lost.<br /><br />We want to <em className="text-gradient-warm" style={{ fontStyle: "italic" }}>reclaim it</em>.
             </h1>
             <p
               className="mt-4 text-xs md:text-sm tracking-wide"
@@ -510,15 +510,84 @@ export default function Home() {
                     padding: 3,
                     cursor: isMobile ? "pointer" : undefined,
                     transition: "transform 0.2s ease-out",
-                    animation: "radiant-pulse 4s ease-in-out infinite",
+                    boxShadow: "0 20px 80px rgba(0,0,0,0.5), 0 0 40px rgba(232,180,106,0.12), 0 0 80px rgba(232,180,106,0.06)",
                   }}
                 >
+                  {/* Card background — matches iframe dark theme */}
+                  <div style={{
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: 22,
+                    background: "#0E1221",
+                    zIndex: 0,
+                  }} />
+                  {/* Warm orb — z-1: above bg, below iframe text */}
+                  <div
+                    className="card-orb-overlay"
+                    style={{
+                      position: "absolute",
+                      top: "-50%",
+                      left: "50%",
+                      transform: "translate(-50%, -50%)",
+                      width: 340,
+                      height: 340,
+                      zIndex: 1,
+                      opacity: 0,
+                      pointerEvents: "none",
+                    }}
+                  >
+                    {/* Warm glow bleed */}
+                    <div style={{
+                      position: "absolute",
+                      inset: "-50%",
+                      background: "radial-gradient(circle, rgba(232,180,106,0.35) 0%, rgba(212,165,116,0.12) 45%, transparent 70%)",
+                      filter: "blur(40px)",
+                      animation: "hero-orb-glow-swell 5s ease-in-out infinite",
+                    }} />
+                    {/* Heart glow */}
+                    <div style={{
+                      position: "absolute",
+                      inset: "0%",
+                      background: "radial-gradient(circle at 50% 40%, rgba(232,180,106,1) 0%, rgba(220,160,80,0.5) 35%, transparent 70%)",
+                      filter: "blur(25px) brightness(1.3)",
+                      animation: "hero-orb-heart 5s ease-in-out infinite",
+                      mixBlendMode: "screen",
+                    }} />
+                    {/* Breathe → Rotate → Image */}
+                    <div style={{ width: "100%", height: "100%", animation: "hero-orb-breathe 5s ease-in-out infinite" }}>
+                      <div style={{ width: "100%", height: "100%", animation: "hero-orb-rotate 90s ease-in-out infinite" }}>
+                        <img
+                          src="/orb-hero.png"
+                          alt=""
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "contain",
+                            opacity: 0.9,
+                            mixBlendMode: "screen",
+                            WebkitMaskImage: "radial-gradient(circle, black 30%, transparent 68%)",
+                            maskImage: "radial-gradient(circle, black 30%, transparent 68%)",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
                   <iframe
                     src="/glow/index.html"
                     scrolling="no"
                     title="Daily Glow interactive experience"
                     className="w-[320px] h-[500px] md:w-[380px] lg:w-[420px] border-0 rounded-[22px]"
-                    style={{ overflow: "hidden", display: "block", marginLeft: -23, marginTop: -13, pointerEvents: isMobile ? "none" : undefined }}
+                    onLoad={(e) => {
+                      try {
+                        const doc = (e.target as HTMLIFrameElement).contentDocument;
+                        if (doc) {
+                          const s = doc.createElement("style");
+                          s.textContent = "html, body { background: transparent !important; } .card, .opening-card { background: transparent !important; } .opening-orb-wrapper { display: none !important; } .card-bg { display: none !important; } .card::before { display: none !important; } .header h1 { color: #202532 !important; } .opening-card .opening-title { color: #202532 !important; } .opening-tap { color: #202532 !important; }";
+                          doc.head.appendChild(s);
+                        }
+                      } catch { /* cross-origin guard */ }
+                    }}
+                    style={{ overflow: "hidden", display: "block", marginLeft: -23, marginTop: -13, pointerEvents: isMobile ? "none" : undefined, background: "transparent", position: "relative", zIndex: 2 }}
                   />
                 </div>
               </div>
@@ -610,7 +679,7 @@ export default function Home() {
                   </p>
                   <p
                     className="text-sm leading-[1.6] tracking-wide max-w-[240px] mx-auto"
-                    style={{ color: "var(--text-tertiary)", fontWeight: 300 }}
+                    style={{ color: "#FFFFFF", fontWeight: 300 }}
                   >
                     {item.label}
                   </p>
@@ -831,7 +900,7 @@ export default function Home() {
 
       {/* ═══ FOOTER ═══ */}
       <footer
-        className={`fixed bottom-0 left-0 right-0 z-[4] px-6 py-4 md:px-12 transition-opacity duration-300 ${glowExpanded ? "opacity-0 pointer-events-none" : ""}`}
+        className={`fixed bottom-0 left-0 right-0 z-[6] px-6 py-4 md:px-12 transition-opacity duration-300 ${glowExpanded ? "opacity-0 pointer-events-none" : ""}`}
         style={{ opacity: glowExpanded ? undefined : 0.7, borderTop: "1px solid var(--border)", background: "rgba(8,11,20,0.6)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
       >
         <div className="max-w-[1400px] mx-auto">
