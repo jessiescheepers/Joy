@@ -126,7 +126,8 @@ export default function OrbSystem({ glowExpanded }: OrbSystemProps) {
         scrollTrigger: {
           trigger: "#hero",
           start: "top top",
-          end: "bottom top",
+          endTrigger: "#glow",
+          end: "top 80%",
           scrub: 0.5,
         },
       });
@@ -153,7 +154,7 @@ export default function OrbSystem({ glowExpanded }: OrbSystemProps) {
       // Scale + filter shrink concurrently — filter:"none" prevents black orb on scroll-up
       heroTl.fromTo(primary,
         { scale: 1, opacity: 1, filter: "none" },
-        { scale: 0.2, filter: "none", duration: 1, ease: "power1.in" },
+        { scale: cardOrbMatchScale, opacity: 1, filter: "none", duration: 1, ease: "power1.in" },
         0
       );
 
@@ -206,10 +207,10 @@ export default function OrbSystem({ glowExpanded }: OrbSystemProps) {
           onUpdate: (self) => {
             const p = self.progress;
             const card = document.querySelector(".holo-border") as HTMLElement;
-            // Z-index: orb in front during initial drop, behind card once shrinking
+            // Orb stays behind page content (z-2) during entire glow descent.
+            // The card's opaque background naturally hides the orb — no z-flip needed.
             if (container) {
-              if (p < 0.50) container.classList.add("orb-system-elevated");
-              else container.classList.remove("orb-system-elevated");
+              container.classList.remove("orb-system-elevated");
             }
             // Radiant pulse activation after absorption
             if (card) {
@@ -235,47 +236,24 @@ export default function OrbSystem({ glowExpanded }: OrbSystemProps) {
         },
       });
 
-      // Keyframes: grow → peak → shrink to card-orb size → land → fade behind card
-      // At p=0.50 (z-index flip), orb matches card-orb-overlay size exactly.
-      // filter:"none" on every keyframe prevents black orb on scroll-up
-      glowTl.to(primary, { scale: 0.30, opacity: 1, y: targetY + descent * 0.10, filter: "none", duration: 0.10, ease: "none" });
-      glowTl.to(primary, { scale: 0.50, opacity: 1, y: targetY + descent * 0.30, filter: "none", duration: 0.15, ease: "none" });
-      glowTl.to(primary, { scale: cardOrbMatchScale * 1.2, opacity: 0.95, y: targetY + descent * 0.60, filter: "none", duration: 0.15, ease: "none" });
-      // 0.40→0.50: arrive at card position, matching card-orb-overlay size
-      glowTl.to(primary, { scale: cardOrbMatchScale, opacity: 0.9, y: landingY, filter: "none", duration: 0.10, ease: "power1.inOut" });
-      // 0.50→0.70: fade out behind card (z-index already flipped)
-      glowTl.to(primary, { scale: cardOrbMatchScale, opacity: 0, y: landingY, filter: "none", duration: 0.20, ease: "power1.in" });
-      // 0.70→0.85: hold invisible — card-orb-overlay takes over
-      glowTl.to(primary, { scale: cardOrbMatchScale, opacity: 0, y: landingY, filter: "none", duration: 0.15, ease: "none" });
-      // 0.85→1.00: hold invisible
-      glowTl.to(primary, { scale: cardOrbMatchScale, opacity: 0, y: landingY, filter: "none", duration: 0.15, ease: "none" });
-
-      // Card-orb-overlay: drops in from TOP of card at progress 0.70→0.85,
-      // holds at centre, then glow-to-vision drops it out the BOTTOM.
-      // Clipped both ways by .holo-border overflow:hidden.
-      if (cardOrbOverlay) {
-        glowTl.fromTo(cardOrbOverlay,
-          { opacity: 1, scale: 1, top: "-50%" },
-          { opacity: 1, scale: 1, top: "50%", duration: 0.15, ease: "power1.out" },
-          0.70
-        );
-      }
+      // Descent at constant cardOrbMatchScale — bg orb stays fully visible (opacity 1).
+      // The card's opaque background naturally hides the portion behind it.
+      // Card-orb-overlay is positioned dynamically by a sync ScrollTrigger (below).
+      glowTl.fromTo(primary,
+        { x: 0, y: targetY, scale: cardOrbMatchScale, opacity: 1, filter: "none" },
+        { scale: cardOrbMatchScale, y: targetY + descent * 0.12, opacity: 1, filter: "none", duration: 0.12, ease: "none", immediateRender: false },
+        0
+      );
+      glowTl.to(primary, { scale: cardOrbMatchScale, y: targetY + descent * 0.30, opacity: 1, filter: "none", duration: 0.13, ease: "none" });
+      glowTl.to(primary, { scale: cardOrbMatchScale, y: targetY + descent * 0.60, opacity: 1, filter: "none", duration: 0.15, ease: "none" });
+      // Arrive at card centre — card bg hides the orb core, glow visible around edges
+      glowTl.to(primary, { scale: cardOrbMatchScale, y: landingY, opacity: 1, filter: "none", duration: 0.15, ease: "power1.in" });
+      // Hold at card centre
+      glowTl.to(primary, { scale: cardOrbMatchScale, y: landingY, opacity: 1, filter: "none", duration: 0.45, ease: "none" });
 
       // ═══ GLOW-TO-VISION — orb DROPS from card and grows into vision ═══
-      // Created LAST for highest GSAP priority.
-      //
-      // RULE: START size === END size of previous phase. No fades, no jumps.
-      // Glow timeline ends with orb at cardOrbMatchScale, opacity 0.6, y: landingY.
-      //
-      // SVG reference circles (cx≈720, viewport 1440×1864):
-      //   c1: cy=408  r=150  — card position (START)
-      //   c2: cy=633  r=181  — dropping, growing slightly
-      //   c3: cy=918  r=250  — past section boundary, growing
-      //   c4: cy=1262 r=341  — deep into vision, much larger
-      //   c5: cy=1446 r=416  — final position (END)
-      //
-      // Position normalized (0→1): 0, 0.217, 0.491, 0.823, 1.0
-      // Scale normalized (0→1):    0, 0.118, 0.378, 0.720, 1.0
+      // Bg orb starts at opacity 1 (card hides it). Transitions to 0.6 as it clears.
+      // Card-orb-overlay tracks the bg orb dynamically via sync ScrollTrigger below.
 
       const totalDrop = -landingY; // positive distance: card → natural center
       const scaleRange = visionEndScale - cardOrbMatchScale;
@@ -289,26 +267,14 @@ export default function OrbSystem({ glowExpanded }: OrbSystemProps) {
         },
       });
 
-      // Card-orb-overlay drops WITHIN the card (clipped by .holo-border overflow:hidden)
-      // This creates the "falling out of the card" effect before the bg orb takes over.
-      if (cardOrbOverlay) {
-        glowToVisionTl.to(cardOrbOverlay, {
-          top: "150%",
-          opacity: 0,
-          duration: 0.20,
-          ease: "power1.in",
-        }, 0);
-      }
-
-      // 4-keyframe drop matching SVG circle trajectory (concurrent with card-orb drop)
-      // c1→c2: bg orb stays invisible while card-orb drops out of card
+      // c1→c2: orb drops from card centre, still mostly behind card
       glowToVisionTl.to(primary, {
         scale: cardOrbMatchScale + scaleRange * 0.118,
         y: landingY + totalDrop * 0.217,
-        opacity: 0, filter: "none",
+        opacity: 1, filter: "none",
         duration: 0.217, ease: "power1.in",
-      }, 0); // position 0: starts same time as card-orb drop
-      // c2→c3: card-orb gone — bg orb fades in, accelerating drop
+      }, 0);
+      // c2→c3: clearing card, opacity transitions to 0.6
       glowToVisionTl.to(primary, {
         scale: cardOrbMatchScale + scaleRange * 0.378,
         y: landingY + totalDrop * 0.491,
@@ -329,6 +295,91 @@ export default function OrbSystem({ glowExpanded }: OrbSystemProps) {
         opacity: 0.6, filter: "none",
         duration: 0.177, ease: "power1.out",
       });
+
+      // ═══ Card-orb sync — dynamic positioning on every scroll frame ═══
+      // Reads the bg orb's current GSAP transforms and positions the card-orb-overlay
+      // so it shows exactly the portion of the orb that's behind the card.
+      // The card's overflow:hidden clips naturally — creating the illusion of one
+      // continuous orb passing through the card.
+      if (cardOrbOverlay) {
+        ScrollTrigger.create({
+          trigger: "#glow",
+          start: "top 80%",
+          endTrigger: "#vision",
+          end: "top 30%",
+          onUpdate: () => {
+            if (!cardEl) return;
+            const cardRect = cardEl.getBoundingClientRect();
+            if (cardRect.bottom < 0 || cardRect.top > vh) {
+              cardOrbOverlay.style.opacity = "0";
+              return;
+            }
+            // Bg orb's current viewport center Y
+            const curY = Number(gsap.getProperty(primary, "y"));
+            const curScale = Number(gsap.getProperty(primary, "scale"));
+            const orbScreenY = orbCSSCenterY + curY;
+
+            // Position card-orb center to match bg orb center (relative to card)
+            const topPct = ((orbScreenY - cardRect.top) / cardRect.height) * 100;
+            cardOrbOverlay.style.top = `${topPct}%`;
+
+            // Scale card-orb to match bg orb's current visual size
+            const matchScale = (orbSize * curScale) / 340;
+            cardOrbOverlay.style.transform = `translate(-50%, -50%) scale(${matchScale})`;
+
+            // Show card-orb when bg orb overlaps card area
+            const visRadius = orbSize * curScale * 0.7;
+            const orbTop = orbScreenY - visRadius;
+            const orbBot = orbScreenY + visRadius;
+            const overlaps = orbBot > cardRect.top && orbTop < cardRect.bottom;
+            cardOrbOverlay.style.opacity = overlaps ? "1" : "0";
+          },
+          onLeave: () => { cardOrbOverlay.style.opacity = "0"; },
+          onLeaveBack: () => { cardOrbOverlay.style.opacity = "0"; },
+        });
+      }
+
+      // ═══ VISION WANDER — dust particle floating through text ═══
+      // Triggers when "Human success" H2 nears top of fold.
+      // Orb shrinks and drifts down like a floating particle until stats appear.
+      const visionH2 = document.querySelector("#vision h2") as HTMLElement | null;
+      if (visionH2) {
+        const dustEndScale = visionEndScale * 0.5;
+        const dustDriftY = vh * 0.25;
+
+        const visionWanderTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: visionH2,
+            start: "top 15%",
+            endTrigger: "#sort-stats",
+            end: "top 80%",
+            scrub: 0.8,
+          },
+        });
+
+        // Gentle leftward arc — orb wanders left while shrinking,
+        // curving toward the "82%" stat position
+        visionWanderTl.to(primary, {
+          x: -vw * 0.02, y: dustDriftY * 0.25,
+          scale: visionEndScale * 0.82, filter: "none",
+          duration: 0.25, ease: "none",
+        });
+        visionWanderTl.to(primary, {
+          x: -vw * 0.05, y: dustDriftY * 0.55,
+          scale: visionEndScale * 0.65, filter: "none",
+          duration: 0.25, ease: "none",
+        });
+        visionWanderTl.to(primary, {
+          x: -vw * 0.07, y: dustDriftY * 0.80,
+          scale: dustEndScale * 1.06, filter: "none",
+          duration: 0.25, ease: "none",
+        });
+        visionWanderTl.to(primary, {
+          x: -vw * 0.08, y: dustDriftY,
+          scale: dustEndScale, filter: "none",
+          duration: 0.25, ease: "none",
+        });
+      }
 
       // ═══ VISION-TO-SORT — orb shrinks, wanders through stats, lands under CTA ═══
       // Continuous from glowToVisionTl end state (visionEndScale, y:0, opacity:0.6).
@@ -409,110 +460,128 @@ export default function OrbSystem({ glowExpanded }: OrbSystemProps) {
         const shrinkStep1 = visionEndScale * shrinkRatio;
         const shrinkStep2 = shrinkStep1 * shrinkRatio;
 
-        // Phase 1a (0→0.07): Shrink step 1, gentle drift toward stats
-        const drift1 = xy(
-          vw / 2 + (statDocs[0].x - vw / 2) * 0.2,
-          statDocs[0].y - hoverGap - 120,
-          0.07
-        );
+        // ═══ Approach — gentle leftward curve while shrinking ═══
+        // Continues the leftward drift from visionWanderTl, curving to stat 1
+        const s1x = statDocs[0].x;
+        const s1y = statDocs[0].y;
+
+        // 1a (0→0.07): Continue leftward, slight downward curve
         sortWanderTl.to(primary, {
-          ...drift1, scale: shrinkStep1, filter: "none",
+          ...xy(vw / 2 + (s1x - vw / 2) * 0.25, s1y - hoverGap - 140, 0.07),
+          scale: shrinkStep1, filter: "none",
           duration: 0.07, ease: "none",
         });
 
-        // Phase 1b (0.07→0.14): Shrink step 2, continue toward stat 1
-        const drift2 = xy(
-          vw / 2 + (statDocs[0].x - vw / 2) * 0.6,
-          statDocs[0].y - hoverGap - 50,
-          0.14
-        );
+        // 1b (0.07→0.14): Curving further left toward stat 1
         sortWanderTl.to(primary, {
-          ...drift2, scale: shrinkStep2, filter: "none",
+          ...xy(vw / 2 + (s1x - vw / 2) * 0.6, s1y - hoverGap - 50, 0.14),
+          scale: shrinkStep2, filter: "none",
           duration: 0.07, ease: "none",
         });
 
-        // Phase 1c (0.14→0.20): Shrink step 3, arrive above stat 1
-        const s1s = xy(statDocs[0].x, statDocs[0].y - hoverGap, 0.20);
+        // 1c (0.14→0.20): Arrive above stat 1
         sortWanderTl.to(primary, {
-          ...s1s, scale: statScale, filter: "none",
+          ...xy(s1x, s1y - hoverGap, 0.20),
+          scale: statScale, filter: "none",
           duration: 0.06, ease: "power1.out",
         });
 
-        // Phase 2 (0.20→0.26): Hover above stat 1
-        const s1e = xy(statDocs[0].x, statDocs[0].y - hoverGap, 0.26);
+        // ═══ Stats flow — continuous undulating wave ═══
+        // Scalloped arcs between stats: the orb lifts gently between each,
+        // with subtle drift during visits. No straight lines anywhere.
+
+        // Stat 1 (0.20→0.24): Settle with subtle rightward drift
         sortWanderTl.to(primary, {
-          ...s1e, scale: statScale, filter: "none",
-          duration: 0.06, ease: "none",
+          ...xy(statDocs[0].x + 10, statDocs[0].y - hoverGap, 0.24),
+          scale: statScale, filter: "none",
+          duration: 0.04, ease: "none",
         });
 
-        // Phase 3 (0.26→0.29): Curve to stat 2
-        const s2s = xy(statDocs[1].x, statDocs[1].y - hoverGap, 0.29);
+        // Arc 1→2 (0.24→0.30): Scallop up through midpoint, descend to stat 2
+        const mid12x = (statDocs[0].x + statDocs[1].x) / 2;
+        const mid12y = Math.min(statDocs[0].y, statDocs[1].y) - hoverGap * 2.5;
         sortWanderTl.to(primary, {
-          ...s2s, scale: statScale, filter: "none",
-          duration: 0.03, ease: "power1.inOut",
+          ...xy(mid12x, mid12y, 0.27),
+          scale: statScale, filter: "none",
+          duration: 0.03, ease: "none",
+        });
+        sortWanderTl.to(primary, {
+          ...xy(statDocs[1].x - 8, statDocs[1].y - hoverGap, 0.30),
+          scale: statScale, filter: "none",
+          duration: 0.03, ease: "none",
         });
 
-        // Phase 4 (0.29→0.36): Hover above stat 2
-        const s2e = xy(statDocs[1].x, statDocs[1].y - hoverGap, 0.36);
+        // Stat 2 (0.30→0.35): Settle with subtle rightward drift
         sortWanderTl.to(primary, {
-          ...s2e, scale: statScale, filter: "none",
-          duration: 0.07, ease: "none",
+          ...xy(statDocs[1].x + 10, statDocs[1].y - hoverGap, 0.35),
+          scale: statScale, filter: "none",
+          duration: 0.05, ease: "none",
         });
 
-        // Phase 5 (0.36→0.39): Curve to stat 3
-        const s3s = xy(statDocs[2].x, statDocs[2].y - hoverGap, 0.39);
+        // Arc 2→3 (0.35→0.42): Scallop up through midpoint, descend to stat 3
+        const mid23x = (statDocs[1].x + statDocs[2].x) / 2;
+        const mid23y = Math.min(statDocs[1].y, statDocs[2].y) - hoverGap * 2.5;
         sortWanderTl.to(primary, {
-          ...s3s, scale: statScale, filter: "none",
-          duration: 0.03, ease: "power1.inOut",
+          ...xy(mid23x, mid23y, 0.38),
+          scale: statScale, filter: "none",
+          duration: 0.03, ease: "none",
+        });
+        sortWanderTl.to(primary, {
+          ...xy(statDocs[2].x - 8, statDocs[2].y - hoverGap, 0.42),
+          scale: statScale, filter: "none",
+          duration: 0.04, ease: "none",
         });
 
-        // Phase 6 (0.39→0.46): Hover above stat 3
-        const s3e = xy(statDocs[2].x, statDocs[2].y - hoverGap, 0.46);
+        // Stat 3 (0.42→0.47): Settle with subtle rightward drift
         sortWanderTl.to(primary, {
-          ...s3e, scale: statScale, filter: "none",
-          duration: 0.07, ease: "none",
+          ...xy(statDocs[2].x + 10, statDocs[2].y - hoverGap, 0.47),
+          scale: statScale, filter: "none",
+          duration: 0.05, ease: "none",
         });
 
-        // Phase 7 (0.46→0.49): Curve to stat 4
-        const s4s = xy(statDocs[3].x, statDocs[3].y - hoverGap, 0.49);
+        // Arc 3→4 (0.47→0.53): Scallop up through midpoint, descend to stat 4
+        const mid34x = (statDocs[2].x + statDocs[3].x) / 2;
+        const mid34y = Math.min(statDocs[2].y, statDocs[3].y) - hoverGap * 2.5;
         sortWanderTl.to(primary, {
-          ...s4s, scale: statScale, filter: "none",
-          duration: 0.03, ease: "power1.inOut",
+          ...xy(mid34x, mid34y, 0.50),
+          scale: statScale, filter: "none",
+          duration: 0.03, ease: "none",
+        });
+        sortWanderTl.to(primary, {
+          ...xy(statDocs[3].x - 8, statDocs[3].y - hoverGap, 0.53),
+          scale: statScale, filter: "none",
+          duration: 0.03, ease: "none",
         });
 
-        // Phase 8 (0.49→0.56): Hover above stat 4
-        const s4e = xy(statDocs[3].x, statDocs[3].y - hoverGap, 0.56);
+        // Stat 4 (0.53→0.56): Brief settle with drift
         sortWanderTl.to(primary, {
-          ...s4e, scale: statScale, filter: "none",
-          duration: 0.07, ease: "none",
+          ...xy(statDocs[3].x + 10, statDocs[3].y - hoverGap, 0.56),
+          scale: statScale, filter: "none",
+          duration: 0.03, ease: "none",
         });
 
-        // Phase 9: Cosine arc — rise right, apex, sweep down to centre
+        // ═══ Exit arc — quadratic Bezier from stat 4 to "Launching 2026" ═══
+        // Smooth parabolic curve: drift right + slight up → sweep down to CTA.
+        // 7 Bezier-sampled waypoints — each directional change <15°.
+        const bzStart = { x: statDocs[3].x + 10, y: statDocs[3].y - hoverGap };
+        const bzControl = {
+          x: Math.min(statDocs[3].x + vw * 0.18, vw * 0.82),
+          y: statDocs[3].y - hoverGap * 2.8,
+        };
+        const bzEnd = { x: launchDoc.x, y: launchDoc.y };
 
-        // 9a (0.56→0.66): Rise and drift right from stat 4
-        const arcRiseY = statDocs[3].y - hoverGap * 3;
-        const arcRiseX = Math.min(statDocs[3].x + (statDocs[3].x - statDocs[2].x), vw * 0.82);
-        const arcRise = xy(arcRiseX, arcRiseY, 0.66);
-        sortWanderTl.to(primary, {
-          ...arcRise, scale: statScale, filter: "none",
-          duration: 0.10, ease: "power1.out",
-        });
-
-        // 9b (0.66→0.80): Apex — furthest right, highest point
-        const apexX = Math.min(arcRiseX + (statDocs[3].x - statDocs[2].x) * 0.5, vw * 0.88);
-        const apexY = arcRiseY - hoverGap * 1.5;
-        const apex = xy(apexX, apexY, 0.80);
-        sortWanderTl.to(primary, {
-          ...apex, scale: statScale, filter: "none",
-          duration: 0.14, ease: "none",
-        });
-
-        // 9c (0.80→1.0): Sweep left and down, land centred under "Launching 2026"
-        const lEnd = xy(launchDoc.x, launchDoc.y, 1.0);
-        sortWanderTl.to(primary, {
-          ...lEnd, scale: statScale, filter: "none",
-          duration: 0.20, ease: "power2.in",
-        });
+        const arcSteps = 7;
+        for (let i = 1; i <= arcSteps; i++) {
+          const t = i / arcSteps;
+          const p = 0.56 + 0.44 * t;
+          const bx = (1 - t) * (1 - t) * bzStart.x + 2 * (1 - t) * t * bzControl.x + t * t * bzEnd.x;
+          const by = (1 - t) * (1 - t) * bzStart.y + 2 * (1 - t) * t * bzControl.y + t * t * bzEnd.y;
+          sortWanderTl.to(primary, {
+            ...xy(bx, by, p), scale: statScale, filter: "none",
+            duration: 0.44 / arcSteps,
+            ease: i === arcSteps ? "power1.out" : "none",
+          });
+        }
       }
     });
 

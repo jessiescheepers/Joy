@@ -689,7 +689,7 @@ export default function Home() {
 
             <div id="sort-solution" className="reveal-section text-sm md:text-base leading-[1.85] tracking-wide" style={{ color: "var(--text-secondary)", fontWeight: 300 }}>
               <p className="mb-6">
-                Sort is Joy&apos;s first feature. It takes your energy, your tasks, your commitments, work and life, and builds a day around what you&apos;ve actually got, and remembers what&apos;s on your plate so you don&apos;t have to. Not another to-do list. A refreshed schedule built around the human you are today.
+                Sort builds your day around the energy you have today. Not yesterday. Not the version of you that optimistically planned six meetings and a gym session. Work, life, all of it, sorted around what you&apos;ve actually got. It keeps reminders of things you want to get to &mdash; so that you actually get to them.
               </p>
               <p
                 className="text-gradient-warm"
