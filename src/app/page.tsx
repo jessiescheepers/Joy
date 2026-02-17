@@ -749,17 +749,16 @@ export default function Home() {
             </h2>
             <div className="reveal-section text-sm md:text-base leading-[1.85] tracking-wide" style={{ color: "var(--text-secondary)", fontWeight: 300 }}>
               <p className="mb-6">
-                Jessie spent 7 years as a People Leader, most as Head of People, building some of Europe&apos;s most exciting scaleups. She became known in the space for building people-first cultures that actually perform. After years of solving it with duct tape and good intentions, she decided to build the infrastructure that should have existed all along.
+                Jessie has always worn the same hat, for different customers. In sales at Meltwater, it was the prospect. Launching new markets at Wolt, it was our restaurant partners, couriers and hungry people. As Head of People at Pleo, it was all about Pleo&apos;ers. Every time, the same focus: understand your customer, remove their pain, and offer them something that delights. Give them more than expected. After 7 years at Pleo, she realised the tools she&apos;d love to use didn&apos;t exist. So she&apos;s building them.
               </p>
               <p className="mb-6">
-                Calvin spent 4 years in People Tech, designing and building the infrastructure for teams at scale. The systems behind the culture. After years of building tools that were never designed around the people using them,
-                <br />he decided to build one that was.
+                Calvin spent 4 years in People Tech at Pleo, designing and building the systems behind the culture. The infrastructure that holds everything together at scale. He saw first-hand how powerful the right tools can be when they&apos;re built around people. Joy is his chance to build that from the ground up.
               </p>
               <p className="mb-6">
-                They met at Pleo, where they worked together for 4 years solving this problem from the inside. Joy is what happens when they decided to solve it for everyone.
+                They worked together at Pleo for 4 years, solving this from the inside. Joy is what happens when they decided to solve it for everyone.
               </p>
               <p>
-                The paradox between people-first and high-performing isn&apos;t inevitable. It&apos;s a design problem. And we&apos;re committed to building you the tools that finally solve it, so that you can do whatever you&apos;re best at doing.
+                The tension between people-first and high-performing isn&apos;t inevitable. It&apos;s a design problem. And we&apos;re building the tools to finally solve it.
               </p>
             </div>
           </div>
