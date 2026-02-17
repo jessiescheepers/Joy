@@ -26,6 +26,11 @@ export default function ContactOrb() {
     let hasEntered = false;
     const half = SIZE / 2;
 
+    // Dynamic start: captured when CloserOrb completes so ContactOrb
+    // progress begins at 0 exactly when the merged orb reaches "you".
+    let contactStartDist = 0;
+    let contactActivated = false;
+
     const bezier = (t: number, p0: number, p1: number, p2: number, p3: number) => {
       const u = 1 - t;
       return u * u * u * p0 + 3 * u * u * t * p1 + 3 * u * t * t * p2 + t * t * t * p3;
@@ -33,6 +38,8 @@ export default function ContactOrb() {
 
     const resetToHidden = () => {
       hasEntered = false;
+      contactActivated = false;
+      contactStartDist = 0;
       orb.style.opacity = "0";
       orb.style.transform = "";
 
@@ -61,17 +68,35 @@ export default function ContactOrb() {
       // Scroll-from-bottom: guarantees animation completes at page bottom
       const scrollable = document.documentElement.scrollHeight - vh;
       const scrollFromBottom = Math.max(0, scrollable - window.scrollY);
-      const START_DIST = 350; // px from bottom when animation begins
-      const END_DIST = 30;    // px from bottom when animation completes
-      const progress = Math.max(0, Math.min(1,
-        (START_DIST - scrollFromBottom) / (START_DIST - END_DIST)
-      ));
+      const END_DIST = 30; // px from bottom when animation completes
 
-      // Activate once CloserOrb has landed at "you", OR closer section scrolled past
+      // Activate once CloserOrb has landed at "you", OR closer section well past
       const closerLanded = !!document.querySelector(".closer-orb-at-rest");
       const closerEl = document.querySelector("#closer") as HTMLElement;
-      const closerPast = closerEl ? closerEl.getBoundingClientRect().top < vh * 0.2 : false;
-      const isActive = progress > 0 && (closerLanded || closerPast);
+      // Tight fallback: only fire after CloserOrb should have completed (10% vh)
+      const closerPast = closerEl ? closerEl.getBoundingClientRect().top < vh * 0.08 : false;
+      const shouldActivate = closerLanded || closerPast;
+
+      // Capture dynamic start distance on first activation so progress
+      // begins at 0 exactly when CloserOrb reaches "you" — no jump.
+      if (shouldActivate && !contactActivated) {
+        contactActivated = true;
+        contactStartDist = Math.max(scrollFromBottom, END_DIST + 10);
+      }
+
+      // Reset if CloserOrb is no longer complete (user scrolled back up)
+      if (!shouldActivate && contactActivated) {
+        contactActivated = false;
+        contactStartDist = 0;
+      }
+
+      const progress = contactActivated
+        ? Math.max(0, Math.min(1,
+            (contactStartDist - scrollFromBottom) / Math.max(1, contactStartDist - END_DIST)
+          ))
+        : 0;
+
+      const isActive = progress > 0 && contactActivated;
 
       if (isActive) {
         if (!hasEntered) {
