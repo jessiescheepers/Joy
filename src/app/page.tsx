@@ -9,6 +9,10 @@ declare global {
 import { useState, useEffect, useRef } from "react";
 import JoyLogo from "./components/JoyLogo";
 import OrbSystem from "./components/OrbSystem";
+import LeadersOrb from "./components/LeadersOrb";
+import FoundersOrb from "./components/FoundersOrb";
+import CloserOrb from "./components/CloserOrb";
+import ContactOrb from "./components/ContactOrb";
 
 export default function Home() {
   const [activeSection, setActiveSection] = useState<string>("home");
@@ -207,11 +211,11 @@ export default function Home() {
             })}
             <a
               href="#hero"
-              className="px-5 py-2 rounded-full text-xs font-medium tracking-wide transition-all duration-300 hover:shadow-[0_0_30px_rgba(224,160,173,0.35)] relative overflow-hidden"
+              className="holo-border-pill px-5 py-2 rounded-full text-xs font-medium tracking-wide transition-all duration-300 hover:shadow-[0_0_30px_rgba(224,160,173,0.35)]"
               style={{
                 fontFamily: "var(--font-display)",
-                background: "var(--text)",
-                color: "var(--bg)",
+                background: "#171E33",
+                color: "#FFFFFF",
               }}
             >
               early access
@@ -252,8 +256,8 @@ export default function Home() {
             <a
               href="#hero"
               onClick={() => setMobileMenuOpen(false)}
-              className="mt-4 px-7 py-3 rounded-full text-sm font-medium tracking-wide"
-              style={{ fontFamily: "var(--font-display)", background: "var(--text)", color: "var(--bg)" }}
+              className="holo-border-pill mt-4 px-7 py-3 rounded-full text-sm font-medium tracking-wide"
+              style={{ fontFamily: "var(--font-display)", background: "#171E33", color: "#FFFFFF" }}
             >
               early access
             </a>
@@ -582,7 +586,7 @@ export default function Home() {
                         const doc = (e.target as HTMLIFrameElement).contentDocument;
                         if (doc) {
                           const s = doc.createElement("style");
-                          s.textContent = "html, body { background: transparent !important; } .card, .opening-card { background: transparent !important; } .opening-orb-wrapper { display: none !important; } .card-bg { display: none !important; } .card::before { display: none !important; } .header h1 { color: #202532 !important; } .opening-card .opening-title { color: #202532 !important; } .opening-tap { color: #202532 !important; }";
+                          s.textContent = "html, body { background: transparent !important; } .card, .opening-card { background: transparent !important; } .opening-orb-wrapper { display: none !important; } .card-bg { display: none !important; } .card::before { display: none !important; } .header h1 { color: #202532 !important; } .opening-card .opening-title { color: #202532 !important; } .opening-tap { color: #202532 !important; } .opening-card .opening-input { color: rgba(40,41,56,0.70) !important; } .opening-card .opening-input::placeholder { color: rgba(40,41,56,0.70) !important; }";
                           doc.head.appendChild(s);
                         }
                       } catch { /* cross-origin guard */ }
@@ -646,7 +650,7 @@ export default function Home() {
           id="sort"
           ref={howRef}
           className="py-24 md:py-32 px-6 md:px-12 lg:px-20"
-          style={{ borderTop: "1px solid var(--border)" }}
+          style={{ borderTop: "1px solid var(--border)", position: "relative", zIndex: 1 }}
         >
           <div className="max-w-[660px] mx-auto text-center">
             <h2
@@ -705,9 +709,10 @@ export default function Home() {
         <section
           id="leaders"
           className="py-24 md:py-32 px-6 md:px-12 lg:px-20"
-          style={{ borderTop: "1px solid var(--border)" }}
+          style={{ borderTop: "1px solid var(--border)", position: "relative", overflow: "visible" }}
         >
-          <div className="max-w-[660px] mx-auto text-center">
+          <LeadersOrb />
+          <div className="max-w-[660px] mx-auto text-center" style={{ position: "relative", zIndex: 1 }}>
             <h2
               className="reveal-section leading-[1.15] tracking-[-0.025em] mb-8"
               style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1rem, 2.5vw, 1.8rem)" }}
@@ -732,9 +737,10 @@ export default function Home() {
         <section
           id="founders"
           className="py-24 md:py-32 px-6 md:px-12 lg:px-20"
-          style={{ borderTop: "1px solid var(--border)" }}
+          style={{ borderTop: "1px solid var(--border)", position: "relative", overflow: "visible" }}
         >
-          <div className="max-w-[660px] mx-auto text-center">
+          <FoundersOrb />
+          <div className="max-w-[660px] mx-auto text-center" style={{ position: "relative", zIndex: 1 }}>
             <h2
               className="reveal-section leading-[1.1] tracking-[-0.025em] mb-8"
               style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1rem, 2.5vw, 1.8rem)" }}
@@ -763,15 +769,16 @@ export default function Home() {
         <section
           id="closer"
           className="py-24 md:py-32 px-6 md:px-12 lg:px-20 text-center relative"
-          style={{ borderTop: "1px solid var(--border)" }}
+          style={{ borderTop: "1px solid var(--border)", overflow: "visible" }}
         >
+          <CloserOrb />
           <div className="absolute pointer-events-none" style={{ top: 0, left: "50%", transform: "translateX(-50%)", width: 900, height: 500, background: "radial-gradient(ellipse, rgba(232,180,106,0.06) 0%, transparent 55%)" }} />
           <div className="max-w-[500px] mx-auto relative z-10">
             <h2
               className="reveal-section leading-[1.1] tracking-[-0.025em] mb-4"
               style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1.1rem, 2.8vw, 2rem)" }}
             >
-              What are you best at <em className="text-gradient-warm" style={{ fontStyle: "italic" }}>doing</em>?
+              What are <span className="closer-orb-target">you</span> best at <em className="text-gradient-warm" style={{ fontStyle: "italic" }}>doing</em>?
             </h2>
             <p
               className="reveal-section text-sm md:text-base tracking-wide mb-8"
@@ -864,15 +871,46 @@ export default function Home() {
           id="contact"
           ref={contactRef}
           className="flex flex-col items-center justify-center px-6 py-24 pb-32 md:px-12 lg:px-20 text-center relative"
-          style={{ borderTop: "1px solid var(--border)" }}
+          style={{ borderTop: "1px solid var(--border)", overflow: "visible" }}
         >
+          <ContactOrb />
           {/* Glow behind heading */}
           <div className="absolute pointer-events-none" style={{ bottom: 0, left: "50%", transform: "translateX(-50%)", width: 800, height: 400, background: "radial-gradient(ellipse, rgba(232,180,106,0.08) 0%, transparent 60%)" }} />
 
           {/* Joy logo with breathing orb */}
           <div className="mb-8 md:mb-12 reveal-section relative inline-flex">
             <JoyLogo width={120} height={63} color="#FFFFFF" />
-            <span className="absolute -top-2 -right-5 w-4 h-4 section-orb" />
+            <span className="absolute -top-2 -right-5 w-4 h-4 contact-section-orb section-orb" />
+            {/* Full orb replacement — shown when ContactOrb arrives */}
+            <div
+              className="absolute contact-orb-replacement pointer-events-none"
+              style={{ top: "-0.5rem", right: "-1.25rem", width: 16, height: 16, opacity: 0, zIndex: 2 }}
+            >
+              <div style={{ position: "relative", width: "100%", height: "100%" }}>
+                {/* Warm ambient glow — wide spread for small orb */}
+                <div className="absolute" style={{
+                  inset: "-300%",
+                  background: "radial-gradient(circle, rgba(232,180,106,0.50) 0%, rgba(212,165,116,0.25) 30%, rgba(212,165,116,0.08) 55%, transparent 70%)",
+                  filter: "blur(14px)",
+                  animation: "hero-orb-glow-swell 5.8s ease-in-out infinite",
+                }} />
+                {/* Heart glow — warm core pulse */}
+                <div className="absolute" style={{
+                  inset: "-80%",
+                  background: "radial-gradient(circle at 50% 40%, rgba(224,140,120,1) 0%, rgba(200,110,90,0.6) 35%, transparent 70%)",
+                  filter: "blur(6px) brightness(1.5)",
+                  animation: "hero-orb-heart 5.4s ease-in-out infinite",
+                  mixBlendMode: "screen",
+                }} />
+                {/* Solid warm core — no image at 16px to avoid ring artifact */}
+                <div className="absolute" style={{
+                  inset: "-10%",
+                  borderRadius: "50%",
+                  background: "radial-gradient(circle, rgba(250,245,224,0.9) 0%, rgba(232,180,106,0.6) 40%, transparent 70%)",
+                  animation: "hero-orb-breathe 5.5s ease-in-out infinite",
+                }} />
+              </div>
+            </div>
           </div>
           <h2
             className="reveal-section leading-[1.08] tracking-[-0.03em] mb-8 md:mb-12"

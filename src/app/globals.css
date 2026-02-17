@@ -548,6 +548,77 @@ body {
   to { --holo-angle: 360deg; }
 }
 
+.holo-border-pill {
+  position: relative;
+  border-radius: 9999px;
+  overflow: hidden;
+  animation: pill-glow-pulse 4s ease-in-out infinite;
+}
+
+@keyframes pill-glow-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 12px rgba(232,180,106,0.25),
+      0 0 30px rgba(232,180,106,0.15),
+      0 0 60px rgba(232,180,106,0.08);
+  }
+  50% {
+    box-shadow:
+      0 0 18px rgba(232,180,106,0.40),
+      0 0 44px rgba(232,170,80,0.25),
+      0 0 80px rgba(232,180,106,0.12);
+  }
+}
+
+.holo-border-pill::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2.7px;
+  background: conic-gradient(
+    from var(--holo-angle),
+    var(--glow-amber),
+    var(--glow-rose),
+    var(--glow-sky),
+    var(--glow-lavender),
+    var(--glow-amber)
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+  animation: holo-rotate 4s linear infinite;
+}
+
+/* Leaders orb — WAAPI entrance + CSS glow expansion */
+
+/* Hide main orb when leaders orb takes over (overrides GSAP inline styles) */
+.orb-primary.orb-primary-hidden {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* Phase 2: Glow expansion — triggered after WAAPI entrance finishes */
+.leaders-glow-expand {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.05);
+}
+.leaders-orb-at-rest .leaders-glow-expand {
+  animation: leaders-glow-scale 2.5s ease-in-out forwards;
+}
+@keyframes leaders-glow-scale {
+  0%   { opacity: 0;   transform: translate(-50%, -50%) scale(0.05); }
+  40%  { opacity: 0.6; transform: translate(-50%, -50%) scale(0.5); }
+  100% { opacity: 0.8; transform: translate(-50%, -50%) scale(1); }
+}
+
 /* Orbiting particles */
 @keyframes orbit-particle {
   0% {
@@ -589,6 +660,33 @@ body {
 /* OrbSystem elevated — orb renders IN FRONT of page content during drop */
 .orb-system-elevated {
   z-index: 8 !important;
+}
+
+/* Hide LeadersOrb when FoundersOrb takes over */
+.leaders-orb-hidden-for-founders {
+  opacity: 0 !important;
+  transition: opacity 0.3s ease;
+}
+
+/* Hide FoundersOrb pair when CloserOrb takes over */
+.founders-orb-hidden-for-closer {
+  opacity: 0 !important;
+  transition: opacity 0.3s ease;
+}
+
+/* Hide CloserOrb merged when ContactOrb takes over */
+.closer-orb-hidden-for-contact {
+  opacity: 0 !important;
+  transition: opacity 0.3s ease;
+}
+
+/* Closer orb at rest — gentle glow pulse behind text */
+.closer-orb-at-rest {
+  animation: closer-glow-pulse 4s ease-in-out infinite;
+}
+@keyframes closer-glow-pulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.3); }
 }
 
 @media (prefers-reduced-motion: reduce) {
