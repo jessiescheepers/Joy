@@ -462,6 +462,14 @@ export default function OrbSystem({ glowExpanded }: OrbSystemProps) {
         // Hover gap: orb center this far above the stat top
         const hoverGap = statFontSize * 0.8;
 
+        // Detect layout: vertical (mobile) vs horizontal (desktop)
+        const isVerticalLayout = Math.abs(statDocs[2].y - statDocs[0].y) > Math.abs(statDocs[2].x - statDocs[0].x);
+        const statRects = Array.from(statEls).map(el => el.getBoundingClientRect());
+        const statOrbY = (i: number) => isVerticalLayout
+          ? statDocs[i].y + statRects[i].height / 2
+          : statDocs[i].y - hoverGap;
+        const drift = isVerticalLayout ? 0 : 10;
+
         // Scroll range matching ScrollTrigger
         const statsEl = document.querySelector("#sort-stats") as HTMLElement;
         const statsRect = statsEl ? statsEl.getBoundingClientRect() : sortSection.getBoundingClientRect();
@@ -478,15 +486,13 @@ export default function OrbSystem({ glowExpanded }: OrbSystemProps) {
         });
 
         // Phase allocations (progress 0→1):
-        //  0.00→0.10  Settle at stat 1 from visionWanderTl handoff (extended bridge)
-        //  0.10→0.24  Hover stat 1
-        //  0.24→0.30  Curve to stat 2
-        //  0.30→0.38  Hover stat 2
-        //  0.38→0.44  Curve to stat 3
-        //  0.44→0.56  Hover stat 3
-        //  0.56→0.72  Wide clockwise arc: right of all text, sweeping down
-        //  0.72→0.88  Continue sweep through bottom-right, arcing under
-        //  0.88→1.00  Rise from below, land beneath "Launching 2026"
+        //  0.00→0.10  Settle at stat 1 from visionWanderTl handoff
+        //  0.10→0.20  Hover stat 1
+        //  0.20→0.32  Bézier arc to stat 2 (6 waypoints)
+        //  0.32→0.42  Hover stat 2
+        //  0.42→0.54  Bézier arc to stat 3 (6 waypoints)
+        //  0.54→0.62  Hover stat 3
+        //  0.62→1.00  Exit arc to "Launching 2026"
 
         const sortWanderTl = gsap.timeline({
           scrollTrigger: {
@@ -497,116 +503,33 @@ export default function OrbSystem({ glowExpanded }: OrbSystemProps) {
           },
         });
 
-        // ═══ Settle at stat 1 — bridge from visionWanderTl's raw GSAP offsets
-        // to sortWanderTl's scroll-relative coordinate system. ═══
+        // ═══ Settle at stat 1 — smooth handoff from visionWanderTl ═══
         const s1x = statDocs[0].x;
-        const s1y = statDocs[0].y;
-
-        // Bridge: start from visionWanderTl end state (raw GSAP offsets),
-        // smoothly transition to sort's scroll-relative coords.
-        // Extended to 10% progress for a buttery-smooth coordinate handoff.
         const visionEndY = vh * 0.25; // dustDriftY from visionWanderTl
-        const settleTarget = xy(s1x, s1y - hoverGap, 0.10);
+        // Convert vision end position to document coordinates so we can
+        // express it in the same scroll-relative xy() system as everything
+        // else — eliminates the coordinate-system mismatch that caused jumps.
+        const visionEndDocY = orbCSSCenterY + visionEndY + sStart;
 
-        // Midpoint: blend between raw GSAP coords and scroll-relative coords
-        sortWanderTl.fromTo(primary,
-          { x: stat1GsapX, y: visionEndY, scale: wanderTargetScale, filter: "none" },
-          {
-            x: stat1GsapX + (settleTarget.x - stat1GsapX) * 0.5,
-            y: visionEndY + (settleTarget.y - visionEndY) * 0.5,
-            scale: wanderTargetScale + (statScale - wanderTargetScale) * 0.5,
-            filter: "none",
-            duration: 0.05, ease: "power1.inOut",
-            immediateRender: false,
-          },
-          0
-        );
-        // Complete settle at stat 1 position
+        // Set starting position (matches visionWanderTl end exactly)
+        sortWanderTl.set(primary, {
+          ...xy(s1x, visionEndDocY, 0),
+          scale: wanderTargetScale, filter: "none",
+          immediateRender: false,
+        }, 0);
+
+        // Smooth settle to stat 1 hover position
         sortWanderTl.to(primary, {
-          ...settleTarget,
+          ...xy(s1x, statOrbY(0), 0.10),
           scale: statScale, filter: "none",
-          duration: 0.05, ease: "power1.out",
+          duration: 0.10, ease: "power1.out",
         });
 
-        // ═══ Stats flow — continuous undulating wave ═══
-        // Scalloped arcs between stats: the orb lifts gently between each,
-        // with subtle drift during visits. No straight lines anywhere.
+        // ═══ Stats flow — smooth Bézier arcs between stats ═══
+        // Desktop: scalloped arcs (orb lifts UP between horizontal stats)
+        // Mobile: serpentine arcs (orb swings LEFT/RIGHT between stacked stats)
 
-        // Stat 1 (0.10→0.24): Hover with subtle rightward drift
-        sortWanderTl.to(primary, {
-          ...xy(statDocs[0].x + 10, statDocs[0].y - hoverGap, 0.24),
-          scale: statScale, filter: "none",
-          duration: 0.14, ease: "none",
-        });
-
-        // Arc 1→2 (0.24→0.30): Scallop up through midpoint, descend to stat 2
-        const mid12x = (statDocs[0].x + statDocs[1].x) / 2;
-        const mid12y = Math.min(statDocs[0].y, statDocs[1].y) - hoverGap * 2.5;
-        sortWanderTl.to(primary, {
-          ...xy(mid12x, mid12y, 0.27),
-          scale: statScale, filter: "none",
-          duration: 0.03, ease: "none",
-        });
-        sortWanderTl.to(primary, {
-          ...xy(statDocs[1].x - 8, statDocs[1].y - hoverGap, 0.30),
-          scale: statScale, filter: "none",
-          duration: 0.03, ease: "none",
-        });
-
-        // Stat 2 (0.30→0.38): Settle with subtle rightward drift
-        sortWanderTl.to(primary, {
-          ...xy(statDocs[1].x + 10, statDocs[1].y - hoverGap, 0.38),
-          scale: statScale, filter: "none",
-          duration: 0.08, ease: "none",
-        });
-
-        // Arc 2→3 (0.38→0.44): Scallop up through midpoint, descend to stat 3
-        const mid23x = (statDocs[1].x + statDocs[2].x) / 2;
-        const mid23y = Math.min(statDocs[1].y, statDocs[2].y) - hoverGap * 2.5;
-        sortWanderTl.to(primary, {
-          ...xy(mid23x, mid23y, 0.41),
-          scale: statScale, filter: "none",
-          duration: 0.03, ease: "none",
-        });
-        sortWanderTl.to(primary, {
-          ...xy(statDocs[2].x - 8, statDocs[2].y - hoverGap, 0.44),
-          scale: statScale, filter: "none",
-          duration: 0.03, ease: "none",
-        });
-
-        // Stat 3 (0.44→0.56): Settle with subtle rightward drift
-        sortWanderTl.to(primary, {
-          ...xy(statDocs[2].x + 10, statDocs[2].y - hoverGap, 0.56),
-          scale: statScale, filter: "none",
-          duration: 0.12, ease: "none",
-        });
-
-        // ═══ Exit arc — wide clockwise sweep from stat 3 to "Launching 2026" ═══
-        // Curves RIGHT from stat 3 (clear of all centred copy), sweeps down the
-        // right edge, arcs across the bottom, enters from below to settle
-        // beneath "Launching 2026". Two joined cubic Béziers for a natural,
-        // unstudied trajectory — no straight segments anywhere.
-
-        const exitStart = { x: statDocs[2].x + 10, y: statDocs[2].y - hoverGap };
-        const exitEnd   = { x: launchDoc.x, y: launchDoc.y };
-
-        // Far-right apex: widest point of sweep, well clear of centred text
-        const apexX = Math.min(vw * 0.92, vw - 40);
-        const apexY = exitStart.y + (exitEnd.y - exitStart.y) * 0.32;
-
-        // Phase A: stat 4 → far-right apex (rise-right then curve down)
-        const a0 = exitStart;
-        const a1 = { x: exitStart.x + vw * 0.14, y: exitStart.y - hoverGap * 3 };
-        const a2 = { x: apexX + 8, y: apexY - (exitEnd.y - exitStart.y) * 0.15 };
-        const a3 = { x: apexX, y: apexY };
-
-        // Phase B: apex → landing (descend, sweep under, rise from below)
-        const b0 = a3;
-        const b1 = { x: apexX - vw * 0.05, y: exitEnd.y + vh * 0.14 };
-        const b2 = { x: exitEnd.x + vw * 0.10, y: exitEnd.y + vh * 0.19 };
-        const b3 = exitEnd;
-
-        // Cubic Bézier evaluator
+        // Cubic Bézier evaluator — shared by stat arcs and exit arc
         const cBez = (
           t: number,
           p0: { x: number; y: number },
@@ -621,17 +544,116 @@ export default function OrbSystem({ glowExpanded }: OrbSystemProps) {
           };
         };
 
-        // 14 evenly-sampled waypoints (7 per segment) for buttery smoothness
+        const arcSteps = 6; // waypoints per stat-to-stat arc
+
+        // Phase allocations — arcs get generous room to breathe
+        const P_HOVER1_END = 0.20;
+        const P_ARC12_END  = 0.32;
+        const P_HOVER2_END = 0.42;
+        const P_ARC23_END  = 0.54;
+        const P_HOVER3_END = 0.62;
+
+        // Stat 1 (0.10→0.20): Hover with subtle drift
+        sortWanderTl.to(primary, {
+          ...xy(statDocs[0].x + drift, statOrbY(0), P_HOVER1_END),
+          scale: statScale, filter: "none",
+          duration: P_HOVER1_END - 0.10, ease: "none",
+        });
+
+        // Arc 1→2 (0.20→0.32): Smooth Bézier, 6 waypoints
+        {
+          const s = { x: statDocs[0].x + drift, y: statOrbY(0) };
+          const e = { x: statDocs[1].x, y: statOrbY(1) };
+          let c1: { x: number; y: number }, c2: { x: number; y: number };
+          if (isVerticalLayout) {
+            const swing = vw * 0.15;
+            c1 = { x: s.x + swing, y: s.y + (e.y - s.y) * 0.33 };
+            c2 = { x: e.x + swing * 0.6, y: s.y + (e.y - s.y) * 0.67 };
+          } else {
+            const lift = hoverGap * 2.5;
+            c1 = { x: s.x + (e.x - s.x) * 0.33, y: Math.min(s.y, e.y) - lift };
+            c2 = { x: s.x + (e.x - s.x) * 0.67, y: Math.min(s.y, e.y) - lift };
+          }
+          const arcDur = P_ARC12_END - P_HOVER1_END;
+          for (let i = 1; i <= arcSteps; i++) {
+            const t = i / arcSteps;
+            const pt = cBez(t, s, c1, c2, e);
+            const p = P_HOVER1_END + arcDur * t;
+            sortWanderTl.to(primary, {
+              ...xy(pt.x, pt.y, p), scale: statScale, filter: "none",
+              duration: arcDur / arcSteps, ease: "none",
+            });
+          }
+        }
+
+        // Stat 2 (0.32→0.42): Hover with subtle drift
+        sortWanderTl.to(primary, {
+          ...xy(statDocs[1].x + drift, statOrbY(1), P_HOVER2_END),
+          scale: statScale, filter: "none",
+          duration: P_HOVER2_END - P_ARC12_END, ease: "none",
+        });
+
+        // Arc 2→3 (0.42→0.54): Smooth Bézier, 6 waypoints
+        {
+          const s = { x: statDocs[1].x + drift, y: statOrbY(1) };
+          const e = { x: statDocs[2].x, y: statOrbY(2) };
+          let c1: { x: number; y: number }, c2: { x: number; y: number };
+          if (isVerticalLayout) {
+            const swing = vw * 0.15;
+            c1 = { x: s.x - swing, y: s.y + (e.y - s.y) * 0.33 };
+            c2 = { x: e.x - swing * 0.6, y: s.y + (e.y - s.y) * 0.67 };
+          } else {
+            const lift = hoverGap * 2.5;
+            c1 = { x: s.x + (e.x - s.x) * 0.33, y: Math.min(s.y, e.y) - lift };
+            c2 = { x: s.x + (e.x - s.x) * 0.67, y: Math.min(s.y, e.y) - lift };
+          }
+          const arcDur = P_ARC23_END - P_HOVER2_END;
+          for (let i = 1; i <= arcSteps; i++) {
+            const t = i / arcSteps;
+            const pt = cBez(t, s, c1, c2, e);
+            const p = P_HOVER2_END + arcDur * t;
+            sortWanderTl.to(primary, {
+              ...xy(pt.x, pt.y, p), scale: statScale, filter: "none",
+              duration: arcDur / arcSteps, ease: "none",
+            });
+          }
+        }
+
+        // Stat 3 (0.54→0.62): Hover with subtle drift
+        sortWanderTl.to(primary, {
+          ...xy(statDocs[2].x + drift, statOrbY(2), P_HOVER3_END),
+          scale: statScale, filter: "none",
+          duration: P_HOVER3_END - P_ARC23_END, ease: "none",
+        });
+
+        // ═══ Exit arc — wide clockwise sweep from stat 3 to "Launching 2026" ═══
+        const exitStart = { x: statDocs[2].x + drift, y: statOrbY(2) };
+        const exitEnd   = { x: launchDoc.x, y: launchDoc.y };
+
+        const apexX = Math.min(vw * 0.92, vw - 40);
+        const apexY = exitStart.y + (exitEnd.y - exitStart.y) * 0.32;
+
+        const a0 = exitStart;
+        const a1 = { x: exitStart.x + vw * 0.14, y: exitStart.y - hoverGap * 3 };
+        const a2 = { x: apexX + 8, y: apexY - (exitEnd.y - exitStart.y) * 0.15 };
+        const a3 = { x: apexX, y: apexY };
+
+        const b0 = a3;
+        const b1 = { x: apexX - vw * 0.05, y: exitEnd.y + vh * 0.14 };
+        const b2 = { x: exitEnd.x + vw * 0.10, y: exitEnd.y + vh * 0.19 };
+        const b3 = exitEnd;
+
+        const exitDur = 1 - P_HOVER3_END;
         const stepsPerSeg = 7;
         const totalArcSteps = stepsPerSeg * 2;
         for (let i = 1; i <= totalArcSteps; i++) {
           const pt = i <= stepsPerSeg
             ? cBez(i / stepsPerSeg, a0, a1, a2, a3)
             : cBez((i - stepsPerSeg) / stepsPerSeg, b0, b1, b2, b3);
-          const p = 0.56 + 0.44 * (i / totalArcSteps);
+          const p = P_HOVER3_END + exitDur * (i / totalArcSteps);
           sortWanderTl.to(primary, {
             ...xy(pt.x, pt.y, p), scale: statScale, filter: "none",
-            duration: 0.44 / totalArcSteps,
+            duration: exitDur / totalArcSteps,
             ease: i === totalArcSteps ? "power1.out" : "none",
           });
         }
