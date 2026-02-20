@@ -435,7 +435,7 @@ export default function OrbSystem({ glowExpanded }: OrbSystemProps) {
       const launchEl = document.querySelector("#sort-solution .text-gradient-warm") as HTMLElement | null;
       const sortSection = document.querySelector("#sort") as HTMLElement | null;
 
-      if (statEls.length === 4 && sortSection) {
+      if (statEls.length === 3 && sortSection) {
         const scrollY0 = window.scrollY;
 
         // Stat document positions (center X, top Y of stat container)
@@ -478,14 +478,12 @@ export default function OrbSystem({ glowExpanded }: OrbSystemProps) {
         });
 
         // Phase allocations (progress 0→1):
-        //  0.00→0.04  Settle at stat 1 from visionWanderTl handoff
-        //  0.04→0.24  Hover stat 1
+        //  0.00→0.10  Settle at stat 1 from visionWanderTl handoff (extended bridge)
+        //  0.10→0.24  Hover stat 1
         //  0.24→0.30  Curve to stat 2
-        //  0.29→0.36  Hover stat 2
-        //  0.36→0.39  Curve to stat 3
-        //  0.39→0.46  Hover stat 3
-        //  0.46→0.49  Curve to stat 4
-        //  0.49→0.56  Hover stat 4
+        //  0.30→0.38  Hover stat 2
+        //  0.38→0.44  Curve to stat 3
+        //  0.44→0.56  Hover stat 3
         //  0.56→0.72  Wide clockwise arc: right of all text, sweeping down
         //  0.72→0.88  Continue sweep through bottom-right, arcing under
         //  0.88→1.00  Rise from below, land beneath "Launching 2026"
@@ -505,28 +503,40 @@ export default function OrbSystem({ glowExpanded }: OrbSystemProps) {
         const s1y = statDocs[0].y;
 
         // Bridge: start from visionWanderTl end state (raw GSAP offsets),
-        // smoothly transition to sort's scroll-relative coords
+        // smoothly transition to sort's scroll-relative coords.
+        // Extended to 10% progress for a buttery-smooth coordinate handoff.
         const visionEndY = vh * 0.25; // dustDriftY from visionWanderTl
+        const settleTarget = xy(s1x, s1y - hoverGap, 0.10);
+
+        // Midpoint: blend between raw GSAP coords and scroll-relative coords
         sortWanderTl.fromTo(primary,
           { x: stat1GsapX, y: visionEndY, scale: wanderTargetScale, filter: "none" },
           {
-            ...xy(s1x, s1y - hoverGap, 0.04),
-            scale: statScale, filter: "none",
-            duration: 0.04, ease: "power1.out",
+            x: stat1GsapX + (settleTarget.x - stat1GsapX) * 0.5,
+            y: visionEndY + (settleTarget.y - visionEndY) * 0.5,
+            scale: wanderTargetScale + (statScale - wanderTargetScale) * 0.5,
+            filter: "none",
+            duration: 0.05, ease: "power1.inOut",
             immediateRender: false,
           },
           0
         );
+        // Complete settle at stat 1 position
+        sortWanderTl.to(primary, {
+          ...settleTarget,
+          scale: statScale, filter: "none",
+          duration: 0.05, ease: "power1.out",
+        });
 
         // ═══ Stats flow — continuous undulating wave ═══
         // Scalloped arcs between stats: the orb lifts gently between each,
         // with subtle drift during visits. No straight lines anywhere.
 
-        // Stat 1 (0.04→0.24): Hover with subtle rightward drift
+        // Stat 1 (0.10→0.24): Hover with subtle rightward drift
         sortWanderTl.to(primary, {
           ...xy(statDocs[0].x + 10, statDocs[0].y - hoverGap, 0.24),
           scale: statScale, filter: "none",
-          duration: 0.20, ease: "none",
+          duration: 0.14, ease: "none",
         });
 
         // Arc 1→2 (0.24→0.30): Scallop up through midpoint, descend to stat 2
@@ -543,62 +553,41 @@ export default function OrbSystem({ glowExpanded }: OrbSystemProps) {
           duration: 0.03, ease: "none",
         });
 
-        // Stat 2 (0.30→0.35): Settle with subtle rightward drift
+        // Stat 2 (0.30→0.38): Settle with subtle rightward drift
         sortWanderTl.to(primary, {
-          ...xy(statDocs[1].x + 10, statDocs[1].y - hoverGap, 0.35),
+          ...xy(statDocs[1].x + 10, statDocs[1].y - hoverGap, 0.38),
           scale: statScale, filter: "none",
-          duration: 0.05, ease: "none",
+          duration: 0.08, ease: "none",
         });
 
-        // Arc 2→3 (0.35→0.42): Scallop up through midpoint, descend to stat 3
+        // Arc 2→3 (0.38→0.44): Scallop up through midpoint, descend to stat 3
         const mid23x = (statDocs[1].x + statDocs[2].x) / 2;
         const mid23y = Math.min(statDocs[1].y, statDocs[2].y) - hoverGap * 2.5;
         sortWanderTl.to(primary, {
-          ...xy(mid23x, mid23y, 0.38),
+          ...xy(mid23x, mid23y, 0.41),
           scale: statScale, filter: "none",
           duration: 0.03, ease: "none",
         });
         sortWanderTl.to(primary, {
-          ...xy(statDocs[2].x - 8, statDocs[2].y - hoverGap, 0.42),
-          scale: statScale, filter: "none",
-          duration: 0.04, ease: "none",
-        });
-
-        // Stat 3 (0.42→0.47): Settle with subtle rightward drift
-        sortWanderTl.to(primary, {
-          ...xy(statDocs[2].x + 10, statDocs[2].y - hoverGap, 0.47),
-          scale: statScale, filter: "none",
-          duration: 0.05, ease: "none",
-        });
-
-        // Arc 3→4 (0.47→0.53): Scallop up through midpoint, descend to stat 4
-        const mid34x = (statDocs[2].x + statDocs[3].x) / 2;
-        const mid34y = Math.min(statDocs[2].y, statDocs[3].y) - hoverGap * 2.5;
-        sortWanderTl.to(primary, {
-          ...xy(mid34x, mid34y, 0.50),
-          scale: statScale, filter: "none",
-          duration: 0.03, ease: "none",
-        });
-        sortWanderTl.to(primary, {
-          ...xy(statDocs[3].x - 8, statDocs[3].y - hoverGap, 0.53),
+          ...xy(statDocs[2].x - 8, statDocs[2].y - hoverGap, 0.44),
           scale: statScale, filter: "none",
           duration: 0.03, ease: "none",
         });
 
-        // Stat 4 (0.53→0.56): Brief settle with drift
+        // Stat 3 (0.44→0.56): Settle with subtle rightward drift
         sortWanderTl.to(primary, {
-          ...xy(statDocs[3].x + 10, statDocs[3].y - hoverGap, 0.56),
+          ...xy(statDocs[2].x + 10, statDocs[2].y - hoverGap, 0.56),
           scale: statScale, filter: "none",
-          duration: 0.03, ease: "none",
+          duration: 0.12, ease: "none",
         });
 
-        // ═══ Exit arc — wide clockwise sweep from stat 4 to "Launching 2026" ═══
-        // Curves RIGHT from 52% (clear of all centred copy), sweeps down the
+        // ═══ Exit arc — wide clockwise sweep from stat 3 to "Launching 2026" ═══
+        // Curves RIGHT from stat 3 (clear of all centred copy), sweeps down the
         // right edge, arcs across the bottom, enters from below to settle
         // beneath "Launching 2026". Two joined cubic Béziers for a natural,
         // unstudied trajectory — no straight segments anywhere.
 
-        const exitStart = { x: statDocs[3].x + 10, y: statDocs[3].y - hoverGap };
+        const exitStart = { x: statDocs[2].x + 10, y: statDocs[2].y - hoverGap };
         const exitEnd   = { x: launchDoc.x, y: launchDoc.y };
 
         // Far-right apex: widest point of sweep, well clear of centred text

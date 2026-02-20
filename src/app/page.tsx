@@ -441,9 +441,9 @@ export default function Home() {
             </h1>
             <p
               className="mt-4 text-xs md:text-sm tracking-wide"
-              style={{ fontFamily: "var(--font-body)", fontStyle: "italic", color: "var(--text-tertiary)" }}
+              style={{ fontFamily: "var(--font-body)", fontStyle: "italic", color: "#FFFFFF" }}
             >
-              Check in (energy, mood, stress, load) &rarr; brain dump your day<br />&rarr; Joy builds a day with the energy you&apos;ve got
+              How are you today? &rarr; What&apos;s on your plate? &rarr; Joy sorts your day
             </p>
           </div>
 
@@ -667,12 +667,11 @@ export default function Home() {
             </div>
 
             {/* Stats grid — the orb fractures behind these */}
-            <div id="sort-stats" className="grid grid-cols-2 md:grid-cols-4 gap-12 md:gap-8 mb-16 max-w-[800px] mx-auto">
+            <div id="sort-stats" className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 mb-16 max-w-[800px] mx-auto">
               {[
-                { stat: "82%", label: "of people have no system for managing their day at all" },
-                { stat: "2.5h", label: "lost every day to context-switching between work and life" },
-                { stat: "151h", label: "of focus lost every year to personal admin during work" },
-                { stat: "52%", label: "of the workforce now reports feeling burnt out" },
+                { stat: "1/4", label: "of work time lost to distraction. The fastest-growing cause? Life.", href: "https://impact.economist.com/new-globalisation/in-search-of-lost-focus-2023/", ref: "1" },
+                { stat: "55%", label: "of people can\u2019t switch off from work when they\u2019re home.", href: "https://www.bitc.org.uk/news/less-than-half-of-workers-feel-able-to-switch-off-from-work-new-research-shows/", ref: "2" },
+                { stat: "13%", label: "more productive at work. Who? Happy people.", href: "https://www.ox.ac.uk/news/2019-10-24-happy-workers-are-13-more-productive", ref: "3" },
               ].map((item, i) => (
                 <div key={i} className="text-center reveal-section stat-item">
                   <p
@@ -685,7 +684,23 @@ export default function Home() {
                     className="text-sm leading-[1.6] tracking-wide max-w-[240px] mx-auto"
                     style={{ color: "#FFFFFF", fontWeight: 300 }}
                   >
-                    {item.label}
+                    {item.label}{" "}
+                    <a
+                      href={item.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        verticalAlign: "super",
+                        fontSize: "0.65em",
+                        textDecoration: "none",
+                        background: "linear-gradient(135deg, #D8C878, #E89050, #D07050)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                        backgroundClip: "text",
+                      }}
+                    >
+                      {item.ref}
+                    </a>
                   </p>
                 </div>
               ))}
