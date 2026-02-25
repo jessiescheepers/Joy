@@ -98,12 +98,10 @@ export default function OrbSystem({ glowExpanded }: OrbSystemProps) {
       const hideSecondary = () => {};
 
       // ═══════════════════════════════════════════════════════════════
-      // LATER SECTIONS FIRST — hero/bridge created LAST for GSAP
-      // priority (last-created wins when multiple timelines conflict
-      // at progress 0 during scroll reversal).
+      // HERO → BRIDGE → VISION — one continuous scrub timeline
       // ═══════════════════════════════════════════════════════════════
 
-      // Compute bridge text centre Y — needed by both glow and hero timelines
+      // Compute bridge text centre Y
       const bridgeTextEl = document.querySelector("#bridge p");
       const heroEl = document.querySelector("#hero") as HTMLElement | null;
       const heroH = heroEl?.offsetHeight || vh;
@@ -112,232 +110,51 @@ export default function OrbSystem({ glowExpanded }: OrbSystemProps) {
         const textRect = bridgeTextEl.getBoundingClientRect();
         const textCenterDoc = textRect.top + window.scrollY + textRect.height / 2;
         const textCenterVP = textCenterDoc - heroH;
-        targetY = textCenterVP - vh * 0.6; // 0.6 = orb natural centre (bottom:-10%, size ~100vh)
+        targetY = textCenterVP - vh * 0.6;
       }
 
-      // ═══════════════════════════════════════════════════════════════
-      // HERO + BRIDGE — created LAST so they win GSAP priority when
-      // multiple scrub timelines revert to progress 0 on scroll-up.
-      // ═══════════════════════════════════════════════════════════════
+      // Bridge scale — noticeably smaller, grows back in mission
+      const bridgeScale = 0.5;
 
-      // ═══ HERO — large clockwise Bezier arc to S2 centre ═══
-      // MotionPath traces: centre → right edge → down → sweep bottom → rise to bridge text.
-      const heroTl = gsap.timeline({
+      // ═══ HERO — orb stays full size, no animation ═══
+      gsap.set(primary, { x: 0, y: 0, scale: 1, opacity: 1, filter: "none", rotation: 0 });
+
+      // ═══ BRIDGE → VISION — shrink, swirl, grow ═══
+      const bridgeVisionTl = gsap.timeline({
         scrollTrigger: {
-          trigger: "#hero",
-          start: "top top",
-          endTrigger: "#glow",
-          end: "top 80%",
-          scrub: 0.5,
-        },
-      });
-
-      // Smooth upward arc — gentle rightward drift, no jumps
-      heroTl.fromTo(primary,
-        { x: 0, y: 0 },
-        {
-          motionPath: {
-            path: [
-              { x: 0, y: 0 },                           // start: natural position
-              { x: vw * 0.12, y: targetY * 0.35 },      // gentle right drift, 1/3 up
-              { x: vw * 0.05, y: targetY * 0.7 },       // easing back to centre, 2/3 up
-              { x: 0, y: targetY },                      // bridge text centre
-            ],
-            curviness: 1.2,
-          },
-          duration: 1,
-          ease: "none",
-        },
-        0
-      );
-
-      // Scale + filter shrink concurrently — filter:"none" prevents black orb on scroll-up
-      heroTl.fromTo(primary,
-        { scale: 1, opacity: 1, filter: "none" },
-        { scale: cardOrbMatchScale, opacity: 1, filter: "none", duration: 1, ease: "power1.in" },
-        0
-      );
-
-      // Cleanup guardian for scroll-up
-      ScrollTrigger.create({
-        trigger: "#bridge",
-        start: "top top",
-        end: "bottom top",
-        onLeaveBack: () => {
-          hideSecondary();
-        },
-      });
-
-      // ═══ BRIDGE-TO-GLOW — cinematic orb drop into card ═══
-      // Created LAST for highest GSAP priority — overrides hero timeline's
-      // scale/y when both target the primary orb during the glow section.
-      const cardEl = document.querySelector(".holo-border") as HTMLElement | null;
-      const container = containerRef.current;
-
-      // Compute landing Y — exact card-orb alignment at progress 0.85
-      let landingY = 0; // fallback: orb natural center
-      if (cardEl) {
-        const glowSection = document.querySelector("#glow") as HTMLElement | null;
-        if (glowSection) {
-          const glowTop = glowSection.offsetTop;
-          const glowHeight = glowSection.offsetHeight;
-          const scrollStart = glowTop - 0.8 * vh;
-          const scrollEnd = glowTop + glowHeight / 2 - vh / 2;
-          const cardRect = cardEl.getBoundingClientRect();
-          const cardDocCenterY = cardRect.top + window.scrollY + cardRect.height * 0.35;
-          // Card viewport position when timeline is at progress 0.85
-          const scroll085 = scrollStart + 0.85 * (scrollEnd - scrollStart);
-          const cardVPCenter = cardDocCenterY - scroll085;
-          landingY = cardVPCenter - orbCSSCenterY;
-        }
-      }
-
-      const levitationWrapper = cardEl?.parentElement;
-      const descent = landingY - targetY; // total Y travel from bridge to card
-
-      // Card orb overlay — controlled via GSAP, not CSS class
-      const cardOrbOverlay = document.querySelector(".card-orb-overlay") as HTMLElement;
-
-      const glowTl = gsap.timeline({
-        scrollTrigger: {
-          trigger: "#glow",
-          start: "top 80%",
-          end: "center center",
-          scrub: 0.5,
-          onUpdate: (self) => {
-            const p = self.progress;
-            const card = document.querySelector(".holo-border") as HTMLElement;
-            // Orb stays behind page content (z-2) during entire glow descent.
-            // The card's opaque background naturally hides the orb — no z-flip needed.
-            if (container) {
-              container.classList.remove("orb-system-elevated");
-            }
-            // Radiant pulse activation after absorption
-            if (card) {
-              if (p >= 0.85) card.classList.add("glow-absorbed");
-              else card.classList.remove("glow-absorbed");
-            }
-            // Pause levitation near absorption for alignment
-            if (levitationWrapper) {
-              levitationWrapper.style.animationPlayState = p > 0.6 ? "paused" : "running";
-            }
-            // Card brightness boost during absorption
-            if (card) {
-              card.style.filter = p > 0.7 ? `brightness(${1 + (p - 0.7) / 0.3 * 0.5})` : "";
-            }
-          },
-          onLeaveBack: () => {
-            hideSecondary();
-            if (container) container.classList.remove("orb-system-elevated");
-            const card = document.querySelector(".holo-border") as HTMLElement;
-            if (card) { card.classList.remove("glow-absorbed"); card.style.filter = ""; }
-            if (levitationWrapper) levitationWrapper.style.animationPlayState = "running";
-          },
-        },
-      });
-
-      // Descent at constant cardOrbMatchScale — bg orb stays fully visible (opacity 1).
-      // The card's opaque background naturally hides the portion behind it.
-      // Card-orb-overlay is positioned dynamically by a sync ScrollTrigger (below).
-      glowTl.fromTo(primary,
-        { x: 0, y: targetY, scale: cardOrbMatchScale, opacity: 1, filter: "none" },
-        { scale: cardOrbMatchScale, y: targetY + descent * 0.12, opacity: 1, filter: "none", duration: 0.12, ease: "none", immediateRender: false },
-        0
-      );
-      glowTl.to(primary, { scale: cardOrbMatchScale, y: targetY + descent * 0.30, opacity: 1, filter: "none", duration: 0.13, ease: "none" });
-      glowTl.to(primary, { scale: cardOrbMatchScale, y: targetY + descent * 0.60, opacity: 1, filter: "none", duration: 0.15, ease: "none" });
-      // Arrive at card centre — card bg hides the orb core, glow visible around edges
-      glowTl.to(primary, { scale: cardOrbMatchScale, y: landingY, opacity: 1, filter: "none", duration: 0.15, ease: "power1.in" });
-      // Hold at card centre
-      glowTl.to(primary, { scale: cardOrbMatchScale, y: landingY, opacity: 1, filter: "none", duration: 0.45, ease: "none" });
-
-      // ═══ GLOW-TO-VISION — orb DROPS from card and grows into vision ═══
-      // Bg orb starts at opacity 1 (card hides it). Transitions to 0.6 as it clears.
-      // Card-orb-overlay tracks the bg orb dynamically via sync ScrollTrigger below.
-
-      const totalDrop = -landingY; // positive distance: card → natural center
-      const scaleRange = visionEndScale - cardOrbMatchScale;
-
-      const glowToVisionTl = gsap.timeline({
-        scrollTrigger: {
-          trigger: "#vision",
-          start: "top 100%",
-          end: "top 30%",
-          scrub: 0.5,
-        },
-      });
-
-      // c1→c2: orb drops from card centre, still mostly behind card
-      glowToVisionTl.to(primary, {
-        scale: cardOrbMatchScale + scaleRange * 0.118,
-        y: landingY + totalDrop * 0.217,
-        opacity: 1, filter: "none",
-        duration: 0.217, ease: "power1.in",
-      }, 0);
-      // c2→c3: clearing card, opacity transitions to 0.6
-      glowToVisionTl.to(primary, {
-        scale: cardOrbMatchScale + scaleRange * 0.378,
-        y: landingY + totalDrop * 0.491,
-        opacity: 0.6, filter: "none",
-        duration: 0.274, ease: "none",
-      });
-      // c3→c4: rapid growth, nearing final position
-      glowToVisionTl.to(primary, {
-        scale: cardOrbMatchScale + scaleRange * 0.720,
-        y: landingY + totalDrop * 0.823,
-        opacity: 0.6, filter: "none",
-        duration: 0.332, ease: "none",
-      });
-      // c4→c5: final position, full size, slight deceleration
-      glowToVisionTl.to(primary, {
-        scale: visionEndScale,
-        y: 0,
-        opacity: 0.6, filter: "none",
-        duration: 0.177, ease: "power1.out",
-      });
-
-      // ═══ Card-orb sync — dynamic positioning on every scroll frame ═══
-      // Reads the bg orb's current GSAP transforms and positions the card-orb-overlay
-      // so it shows exactly the portion of the orb that's behind the card.
-      // The card's overflow:hidden clips naturally — creating the illusion of one
-      // continuous orb passing through the card.
-      if (cardOrbOverlay) {
-        ScrollTrigger.create({
-          trigger: "#glow",
+          trigger: "#bridge",
           start: "top 80%",
           endTrigger: "#vision",
           end: "top 30%",
-          onUpdate: () => {
-            if (!cardEl) return;
-            const cardRect = cardEl.getBoundingClientRect();
-            if (cardRect.bottom < 0 || cardRect.top > vh) {
-              cardOrbOverlay.style.opacity = "0";
-              return;
-            }
-            // Bg orb's current viewport center Y
-            const curY = Number(gsap.getProperty(primary, "y"));
-            const curScale = Number(gsap.getProperty(primary, "scale"));
-            const orbScreenY = orbCSSCenterY + curY;
+          scrub: 0.6,
+        },
+      });
 
-            // Position card-orb center to match bg orb center (relative to card)
-            const topPct = ((orbScreenY - cardRect.top) / cardRect.height) * 100;
-            cardOrbOverlay.style.top = `${topPct}%`;
+      // 0.00→0.35: Bridge — orb shrinks + swirls
+      bridgeVisionTl.to(primary, {
+        y: 0, scale: bridgeScale,
+        opacity: 1, filter: "none", rotation: 60,
+        duration: 0.35, ease: "none",
+      }, 0);
 
-            // Scale card-orb to match bg orb's current visual size
-            const matchScale = (orbSize * curScale) / 340;
-            cardOrbOverlay.style.transform = `translate(-50%, -50%) scale(${matchScale})`;
+      // 0.35→0.55: Bridge hold — continues swirl at small size
+      bridgeVisionTl.to(primary, {
+        y: 0, scale: bridgeScale,
+        opacity: 1, filter: "none", rotation: 150,
+        duration: 0.20, ease: "none",
+      });
 
-            // Show card-orb when bg orb overlaps card area
-            const visRadius = orbSize * curScale * 0.7;
-            const orbTop = orbScreenY - visRadius;
-            const orbBot = orbScreenY + visRadius;
-            const overlaps = orbBot > cardRect.top && orbTop < cardRect.bottom;
-            cardOrbOverlay.style.opacity = overlaps ? "1" : "0";
-          },
-          onLeave: () => { cardOrbOverlay.style.opacity = "0"; },
-          onLeaveBack: () => { cardOrbOverlay.style.opacity = "0"; },
-        });
-      }
+      // 0.55→1.0: Vision — orb grows to visionEndScale, continues swirl
+      bridgeVisionTl.to(primary, {
+        y: 0, scale: bridgeScale + (visionEndScale - bridgeScale) * 0.5,
+        opacity: 1, filter: "none", rotation: 220,
+        duration: 0.22, ease: "none",
+      });
+      bridgeVisionTl.to(primary, {
+        y: 0, scale: visionEndScale,
+        opacity: 1, filter: "none", rotation: 270,
+        duration: 0.23, ease: "power1.out",
+      });
 
       // ═══ VISION WANDER — sweeping leftward arc through vision text ═══
       // Wide counterclockwise sweep: from vision section, the orb curves
@@ -429,8 +246,8 @@ export default function OrbSystem({ glowExpanded }: OrbSystemProps) {
       }
 
       // ═══ VISION-TO-SORT — orb shrinks, wanders through stats, lands under CTA ═══
-      // Continuous from glowToVisionTl end state (visionEndScale, y:0, opacity:0.6).
-      // No fade — the orb stays at opacity 0.6 throughout.
+      // Continuous from mainTl end state (visionEndScale, y:0, opacity:1).
+      // Full brightness throughout — matches hero orb heart.
       const statEls = document.querySelectorAll<HTMLElement>(".stat-item");
       const launchEl = document.querySelector("#sort-solution .text-gradient-warm") as HTMLElement | null;
       const sortSection = document.querySelector("#sort") as HTMLElement | null;

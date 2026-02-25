@@ -61,7 +61,7 @@ export default function Home() {
       },
       { threshold: 0.2 }
     );
-    [heroRef, glowRef, howRef, aboutRef, contactRef].forEach((ref) => {
+    [heroRef, howRef, aboutRef, contactRef].forEach((ref) => {
       if (ref.current) observer.observe(ref.current);
     });
     return () => observer.disconnect();
@@ -115,7 +115,6 @@ export default function Home() {
 
   const navItems: { id: string; label: string; href: string }[] = [
     { id: "home", label: "home", href: "#hero" },
-    { id: "glow", label: "glow", href: "#glow" },
     { id: "how", label: "sort", href: "#sort" },
     { id: "about", label: "about", href: "#vision" },
     { id: "contact", label: "contact", href: "#contact" },
@@ -211,11 +210,11 @@ export default function Home() {
             })}
             <a
               href="#hero"
-              className="holo-border-pill px-5 py-2 rounded-full text-xs font-medium tracking-wide transition-all duration-300 hover:shadow-[0_0_30px_rgba(224,160,173,0.35)]"
+              className="btn-ghost px-5 py-2 rounded-full text-xs font-medium tracking-wide"
               style={{
                 fontFamily: "var(--font-display)",
-                background: "#171E33",
-                color: "#FFFFFF",
+                border: "1px solid var(--border)",
+                color: "var(--text-secondary)",
               }}
             >
               early access
@@ -256,8 +255,8 @@ export default function Home() {
             <a
               href="#hero"
               onClick={() => setMobileMenuOpen(false)}
-              className="holo-border-pill mt-4 px-7 py-3 rounded-full text-sm font-medium tracking-wide"
-              style={{ fontFamily: "var(--font-display)", background: "#171E33", color: "#FFFFFF" }}
+              className="btn-ghost mt-4 px-7 py-3 rounded-full text-sm font-medium tracking-wide"
+              style={{ fontFamily: "var(--font-display)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
             >
               early access
             </a>
@@ -415,12 +414,12 @@ export default function Home() {
           </p>
         </section>
 
-        {/* ═══ INTERACTIVE / GLOW SECTION ═══ */}
+        {/* ═══ INTERACTIVE / GLOW SECTION (hidden — may return later) ═══ */}
         <section
           id="glow"
           ref={glowRef}
           className="min-h-screen flex flex-col items-center justify-center px-6 py-24 md:px-12 lg:px-20 text-center"
-          style={{ borderTop: "1px solid var(--border)" }}
+          style={{ borderTop: "1px solid var(--border)", display: "none" }}
           onMouseMove={(e) => {
             if (isMobile || glowExpanded || !glowCardRef.current || !glowAuraRef.current) return;
             const rect = glowCardRef.current.getBoundingClientRect();
@@ -437,7 +436,7 @@ export default function Home() {
               className="leading-[1.3] tracking-[-0.02em] mb-4"
               style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1rem, 2.5vw, 1.6rem)", color: "var(--text-secondary)" }}
             >
-              An urgent barrier to human success<br />is work:life energy lost.<br /><br />We want to <em className="text-gradient-warm" style={{ fontStyle: "italic" }}>reclaim it</em>.
+              On your best days, you have 3 hours for deep work. Joy helps you use them on what matters.
             </h1>
             <p
               className="mt-4 text-xs md:text-sm tracking-wide"
@@ -639,7 +638,7 @@ export default function Home() {
                 Hard days, lighter. Great days, better. Less time on the small frustrations. More time on what makes us human.
               </p>
               <p>
-                That&apos;s not a product vision. It&apos;s a mission. And we&apos;re just getting started.
+                That&apos;s the mission. And we&apos;re just getting started.
               </p>
             </div>
           </div>
@@ -671,7 +670,7 @@ export default function Home() {
               {[
                 { stat: "1/4", label: "of work time lost to distraction. The fastest-growing cause? Life.", href: "https://impact.economist.com/new-globalisation/in-search-of-lost-focus-2023/", ref: "1" },
                 { stat: "55%", label: "of people can\u2019t switch off from work when they\u2019re home.", href: "https://www.bitc.org.uk/news/less-than-half-of-workers-feel-able-to-switch-off-from-work-new-research-shows/", ref: "2" },
-                { stat: "13%", label: "more productive at work. Who? Happy people.", href: "https://www.ox.ac.uk/news/2019-10-24-happy-workers-are-13-more-productive", ref: "3" },
+                { stat: "13%", label: "more output. The input? Happier people.", href: "https://www.ox.ac.uk/news/2019-10-24-happy-workers-are-13-more-productive", ref: "3" },
               ].map((item, i) => (
                 <div key={i} className="text-center reveal-section stat-item">
                   <p
@@ -964,12 +963,12 @@ export default function Home() {
                 href={item.href}
                 {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                 className="text-xs tracking-wide transition-colors duration-300"
-                style={{ fontFamily: "var(--font-display)", color: "var(--text-tertiary)" }}
+                style={{ fontFamily: "var(--font-display)", color: "#FFFFFF" }}
               >
                 {item.label}
               </a>
             ))}
-            <span className="text-xs" style={{ fontFamily: "var(--font-display)", color: "var(--text-tertiary)" }}>
+            <span className="text-xs" style={{ fontFamily: "var(--font-display)", color: "#FFFFFF" }}>
               &copy; 2026 Joy
             </span>
           </div>
@@ -982,13 +981,13 @@ export default function Home() {
                 href={item.href}
                 {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                 className="text-xs md:text-sm tracking-wide transition-colors duration-300"
-                style={{ fontFamily: "var(--font-display)", color: "var(--text-tertiary)" }}
+                style={{ fontFamily: "var(--font-display)", color: "#FFFFFF" }}
               >
                 {item.label}
               </a>
             ))}
 
-            <span className="text-xs" style={{ fontFamily: "var(--font-display)", color: "var(--text-tertiary)" }}>
+            <span className="text-xs" style={{ fontFamily: "var(--font-display)", color: "#FFFFFF" }}>
               &copy; 2026 Joy
             </span>
           </div>

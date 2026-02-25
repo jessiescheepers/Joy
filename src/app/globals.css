@@ -552,38 +552,20 @@ body {
   position: relative;
   border-radius: 9999px;
   overflow: hidden;
-  animation: pill-glow-pulse 4s ease-in-out infinite;
-}
-
-@keyframes pill-glow-pulse {
-  0%, 100% {
-    box-shadow:
-      0 0 12px rgba(232,180,106,0.25),
-      0 0 30px rgba(232,180,106,0.15),
-      0 0 60px rgba(232,180,106,0.08);
-  }
-  50% {
-    box-shadow:
-      0 0 18px rgba(232,180,106,0.40),
-      0 0 44px rgba(232,170,80,0.25),
-      0 0 80px rgba(232,180,106,0.12);
-  }
+  border: 1px solid rgba(200,169,110,0.28);
 }
 
 .holo-border-pill::before {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: -1px;
   border-radius: inherit;
-  padding: 2.7px;
-  background: conic-gradient(
-    from var(--holo-angle),
-    var(--glow-amber),
-    var(--glow-rose),
-    var(--glow-sky),
-    var(--glow-lavender),
-    var(--glow-amber)
-  );
+  padding: 1px;
+  background: conic-gradient(from var(--holo-angle, 0deg),
+    rgba(200,169,110,0.18) 0deg, rgba(200,169,110,0.18) 40deg,
+    rgba(220,185,120,0.55) 80deg, rgba(255,225,150,1.0) 110deg,
+    rgba(220,185,120,0.55) 140deg, rgba(200,169,110,0.18) 180deg,
+    rgba(200,169,110,0.18) 360deg);
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
@@ -594,7 +576,7 @@ body {
   mask-composite: exclude;
   pointer-events: none;
   z-index: 1;
-  animation: holo-rotate 4s linear infinite;
+  animation: holo-rotate 3.5s linear infinite;
 }
 
 /* Leaders orb — WAAPI entrance + CSS glow expansion */
