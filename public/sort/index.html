@@ -6,7 +6,7 @@
 <title>Joy — Sort Your Day</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mp4-muxer/build/mp4-muxer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mp4-muxer@4/build/mp4-muxer.min.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -2554,44 +2554,63 @@ function startVideoCapture(e) {
       }
     }
 
-    // ── Fallback: MediaRecorder → save as .mp4 extension regardless ──
-    console.log('Using MediaRecorder fallback');
+    // ── Fallback: MediaRecorder → real-time canvas capture ──
+    console.log('Trying MediaRecorder fallback');
     if (typeof MediaRecorder === 'undefined' || typeof compCanvas.captureStream !== 'function') {
       console.warn('MediaRecorder/captureStream unavailable, falling back to PNG');
       restoreOrb(); cleanup(); downloadCardPng(); return;
     }
-    const stream = compCanvas.captureStream(0);
-    const mimeType = ['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm']
-      .find(t => MediaRecorder.isTypeSupported(t)) || '';
-    console.log('MediaRecorder mime:', mimeType || 'NONE');
-    if (!mimeType) { restoreOrb(); cleanup(); downloadCardPng(); return; }
-    const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 5_000_000 });
-    const chunks = [];
-    recorder.ondataavailable = ev => { if (ev.data.size > 0) chunks.push(ev.data); };
-    recorder.onstop = async () => {
-      await triggerDownload(new Blob(chunks, { type: mimeType.split(';')[0] }), 'mp4');
-      cleanup();
-    };
-    recorder.onerror = (err) => { console.error('MediaRecorder error:', err); cleanup(); downloadCardPng(); };
-    let frames = 0;
-    recorder.start();
-    const capFrame = () => {
-      if (frames >= total) {
-        recorder.stop(); restoreOrb(); return;
-      }
-      orbT = savedOrbT + (frames / total) * Math.PI * 4;
-      drawOrb();
-      clipFrame();
-      compCtx.drawImage(orbCanvas, 0, 0, vidW, vidH);
-      if (chromeSized) compCtx.drawImage(chromeSized, 0, 0);
-      compCtx.restore();
-      const track = stream.getVideoTracks()[0];
-      if (track.requestFrame) track.requestFrame();
-      frames++;
-      prog.textContent = `day keepsake loading... ${Math.round((frames / total) * 100)}%`;
+    try {
+      // Auto-capture mode: stream grabs every canvas change automatically
+      const stream = compCanvas.captureStream();
+      const mimeType = ['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm']
+        .find(t => MediaRecorder.isTypeSupported(t)) || '';
+      console.log('MediaRecorder mime:', mimeType || 'NONE');
+      if (!mimeType) { restoreOrb(); cleanup(); downloadCardPng(); return; }
+      const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 5_000_000 });
+      const chunks = [];
+      recorder.ondataavailable = ev => { if (ev.data.size > 0) chunks.push(ev.data); };
+      recorder.onstop = async () => {
+        try {
+          const blob = new Blob(chunks, { type: mimeType.split(';')[0] });
+          if (blob.size < 1000) { // empty/corrupt video
+            console.warn('MediaRecorder produced empty video, falling back to PNG');
+            cleanup(); downloadCardPng(); return;
+          }
+          await triggerDownload(blob, 'mp4');
+          cleanup();
+        } catch (dlErr) {
+          console.error('Download failed:', dlErr);
+          cleanup(); downloadCardPng();
+        }
+      };
+      recorder.onerror = () => { restoreOrb(); cleanup(); downloadCardPng(); };
+
+      // Real-time capture: animate for 8 real seconds, stream auto-captures
+      const realDuration = 8000; // ms
+      let startTs = null;
+      recorder.start(1000); // request data every 1s for reliability
+      const capFrame = (ts) => {
+        if (!startTs) startTs = ts;
+        const elapsed = ts - startTs;
+        if (elapsed >= realDuration) {
+          recorder.stop(); restoreOrb(); return;
+        }
+        const progress = elapsed / realDuration;
+        orbT = savedOrbT + progress * Math.PI * 4;
+        drawOrb();
+        clipFrame();
+        compCtx.drawImage(orbCanvas, 0, 0, vidW, vidH);
+        if (chromeSized) compCtx.drawImage(chromeSized, 0, 0);
+        compCtx.restore();
+        prog.textContent = `day keepsake loading... ${Math.round(progress * 100)}%`;
+        requestAnimationFrame(capFrame);
+      };
       requestAnimationFrame(capFrame);
-    };
-    requestAnimationFrame(capFrame);
+    } catch (mrErr) {
+      console.error('MediaRecorder setup failed:', mrErr);
+      restoreOrb(); cleanup(); downloadCardPng();
+    }
 
   }).catch(err => {
     console.error('Video capture failed:', err);
