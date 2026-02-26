@@ -2431,6 +2431,14 @@ function startVideoCapture(e) {
   const btn = document.getElementById('gif-btn');
   const prog = document.getElementById('gif-progress');
 
+  // Secure context check — file:// blocks all video APIs
+  if (location.protocol === 'file:') {
+    prog.classList.add('visible');
+    prog.textContent = 'open via localhost or https for video';
+    setTimeout(() => prog.classList.remove('visible'), 3000);
+    return;
+  }
+
   videoRecording = true;
   btn.style.opacity = '0'; btn.style.pointerEvents = 'none';
   prog.classList.add('visible'); prog.textContent = 'day keepsake loading...';
@@ -2482,7 +2490,8 @@ function startVideoCapture(e) {
     };
 
     // ── Primary: WebCodecs + mp4-muxer → true H.264 MP4 ──
-    console.log('VideoEncoder:', typeof VideoEncoder, 'Mp4Muxer:', typeof Mp4Muxer);
+    prog.textContent = 'checking video support...';
+    console.log('[export] VideoEncoder:', typeof VideoEncoder, 'Mp4Muxer:', typeof Mp4Muxer, 'MediaRecorder:', typeof MediaRecorder, 'captureStream:', typeof compCanvas.captureStream);
     if (typeof VideoEncoder !== 'undefined' && typeof Mp4Muxer !== 'undefined') {
       // Try multiple H.264 profiles in order of compatibility
       const codecs = ['avc1.42001E','avc1.42E01E','avc1.4D0028','avc1.640028'];
@@ -2495,6 +2504,7 @@ function startVideoCapture(e) {
       }
       if (supportedCodec) {
         try {
+          prog.textContent = 'encoding mp4...';
           const muxer = new Mp4Muxer.Muxer({
             target: new Mp4Muxer.ArrayBufferTarget(),
             video: { codec: 'avc', width: vidW, height: vidH },
@@ -2555,7 +2565,8 @@ function startVideoCapture(e) {
     }
 
     // ── Fallback: MediaRecorder → real-time canvas capture ──
-    console.log('Trying MediaRecorder fallback');
+    console.log('[export] Trying MediaRecorder fallback');
+    prog.textContent = 'recording video...';
     if (typeof MediaRecorder === 'undefined' || typeof compCanvas.captureStream !== 'function') {
       console.warn('MediaRecorder/captureStream unavailable, falling back to PNG');
       restoreOrb(); cleanup(); downloadCardPng(); return;
@@ -2613,8 +2624,9 @@ function startVideoCapture(e) {
     }
 
   }).catch(err => {
-    console.error('Video capture failed:', err);
-    cleanup(); downloadCardPng();
+    console.error('[export] Video capture failed:', err);
+    prog.textContent = 'video failed: ' + (err.message || err);
+    setTimeout(() => { cleanup(); downloadCardPng(); }, 2000);
   });
 }
 
