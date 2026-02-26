@@ -1,0 +1,2583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Joy — Sort Your Day</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mp4-muxer/build/mp4-muxer.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f4efe5;
+  --surface: #ebe5d9;
+  --border: rgba(0,0,0,0.06);
+  --text: #2a2520;
+  --muted: rgba(42,37,32,0.38);
+  --dim: rgba(42,37,32,0.22);
+  --accent: #b8944e;
+  --glow-amber: #E8B46A;
+  --glow-honey: #D49A48;
+  --glow-rose: #D4A0A8;
+  --glow-sky: #A8C4E0;
+  --glow-periwinkle: #7A99C8;
+  --glow-lavender: #B0A8CC;
+  --gradient-warm: linear-gradient(135deg, #D8C878, #E89050, #D07050);
+  --gradient-cool: linear-gradient(135deg, #6890D0, #60B8A8, #9878C8);
+  --gradient-standard: linear-gradient(135deg, #E89050, #D4A0C0, #9878C8);
+  --card-w: min(300px, calc(100vw - 48px));
+  --card-h: calc(var(--card-w) * 1.5);
+}
+
+html, body { height: 100%; overscroll-behavior: none; }
+.card-wrapper, button, .tap-prompt, .reveal-action-btn, .gif-btn { -webkit-tap-highlight-color: transparent; }
+.card-wrapper { user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+
+body {
+  background: transparent;
+  color: var(--text);
+  font-family: 'Source Serif 4', serif;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ═══ CARD SCENE ═══ */
+.card-scene {
+  position: relative;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.card-glow {
+  position: absolute; width: 120%; height: 120%;
+  top: 50%; left: 50%; transform: translate(-50%,-50%);
+  pointer-events: none; z-index: 0; overflow: visible;
+  opacity: 0.25;
+}
+.glow-heart { width: 100%; height: 100%; overflow: visible; }
+.glow-heart-path { fill: url(#heartGrad); filter: blur(24px); }
+
+.card-wrapper {
+  position: relative; width: var(--card-w); height: var(--card-h);
+  cursor: pointer; flex-shrink: 0; border-radius: 24px; z-index: 1;
+  overflow: hidden;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.04),
+    0 8px 24px rgba(0,0,0,0.06),
+    0 20px 50px rgba(0,0,0,0.05),
+    0 0 80px rgba(200,160,80,0.04);
+}
+#orb-canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 24px; display: block; }
+
+.veil {
+  position: absolute; inset: 0; border-radius: 24px;
+  background: transparent;
+  transition: opacity 1.6s cubic-bezier(0.4,0,0.2,1); pointer-events: none; z-index: 1;
+}
+.card-wrapper.revealed .veil { opacity: 0; }
+
+.card-border {
+  position: absolute; inset: 0; border-radius: 24px;
+  pointer-events: none; z-index: 5;
+  border: 1px solid rgba(180,150,90,0.3);
+}
+.card-border::before {
+  content: ''; position: absolute; inset: -1px;
+  border-radius: 25px; padding: 1px;
+  background: conic-gradient(from var(--angle, 0deg),
+    rgba(190,140,60,0.15) 0deg, rgba(190,140,60,0.15) 40deg,
+    rgba(210,155,70,0.45) 80deg, rgba(240,190,90,0.85) 110deg,
+    rgba(210,155,70,0.45) 140deg, rgba(190,140,60,0.15) 180deg,
+    rgba(190,140,60,0.15) 360deg);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: border-spin 3.5s linear infinite;
+}
+@property --angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+@keyframes border-spin { to { --angle: 360deg; } }
+
+/* ═══ CHECK-IN LAYER (frosted glass over living canvas) ═══ */
+.checkin-layer {
+  position: absolute; inset: 0; border-radius: 24px;
+  z-index: 2; pointer-events: auto;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: rgba(244,239,229,0.72);
+  backdrop-filter: blur(20px) saturate(1.1);
+  -webkit-backdrop-filter: blur(20px) saturate(1.1);
+  transition: opacity 1.2s cubic-bezier(0.4,0,0.2,1);
+  overflow: hidden;
+}
+.checkin-layer.hidden { opacity: 0; pointer-events: none; }
+.card-wrapper.day-locked .checkin-layer { opacity: 0 !important; pointer-events: none; }
+.card-wrapper.day-locked .veil { opacity: 0 !important; }
+
+.checkin-moment {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  padding: 32px 36px;
+}
+.checkin-moment.active {
+  opacity: 1; pointer-events: auto;
+}
+.checkin-moment.exit-up {
+  animation: momentExitUp 0.45s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+.checkin-moment.enter-up {
+  animation: momentEnterUp 0.5s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+
+@keyframes momentExitUp {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(-8px) scale(0.98); }
+}
+@keyframes momentEnterUp {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ─── Name Moment ─── */
+@keyframes orb-breathe { 0%,100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
+
+.name-rings {
+  position: relative; width: 80px; height: 80px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 28px;
+}
+.name-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 1px solid rgba(180,130,50,0.18);
+  animation: orb-breathe 3.2s ease-in-out infinite;
+}
+.name-ring:nth-child(2) { inset: -16px; border-color: rgba(180,130,50,0.08); animation-delay: 0.7s; }
+.name-ring:nth-child(3) { inset: -32px; border-color: rgba(180,130,50,0.04); animation-delay: 1.4s; }
+
+.name-logo {
+  width: 26px; height: auto;
+  color: rgba(120,85,30,0.6);
+}
+.greeting {
+  font-family: 'Source Serif 4', serif;
+  font-style: italic;
+  font-size: 15px;
+  color: rgb(95,70,30);
+  line-height: 1.5;
+  margin-top: 4px;
+  text-shadow: 0 0 30px rgba(200,160,60,0.08);
+}
+.greeting-sub {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 9px; letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgb(105,78,32);
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+.name-row {
+  display: flex; flex-direction: column; gap: 12px; align-items: center;
+  width: 100%; max-width: 200px;
+}
+.name-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(130,95,35,0.25);
+  border-radius: 0; padding: 10px 4px;
+  color: rgb(85,62,22);
+  font-family: 'Source Serif 4', serif;
+  font-style: italic;
+  font-size: 16px; outline: none;
+  transition: border-color 0.4s, color 0.3s; text-align: center;
+  text-shadow: 0 0 30px rgba(200,160,60,0.08);
+}
+.name-input:focus { border-color: rgba(130,95,35,0.4); color: rgb(70,50,15); }
+.name-input::placeholder { color: rgba(110,80,30,0.45); font-style: italic; }
+.name-submit {
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid rgba(130,95,35,0.25);
+  background: rgba(200,160,60,0.04);
+  color: rgba(110,80,30,0.6);
+  cursor: pointer; font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.3s; flex-shrink: 0;
+  touch-action: manipulation;
+}
+.name-submit:active { background: rgba(200,160,60,0.12); transform: scale(0.94); }
+.name-submit:hover { border-color: rgba(130,95,35,0.4); color: rgb(90,65,20); background: rgba(200,160,60,0.08); }
+
+/* ─── Vertical Slider ─── */
+.slider-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  height: 200px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+  padding: 0 24px;
+}
+
+.slider-track-container {
+  position: relative;
+  width: 32px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.slider-track {
+  position: relative;
+  width: 1px;
+  height: 100%;
+  background: rgba(130,95,35,0.18);
+}
+
+/* T-bar caps — whisper-thin serifs */
+.slider-track::before,
+.slider-track::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 1px;
+  background: rgba(130,95,35,0.22);
+}
+.slider-track::before { top: 0; }
+.slider-track::after { bottom: 0; }
+
+.slider-fill {
+  position: absolute;
+  bottom: 0;
+  left: -2px;
+  width: 5px;
+  border-radius: 3px;
+  transition: height 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events: none;
+}
+
+.slider-thumb {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 19px;
+  transition: top 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events: none;
+  z-index: 2;
+  filter: drop-shadow(0 0 8px rgba(130,95,35,0.2));
+}
+.slider-thumb svg {
+  width: 100%;
+  height: 100%;
+  fill: rgb(110,80,28);
+  display: block;
+}
+
+/* tick labels hidden — the slider speaks through its readout */
+.slider-tick-labels { display: none; }
+
+.slider-readout {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 75px;
+  padding-left: 2px;
+}
+
+.slider-number {
+  font-family: 'DM Mono', monospace;
+  font-size: 48px;
+  font-weight: 300;
+  line-height: 1;
+  color: rgb(90,65,22);
+  letter-spacing: -0.04em;
+  transition: transform 0.25s ease-out, color 0.3s;
+  text-shadow: 0 0 40px rgba(200,160,60,0.1);
+}
+.slider-number.pop {
+  transform: scale(1.15);
+  color: rgb(75,52,15);
+}
+
+.slider-word {
+  font-family: 'Source Serif 4', serif;
+  font-style: italic;
+  font-size: 14px;
+  color: rgb(120,90,40);
+  margin-top: 3px;
+  transition: opacity 0.3s ease;
+  min-height: 20px;
+}
+
+/* ─── Question Label (same color family as slider number) ─── */
+.question-label {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 9px; letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgb(105,78,32);
+  margin-bottom: 28px;
+}
+
+/* ─── Progress Dots ─── */
+.checkin-progress {
+  position: absolute; bottom: 18px; left: 0; right: 0;
+  display: flex; justify-content: center; gap: 8px;
+  z-index: 3;
+  opacity: 0; transition: opacity 0.4s ease;
+}
+.checkin-progress.visible { opacity: 1; }
+.progress-dot {
+  width: 4px; height: 4px; border-radius: 50%;
+  background: rgba(130,95,35,0.18);
+  transition: background 0.4s ease, transform 0.3s ease, box-shadow 0.4s ease;
+}
+.progress-dot.filled {
+  background: rgba(130,95,35,0.6);
+  transform: scale(1.15);
+  box-shadow: 0 0 6px rgba(160,120,40,0.2);
+}
+.progress-dot.current {
+  background: rgba(130,95,35,0.35);
+}
+
+/* ═══ PRE-CONTENT — anticipation moment (light, own identity) ═══ */
+.pre-content {
+  position: absolute; inset: 0; border-radius: 24px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 18px; z-index: 2; pointer-events: none;
+  opacity: 0; transition: opacity 0.7s ease;
+  background: rgba(244,239,229,0.65);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+}
+.pre-content.visible { opacity: 1; pointer-events: auto; }
+.card-wrapper.revealed .pre-content { opacity: 0; pointer-events: none; transition: opacity 0.8s ease; }
+.card-wrapper.day-locked .pre-content { opacity: 0 !important; pointer-events: none; animation: none !important; }
+
+.tap-prompt { display: flex; flex-direction: column; align-items: center; gap: 20px; cursor: pointer; touch-action: manipulation; }
+.tap-orb {
+  width: 90px; height: 90px; border-radius: 50%; position: relative;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle, rgba(200,160,60,0.08) 0%, rgba(200,160,60,0) 70%);
+}
+.tap-orb-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 1px solid rgba(180,130,50,0.18);
+  animation: orb-breathe 3.2s ease-in-out infinite;
+}
+.tap-orb-ring:nth-child(2) { inset: -18px; border-color: rgba(180,130,50,0.08); animation-delay: 0.7s; }
+.tap-orb-ring:nth-child(3) { inset: -36px; border-color: rgba(180,130,50,0.03); animation-delay: 1.4s; }
+.tap-orb-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(180,130,50,0.35);
+  animation: orb-breathe 3.2s ease-in-out infinite;
+  box-shadow: 0 0 16px rgba(200,160,60,0.2), 0 0 40px rgba(200,160,60,0.08);
+}
+.tap-label {
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 9px;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: rgb(120,90,38);
+}
+.pre-date {
+  position: absolute; bottom: 22px; left: 0; right: 0; text-align: center;
+  font-family: 'DM Mono', monospace; font-size: 8px;
+  letter-spacing: 0.14em; color: rgba(110,80,30,0.45);
+}
+
+
+/* Anticipation pulse — the orb gently intensifies */
+@keyframes pre-glow-pulse {
+  0%, 100% { box-shadow: 0 0 16px rgba(200,160,60,0.25), 0 0 40px rgba(200,160,60,0.1); }
+  50% { box-shadow: 0 0 24px rgba(200,160,60,0.4), 0 0 60px rgba(200,160,60,0.15); }
+}
+.pre-content.visible .tap-orb-dot {
+  animation: orb-breathe 3.2s ease-in-out infinite, pre-glow-pulse 2.4s ease-in-out infinite;
+}
+
+/* ═══ LENS FOCUS — pre-content clears like a lens coming into focus (Ghibli) ═══ */
+.card-wrapper.revealed .pre-content {
+  animation: lens-focus 1.8s cubic-bezier(0.4,0,0.2,1) forwards;
+  transition: none;
+}
+@keyframes lens-focus {
+  0%   { opacity: 1; backdrop-filter: blur(24px) saturate(1.2); -webkit-backdrop-filter: blur(24px) saturate(1.2); }
+  40%  { opacity: 0.85; backdrop-filter: blur(12px) saturate(1.1); -webkit-backdrop-filter: blur(12px) saturate(1.1); }
+  70%  { opacity: 0.5; backdrop-filter: blur(4px) saturate(1.05); -webkit-backdrop-filter: blur(4px) saturate(1.05); }
+  90%  { opacity: 0.15; backdrop-filter: blur(1px) saturate(1.0); -webkit-backdrop-filter: blur(1px) saturate(1.0); }
+  100% { opacity: 0; backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); pointer-events: none; }
+}
+
+/* ═══ REVEAL CONTENT (dark overlay, white text) ═══ */
+.reveal-content {
+  position: absolute; inset: 0; border-radius: 24px;
+  display: flex; flex-direction: column;
+  padding: 28px 24px 72px; z-index: 3; pointer-events: none;
+  opacity: 0; transition: opacity 1s ease 0.5s;
+}
+.card-wrapper.revealed .reveal-content { opacity: 1; }
+
+/* ── top bar (header only) ── */
+.reveal-top-bar { flex: 0 0 auto; text-align: center; }
+
+/* ── logo + CTA at bottom — hidden until locked ── */
+.reveal-footer { position: absolute; bottom: 28px; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; opacity: 0; transition: opacity 0.8s ease; pointer-events: none; }
+.card-wrapper.day-locked .reveal-footer { opacity: 1; }
+.overlay-logo { width: 24px; color: rgb(120,90,40); }
+.reveal-footer-url { font-family: 'Source Serif 4', serif; font-size: 9px; color: rgba(120,90,40,0.45); letter-spacing: 0.04em; }
+.reveal-body {
+  text-align: center; display: flex; flex-direction: column; align-items: center;
+  justify-content: flex-start;
+  flex: 1; position: relative;
+}
+.reveal-body::before {
+  content: ''; flex: 0 0 24%;
+}
+.reveal-hero {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+
+/* ── Element 1: Name + date ── */
+.card-header {
+  font-family: 'DM Mono', monospace; font-size: 11.5px;
+  color: rgb(105,78,32); letter-spacing: 0.10em;
+  opacity: 0; transform: translateY(4px);
+  transition: transform 0.8s cubic-bezier(0.16,1,0.3,1) 0.5s, opacity 0.8s ease 0.5s;
+}
+.card-wrapper.revealed .card-header { opacity: 1; transform: translateY(0); }
+
+/* ── Element 2: State name (hero) ── */
+.card-state-name {
+  font-family: 'Source Serif 4', serif; font-weight: 600;
+  font-size: 28px; line-height: 1.15; color: rgb(82,62,24);
+  letter-spacing: -0.02em;
+  margin-top: 6px;
+  opacity: 0; transform: translateY(6px);
+  transition: transform 1s cubic-bezier(0.16,1,0.3,1) 0.8s, opacity 1s ease 0.8s;
+}
+.card-wrapper.revealed .card-state-name { opacity: 1; transform: translateY(0); }
+
+/* ── Element 2b: Descriptor ── */
+.card-descriptor {
+  font-family: 'Source Serif 4', serif; font-style: italic; font-weight: 400;
+  font-size: 12px; line-height: 1.5; color: rgb(120,90,40);
+  max-width: 220px; margin-top: 8px;
+  opacity: 0; transform: translateY(4px);
+  transition: transform 0.9s cubic-bezier(0.16,1,0.3,1) 1.2s, opacity 0.9s ease 1.2s;
+}
+.card-wrapper.revealed .card-descriptor { opacity: 1; transform: translateY(0); }
+
+/* ── Element 3: Deep focus line ── */
+.card-focus-line {
+  font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 400;
+  font-size: 11px; line-height: 1.5; color: rgb(105,78,32);
+  letter-spacing: 0.01em; margin-top: 14px;
+  opacity: 0; transform: translateY(4px);
+  transition: transform 0.8s cubic-bezier(0.16,1,0.3,1) 1.6s, opacity 0.8s ease 1.6s;
+}
+.card-wrapper.revealed .card-focus-line { opacity: 1; transform: translateY(0); }
+
+.card-wrapper.no-transition, .card-wrapper.no-transition * { transition: none !important; }
+
+/* ═══ GIF ═══ */
+.gif-btn { position: absolute; bottom: 10px; right: 10px; width: 44px; height: 44px; border-radius: 50%; background: rgba(200,160,60,0.06); border: 1px solid rgba(130,95,35,0.18); display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 6; transition: background 0.2s, border-color 0.2s, opacity 0.6s ease 1.2s; backdrop-filter: blur(4px); opacity: 0; pointer-events: none; touch-action: manipulation; }
+.gif-btn:active { transform: scale(0.92); }
+.gif-btn svg { width: 13px; height: 13px; fill: none; stroke: rgb(130,95,35); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.gif-btn.recording { border-color: rgba(200,100,80,0.7); background: rgba(200,100,80,0.15); }
+.gif-progress { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 9px; letter-spacing: 0.12em; color: rgb(120,90,40); pointer-events: none; opacity: 0; transition: opacity 0.3s; white-space: nowrap; z-index: 6; }
+.gif-progress.visible { opacity: 1; }
+
+/* ═══ REVEAL ACTIONS ═══ */
+.reveal-actions {
+  display: flex; gap: 12px; margin-top: 16px; z-index: 2; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.6s ease 1.5s;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.reveal-actions.visible { opacity: 1; pointer-events: auto; }
+.reveal-action-btn { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10px; padding: 14px 20px; border-radius: 24px; border: 1px solid rgba(180,130,50,0.12); background: transparent; color: rgba(140,105,45,0.4); cursor: pointer; transition: all 0.3s; letter-spacing: 0.08em; touch-action: manipulation; }
+.reveal-action-btn:hover { border-color: rgba(180,130,50,0.25); color: rgba(140,105,45,0.6); }
+.reveal-action-btn:active { transform: scale(0.95); background: rgba(180,130,50,0.05); }
+
+/* ═══ SORT PHASE — Category pills, lock, pledge ═══ */
+.sort-section {
+  margin-top: -14px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  max-height: 0; opacity: 0; overflow: hidden;
+  transition: max-height 0.8s cubic-bezier(0.16,1,0.3,1), opacity 0.6s ease 0.1s;
+  pointer-events: none;
+  z-index: 2;
+}
+.sort-section.visible { max-height: 320px; opacity: 1; overflow: visible; pointer-events: auto; }
+
+.sort-prompt {
+  font-family: 'Source Serif 4', serif; font-style: italic;
+  font-size: 12px; line-height: 1.5; color: rgb(120,90,40);
+  text-align: center; margin-bottom: 0;
+}
+.sort-rationale {
+  font-family: 'Source Serif 4', serif; font-style: italic;
+  font-size: 10px; line-height: 1.5; color: rgba(120,90,40,0.6);
+  text-align: center; margin-bottom: 2px;
+}
+
+.category-pills {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 6px;
+  max-width: 280px;
+}
+
+.category-pill {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 10px; letter-spacing: 0.08em;
+  padding: 7px 12px; border-radius: 18px;
+  cursor: pointer; transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
+  user-select: none; -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.category-pill:active:not(.auto-assigned):not(.locked-out) { transform: scale(0.95); }
+.category-pill.promoted {
+  background: rgba(180,130,50,0.10);
+  border: 1.5px solid rgba(130,95,35,0.35);
+  color: rgb(95,72,28);
+}
+.category-pill.offered {
+  background: transparent;
+  border: 1px solid rgba(130,95,35,0.18);
+  color: rgb(120,90,40);
+}
+.category-pill.dimmed {
+  background: transparent;
+  border: 1px dashed rgba(130,95,35,0.10);
+  color: rgba(120,90,40,0.35);
+}
+.category-pill.always-on {
+  background: transparent;
+  border: 1px solid rgba(130,95,35,0.18);
+  color: rgb(120,90,40);
+  position: relative;
+}
+.category-pill.always-on::before {
+  content: '';
+  position: absolute; top: 6px; right: 6px;
+  width: 4px; height: 4px; border-radius: 50%;
+  background: rgba(200,160,60,0.5);
+  box-shadow: 0 0 6px rgba(200,160,60,0.3);
+  transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+.category-pill.always-on.selected::before {
+  background: rgba(244,239,229,0.6);
+  box-shadow: 0 0 6px rgba(244,239,229,0.3);
+}
+.category-pill.selected {
+  background: rgb(82,62,24);
+  border: 1px solid rgba(130,95,35,0.5);
+  color: #f4efe5;
+  transform: scale(1.02);
+  box-shadow: 0 2px 8px rgba(82,62,24,0.18);
+}
+.category-pill.locked-out {
+  opacity: 0; transform: scale(0.85);
+  pointer-events: none;
+  transition: opacity 0.9s cubic-bezier(0.4,0,0.2,1), transform 0.9s cubic-bezier(0.4,0,0.2,1);
+}
+.category-pill.auto-assigned {
+  background: rgb(82,62,24);
+  border: 1px solid rgba(130,95,35,0.5);
+  color: #f4efe5;
+  box-shadow: 0 2px 8px rgba(82,62,24,0.18);
+  pointer-events: none;
+}
+
+.pick-counter {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px; letter-spacing: 0.08em;
+  color: rgba(120,90,40,0.45);
+  margin-bottom: 2px;
+}
+
+.lock-btn {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 10px; letter-spacing: 0.08em;
+  padding: 7px 12px; border-radius: 18px;
+  border: 1px solid transparent;
+  background: transparent; color: transparent;
+  cursor: default; pointer-events: none;
+  opacity: 0;
+  margin-top: 10px; margin-bottom: 4px;
+  transition: opacity 0.4s cubic-bezier(0.16,1,0.3,1), background 0.3s, border-color 0.3s, color 0.3s;
+  touch-action: manipulation;
+}
+.lock-btn.ready:active { transform: scale(0.96); }
+.lock-btn.ready {
+  border-color: rgba(130,95,35,0.35);
+  background: rgba(180,130,50,0.10);
+  color: rgb(105,78,32);
+  cursor: pointer; pointer-events: auto;
+  opacity: 1;
+  animation: lock-pulse 2s ease-in-out infinite;
+}
+@keyframes lock-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(180,130,50,0); }
+  50% { box-shadow: 0 0 12px rgba(180,130,50,0.12); }
+}
+.lock-btn.locked {
+  border-color: rgba(130,95,35,0.25);
+  background: rgba(180,130,50,0.08);
+  color: rgb(120,90,40);
+  animation: none;
+}
+
+@keyframes card-press {
+  0% { transform: scale(1); }
+  40% { transform: scale(0.98); }
+  100% { transform: scale(1); }
+}
+.card-wrapper.locking {
+  animation: card-press 0.3s cubic-bezier(0.22,1,0.36,1);
+}
+
+/* ── Post-lock: selected categories as text (inside hero, below focus line) ── */
+.locked-choices {
+  display: flex; flex-wrap: wrap; justify-content: center;
+  gap: 6px 10px; max-width: 220px;
+  margin-top: 18px;
+  opacity: 0; transition: opacity 0.8s ease;
+}
+.locked-choice-item {
+  font-family: 'Source Serif 4', serif;
+  font-size: 11px; color: rgb(105,78,32);
+  letter-spacing: 0.02em; line-height: 1.4;
+  white-space: nowrap;
+}
+.locked-choices.visible { opacity: 1; }
+
+/* Selected pills dissolve after lock — soft fade into the card */
+.category-pill.locked-in {
+  opacity: 0; transform: scale(0.92);
+  pointer-events: none;
+  transition: opacity 1s cubic-bezier(0.4,0,0.2,1), transform 1s cubic-bezier(0.4,0,0.2,1);
+}
+
+
+.crisis-message {
+  font-family: 'Source Serif 4', serif; font-style: italic;
+  font-size: 13px; color: rgb(120,90,40);
+  text-align: center; line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+/* GIF visibility: only after lock */
+.card-wrapper.revealed .gif-btn { opacity: 0; pointer-events: none; }
+.card-wrapper.day-locked .gif-btn { opacity: 1; pointer-events: auto; transition: opacity 0.6s ease 0.5s; }
+</style>
+</head>
+<body>
+
+<!-- Joy brand SVG (reused) -->
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <symbol id="joy-logo" viewBox="0 0 1029 474">
+    <path d="M814.35 81.415C901.493 76.3322 861.463 160.222 867.463 175.722C873.463 191.222 891.963 185.222 897.963 172.722C903.963 160.222 905.803 89.7324 966.133 94.8153C1026.46 99.8981 1025.46 135.722 1026.96 146.722C1028.46 157.722 1023.96 228.722 1023.96 228.722C1023.96 228.722 1014.97 367.904 990.552 408.104C966.133 448.305 866.962 472.222 823.962 472.222C780.961 472.222 688.423 465.402 700.872 388.697C713.321 311.992 840.684 348.034 857.922 311.992C875.159 275.95 779.463 288.984 754.499 251.922C729.535 214.859 733.463 167.222 733.463 167.222C733.463 167.222 727.207 86.4979 814.35 81.415Z" fill="currentColor" stroke="currentColor" stroke-width="3"/>
+    <path d="M503.433 59.7238C555.635 58.7103 593.043 94.183 614.035 115.675C619.236 120.999 625.053 125.551 630.955 130.763C636.808 135.931 642.61 141.645 647.468 149.091C657.221 164.042 662.978 185.682 658.451 223.403C653.885 261.455 631.174 288.041 606.267 305.696C581.38 323.338 554.17 332.165 540.23 334.699C512.536 339.735 478.661 342.761 432.762 318.55C409.76 306.417 385.755 284.188 372.537 255.476C359.291 226.702 356.905 191.457 377.139 153.518C397.185 115.93 415.697 92.6889 435.794 78.7414C455.935 64.7633 477.512 60.2271 503.433 59.7238ZM509.921 170.727C504.684 170.828 500.177 171.746 495.95 174.668C491.767 177.56 488.014 182.31 484.031 189.748C479.86 197.539 480.338 204.847 483.094 210.81C485.821 216.71 490.75 221.251 495.479 223.736C504.83 228.649 511.795 228.035 517.399 227.02C520.072 226.536 526.655 225.479 532.792 222.64C538.915 219.807 544.974 215.017 545.951 206.902C546.874 199.242 545.349 193.838 542.97 189.78C540.642 185.81 537.479 183.156 535.533 181.172C533.314 178.909 529.558 176.264 525.083 174.207C520.601 172.147 515.278 170.623 509.921 170.727Z" fill="currentColor"/>
+    <path d="M127.461 89.2221C129.336 74.0326 130.89 0.788146 191.926 1.50523C252.962 2.22231 258.103 76.3009 262.796 118.482C267.49 160.664 280.518 291.886 267.49 343.304C254.462 394.722 183.478 453.759 141.706 459.847C99.9348 465.935 60.0407 449.845 60.0407 449.845C60.0407 449.845 -4.53812 423.722 1.96163 383.722C8.46138 343.722 41.0407 343.304 60.0407 343.304C79.0407 343.304 91.4611 343.222 98.9611 328.222C106.461 313.222 125.586 104.412 127.461 89.2221Z" fill="currentColor" stroke="currentColor" stroke-width="3"/>
+  </symbol>
+  <!-- Joy O blob thumb -->
+  <symbol id="joy-o-thumb" viewBox="0 0 71 67">
+    <path d="M33.4773 0.00507876C45.9792 -0.237324 54.8639 8.2549 59.6677 13.173C60.8211 14.3538 62.0607 15.3162 63.4822 16.5715C64.8541 17.783 66.2727 19.1721 67.4685 21.0051C69.8981 24.7296 71.2223 29.9882 70.1648 38.801C69.0674 47.945 63.605 54.2959 57.7293 58.4611C51.8735 62.612 45.477 64.6937 42.1375 65.301C35.6426 66.4819 27.5926 67.1949 16.7683 61.4855C11.3039 58.6032 5.60729 53.3343 2.45874 46.4953C-0.717831 39.595 -1.27391 31.1379 3.54273 22.1066C8.17167 13.4274 12.5187 7.91639 17.3425 4.56856C22.2106 1.19016 27.407 0.122949 33.4773 0.00507876Z" fill-rule="evenodd"/>
+  </symbol>
+</svg>
+
+<!-- ═══ SINGLE CARD ═══ -->
+<div class="card-scene">
+  <div class="card-glow">
+    <svg class="glow-heart" viewBox="0 0 100 90" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+      <defs><radialGradient id="heartGrad" cx="50%" cy="45%" r="55%">
+        <stop offset="0%" stop-color="rgba(230,160,60,0.85)"/>
+        <stop offset="40%" stop-color="rgba(210,130,40,0.4)"/>
+        <stop offset="75%" stop-color="rgba(190,100,30,0.12)"/>
+        <stop offset="100%" stop-color="rgba(170,80,20,0)"/>
+      </radialGradient></defs>
+      <path class="glow-heart-path" d="M50 80 C50 80 10 55 10 30 C10 18 18 10 28 10 C36 10 44 15 50 22 C56 15 64 10 72 10 C82 10 90 18 90 30 C90 55 50 80 50 80Z"/>
+    </svg>
+  </div>
+
+  <div class="card-wrapper" id="card" onclick="handleCardTap()">
+    <canvas id="orb-canvas"></canvas>
+    <div class="veil"></div>
+
+    <!-- Check-in Layer (semi-transparent, canvas shows through) -->
+    <div class="checkin-layer" id="checkin-layer">
+
+      <!-- Moment 0: Name -->
+      <div class="checkin-moment active" id="moment-name">
+        <div class="name-rings">
+          <div class="name-ring"></div>
+          <div class="name-ring"></div>
+          <div class="name-ring"></div>
+          <svg class="name-logo" viewBox="0 0 1029 474"><use href="#joy-logo"></use></svg>
+        </div>
+        <div class="greeting">Hello.</div>
+        <div class="greeting-sub">type your name</div>
+        <div class="name-row">
+          <input class="name-input" id="nameInput" type="text" placeholder="first name" maxlength="20" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false">
+          <button class="name-submit" id="nameSubmit">&#8594;</button>
+        </div>
+      </div>
+
+      <!-- Moment 1: Sleep -->
+      <div class="checkin-moment" id="moment-sleep" data-key="sleep">
+        <div class="question-label">how did you sleep?</div>
+        <div class="slider-wrap" data-key="sleep">
+          <div class="slider-track-container">
+            <div class="slider-track">
+              <div class="slider-fill"></div>
+            </div>
+            <div class="slider-thumb">
+              <svg viewBox="0 0 71 67"><use href="#joy-o-thumb"/></svg>
+            </div>
+            <div class="slider-tick-labels">
+              <span class="slider-tick-label" style="top:0%">5</span>
+              <span class="slider-tick-label" style="top:25%">4</span>
+              <span class="slider-tick-label" style="top:50%">3</span>
+              <span class="slider-tick-label" style="top:75%">2</span>
+              <span class="slider-tick-label" style="top:100%">1</span>
+            </div>
+          </div>
+          <div class="slider-readout">
+            <div class="slider-number">3</div>
+            <div class="slider-word">ok</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Moment 2: Mental -->
+      <div class="checkin-moment" id="moment-mental" data-key="mental">
+        <div class="question-label">mental energy?</div>
+        <div class="slider-wrap" data-key="mental">
+          <div class="slider-track-container">
+            <div class="slider-track">
+              <div class="slider-fill"></div>
+            </div>
+            <div class="slider-thumb">
+              <svg viewBox="0 0 71 67"><use href="#joy-o-thumb"/></svg>
+            </div>
+            <div class="slider-tick-labels">
+              <span class="slider-tick-label" style="top:0%">5</span>
+              <span class="slider-tick-label" style="top:25%">4</span>
+              <span class="slider-tick-label" style="top:50%">3</span>
+              <span class="slider-tick-label" style="top:75%">2</span>
+              <span class="slider-tick-label" style="top:100%">1</span>
+            </div>
+          </div>
+          <div class="slider-readout">
+            <div class="slider-number">3</div>
+            <div class="slider-word">steady</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Moment 3: Physical -->
+      <div class="checkin-moment" id="moment-physical" data-key="physical">
+        <div class="question-label">physical energy?</div>
+        <div class="slider-wrap" data-key="physical">
+          <div class="slider-track-container">
+            <div class="slider-track">
+              <div class="slider-fill"></div>
+            </div>
+            <div class="slider-thumb">
+              <svg viewBox="0 0 71 67"><use href="#joy-o-thumb"/></svg>
+            </div>
+            <div class="slider-tick-labels">
+              <span class="slider-tick-label" style="top:0%">5</span>
+              <span class="slider-tick-label" style="top:25%">4</span>
+              <span class="slider-tick-label" style="top:50%">3</span>
+              <span class="slider-tick-label" style="top:75%">2</span>
+              <span class="slider-tick-label" style="top:100%">1</span>
+            </div>
+          </div>
+          <div class="slider-readout">
+            <div class="slider-number">3</div>
+            <div class="slider-word">ok</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Moment 4: Mindset -->
+      <div class="checkin-moment" id="moment-mindset" data-key="mindset">
+        <div class="question-label">mindset?</div>
+        <div class="slider-wrap" data-key="mindset">
+          <div class="slider-track-container">
+            <div class="slider-track">
+              <div class="slider-fill"></div>
+            </div>
+            <div class="slider-thumb">
+              <svg viewBox="0 0 71 67"><use href="#joy-o-thumb"/></svg>
+            </div>
+            <div class="slider-tick-labels">
+              <span class="slider-tick-label" style="top:0%">5</span>
+              <span class="slider-tick-label" style="top:25%">4</span>
+              <span class="slider-tick-label" style="top:50%">3</span>
+              <span class="slider-tick-label" style="top:75%">2</span>
+              <span class="slider-tick-label" style="top:100%">1</span>
+            </div>
+          </div>
+          <div class="slider-readout">
+            <div class="slider-number">3</div>
+            <div class="slider-word">neutral</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Moment 5: Stress -->
+      <div class="checkin-moment" id="moment-stress" data-key="stress">
+        <div class="question-label">stress level?</div>
+        <div class="slider-wrap" data-key="stress">
+          <div class="slider-track-container">
+            <div class="slider-track">
+              <div class="slider-fill"></div>
+            </div>
+            <div class="slider-thumb">
+              <svg viewBox="0 0 71 67"><use href="#joy-o-thumb"/></svg>
+            </div>
+            <div class="slider-tick-labels">
+              <span class="slider-tick-label" style="top:0%">5</span>
+              <span class="slider-tick-label" style="top:25%">4</span>
+              <span class="slider-tick-label" style="top:50%">3</span>
+              <span class="slider-tick-label" style="top:75%">2</span>
+              <span class="slider-tick-label" style="top:100%">1</span>
+            </div>
+          </div>
+          <div class="slider-readout">
+            <div class="slider-number">2</div>
+            <div class="slider-word">mild</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Moment 6: Load -->
+      <div class="checkin-moment" id="moment-load" data-key="load">
+        <div class="question-label">today's demands?</div>
+        <div class="slider-wrap" data-key="load">
+          <div class="slider-track-container">
+            <div class="slider-track">
+              <div class="slider-fill"></div>
+            </div>
+            <div class="slider-thumb">
+              <svg viewBox="0 0 71 67"><use href="#joy-o-thumb"/></svg>
+            </div>
+            <div class="slider-tick-labels">
+              <span class="slider-tick-label" style="top:0%">5</span>
+              <span class="slider-tick-label" style="top:25%">4</span>
+              <span class="slider-tick-label" style="top:50%">3</span>
+              <span class="slider-tick-label" style="top:75%">2</span>
+              <span class="slider-tick-label" style="top:100%">1</span>
+            </div>
+          </div>
+          <div class="slider-readout">
+            <div class="slider-number">3</div>
+            <div class="slider-word">moderate</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress Dots -->
+      <div class="checkin-progress" id="checkin-progress">
+        <div class="progress-dot" data-idx="0"></div>
+        <div class="progress-dot" data-idx="1"></div>
+        <div class="progress-dot" data-idx="2"></div>
+        <div class="progress-dot" data-idx="3"></div>
+        <div class="progress-dot" data-idx="4"></div>
+        <div class="progress-dot" data-idx="5"></div>
+      </div>
+    </div>
+
+    <!-- Pre-content (anticipation — own identity, light mode) -->
+    <div class="pre-content" id="pre-content">
+      <div class="tap-prompt" id="tap-prompt">
+        <div class="tap-orb"><div class="tap-orb-ring"></div><div class="tap-orb-ring"></div><div class="tap-orb-ring"></div><div class="tap-orb-dot"></div></div>
+        <div class="tap-label">tap to reveal</div>
+      </div>
+      <div class="pre-date" id="card-date-front"></div>
+    </div>
+
+    <!-- Reveal content -->
+    <div class="reveal-content">
+      <div class="reveal-top-bar">
+        <div class="card-header" id="card-header"></div>
+      </div>
+      <div class="reveal-body">
+        <div class="reveal-hero" id="reveal-hero">
+          <div class="card-state-name" id="card-state-name"></div>
+          <div class="card-descriptor" id="card-descriptor"></div>
+          <div class="card-focus-line" id="card-focus-line"></div>
+          <div class="locked-choices" id="locked-choices"></div>
+        </div>
+        <!-- SORT PHASE (appears after reveal stagger) -->
+        <div class="sort-section" id="sort-section" onclick="event.stopPropagation()">
+          <div class="sort-prompt" id="sort-prompt"></div>
+          <div class="sort-rationale" id="sort-rationale"></div>
+          <div class="pick-counter" id="pick-counter"></div>
+          <div class="category-pills" id="category-pills"></div>
+          <button class="lock-btn" id="lock-btn" onclick="lockDay(); event.stopPropagation();">lock your day</button>
+        </div>
+      </div>
+      <div class="reveal-footer">
+        <svg class="overlay-logo" viewBox="0 0 1029 474" xmlns="http://www.w3.org/2000/svg">
+          <path d="M814.35 81.415C901.493 76.3322 861.463 160.222 867.463 175.722C873.463 191.222 891.963 185.222 897.963 172.722C903.963 160.222 905.803 89.7324 966.133 94.8153C1026.46 99.8981 1025.46 135.722 1026.96 146.722C1028.46 157.722 1023.96 228.722 1023.96 228.722C1023.96 228.722 1014.97 367.904 990.552 408.104C966.133 448.305 866.962 472.222 823.962 472.222C780.961 472.222 688.423 465.402 700.872 388.697C713.321 311.992 840.684 348.034 857.922 311.992C875.159 275.95 779.463 288.984 754.499 251.922C729.535 214.859 733.463 167.222 733.463 167.222C733.463 167.222 727.207 86.4979 814.35 81.415Z" fill="currentColor" stroke="currentColor" stroke-width="3"/>
+          <path d="M503.433 59.7238C555.635 58.7103 593.043 94.183 614.035 115.675C619.236 120.999 625.053 125.551 630.955 130.763C636.808 135.931 642.61 141.645 647.468 149.091C657.221 164.042 662.978 185.682 658.451 223.403C653.885 261.455 631.174 288.041 606.267 305.696C581.38 323.338 554.17 332.165 540.23 334.699C512.536 339.735 478.661 342.761 432.762 318.55C409.76 306.417 385.755 284.188 372.537 255.476C359.291 226.702 356.905 191.457 377.139 153.518C397.185 115.93 415.697 92.6889 435.794 78.7414C455.935 64.7633 477.512 60.2271 503.433 59.7238ZM509.921 170.727C504.684 170.828 500.177 171.746 495.95 174.668C491.767 177.56 488.014 182.31 484.031 189.748C479.86 197.539 480.338 204.847 483.094 210.81C485.821 216.71 490.75 221.251 495.479 223.736C504.83 228.649 511.795 228.035 517.399 227.02C520.072 226.536 526.655 225.479 532.792 222.64C538.915 219.807 544.974 215.017 545.951 206.902C546.874 199.242 545.349 193.838 542.97 189.78C540.642 185.81 537.479 183.156 535.533 181.172C533.314 178.909 529.558 176.264 525.083 174.207C520.601 172.147 515.278 170.623 509.921 170.727Z" fill="currentColor"/>
+          <path d="M127.461 89.2221C129.336 74.0326 130.89 0.788146 191.926 1.50523C252.962 2.22231 258.103 76.3009 262.796 118.482C267.49 160.664 280.518 291.886 267.49 343.304C254.462 394.722 183.478 453.759 141.706 459.847C99.9348 465.935 60.0407 449.845 60.0407 449.845C60.0407 449.845 -4.53812 423.722 1.96163 383.722C8.46138 343.722 41.0407 343.304 60.0407 343.304C79.0407 343.304 91.4611 343.222 98.9611 328.222C106.461 313.222 125.586 104.412 127.461 89.2221Z" fill="currentColor" stroke="currentColor" stroke-width="3"/>
+        </svg>
+        <div class="reveal-footer-url">feeljoy.ai</div>
+      </div>
+    </div>
+
+    <div class="gif-progress" id="gif-progress"></div>
+    <div class="gif-btn" id="gif-btn" title="Download video" onclick="startVideoCapture(event)">
+      <svg viewBox="0 0 24 24"><path d="M12 3v13M7 11l5 5 5-5"/><path d="M5 20h14"/></svg>
+    </div>
+    <div class="card-border"></div>
+  </div>
+</div>
+
+<div class="reveal-actions" id="reveal-actions">
+  <button class="reveal-action-btn" onclick="startOver()">start over</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+let P = { sleep:3, mental:3, physical:3, mindset:3, stress:2, load:3 };
+let userName = '';
+let orbRevealed = false, orbT = Math.random() * 1000, orbRunning = false;
+let bgT = 0, bgRunning = false;
+
+// Flow state
+const MOMENTS = ['name','sleep','mental','physical','mindset','stress','load'];
+let currentMoment = 0;
+let answeredCount = 0;
+let advancing = false;
+
+// Sort state
+let currentProfile = null;
+let profileCode = '';
+let categories = [];
+let selectedCount = 0;
+let dayLocked = false;
+
+// ═══════════════════════════════════════════════════════════════
+// PROFILE LOOKUP TABLE (v5 values)
+// ═══════════════════════════════════════════════════════════════
+const PROFILES = {
+  A0: { name:'Embers',            descriptor:'Cup of tea, getting through it.',                           dw:0,   block:0,  picks:0, diff:'none',   tier:'A0' },
+  A1: { name:'Candlelight',       descriptor:'Today\u2019s lit by candles.',                              dw:30,  block:45, picks:1, diff:'low',    tier:'A1' },
+  B1: { name:'Slow Burn',         descriptor:'Tempting to burn it all at once.',                          dw:60,  block:60, picks:2, diff:'low',    tier:'B'  },
+  B2: { name:'Drizzle',           descriptor:'Grey outside, cosy inside. Crack on.',                     dw:60,  block:60, picks:2, diff:'low',    tier:'B'  },
+  B3: { name:'Friction',          descriptor:'System\u2019s strained. Hold steady.',                     dw:45,  block:45, picks:2, diff:'low',    tier:'B'  },
+  B4: { name:'Tenterhooks',       descriptor:'Big day. Tank\u2019s low.',                                dw:55,  block:60, picks:2, diff:'medium', tier:'B'  },
+  C1: { name:'Blue Sky Day',      descriptor:'Not a cloud in sight.',                                    dw:150, block:90, picks:3, diff:'medium', tier:'C'  },
+  C2: { name:'Hungry',            descriptor:'Full plate. Big appetite.',                                dw:150, block:75, picks:3, diff:'medium', tier:'C'  },
+  C3: { name:'Frenetic',          descriptor:'All revved up. Where to?',                                 dw:105, block:75, picks:3, diff:'medium', tier:'C'  },
+  C4: { name:'Humming',           descriptor:'Everything, all at once.',                                 dw:120, block:75, picks:3, diff:'hard',   tier:'C'  },
+  D1: { name:'Magic',             descriptor:'A rare one. Enjoy it!',                                    dw:180, block:90, picks:3, diff:'hard',   tier:'D'  },
+  D2: { name:'Vooma',             descriptor:'Freewheeling downhill. No brakes.',                        dw:180, block:90, picks:4, diff:'hard',   tier:'D'  },
+  D3: { name:'Sparky',            descriptor:'Bright. Might combust.',                                   dw:120, block:90, picks:3, diff:'hard',   tier:'D'  },
+  D4: { name:'Too Hot To Handle', descriptor:'Recommended: welding gloves.',                             dw:150, block:90, picks:4, diff:'hard',   tier:'D'  },
+};
+
+// ═══════════════════════════════════════════════════════════════
+// PROFILE PALETTES — each profile maps to 3 hex colours
+// ═══════════════════════════════════════════════════════════════
+const PROFILE_PALETTES = {
+  A0: { primary:'#3D2B1F', secondary:'#1A1410', accent:'#7A3A1A' },
+  A1: { primary:'#D4A050', secondary:'#C88A30', accent:'#F0C870' },
+  B1: { primary:'#D4752A', secondary:'#B85C1A', accent:'#8B3A0F' },
+  B2: { primary:'#A8B8C8', secondary:'#8898A8', accent:'#C8D4DC' },
+  B3: { primary:'#B8762A', secondary:'#7A6A5A', accent:'#5A5A6A' },
+  B4: { primary:'#C8CC7A', secondary:'#A8A85A', accent:'#D8D4A0' },
+  C1: { primary:'#F5E040', secondary:'#F8C830', accent:'#FFFBE0' },
+  C2: { primary:'#D45A2A', secondary:'#E8782A', accent:'#F0A050' },
+  C3: { primary:'#C8E020', secondary:'#E8F040', accent:'#A0C010' },
+  C4: { primary:'#E0802A', secondary:'#D86830', accent:'#C8A048' },
+  D1: { primary:'#F0C030', secondary:'#E8A020', accent:'#A060C8' },
+  D2: { primary:'#00E8D0', secondary:'#00C8F0', accent:'#80F0E0' },
+  D3: { primary:'#F8F040', secondary:'#F8C020', accent:'#F06080' },
+  D4: { primary:'#F03010', secondary:'#F87030', accent:'#F8A040' },
+};
+
+// ═══════════════════════════════════════════════════════════════
+// SORT PROMPT (universal)
+// ═══════════════════════════════════════════════════════════════
+const SORT_PROMPT = 'What\u2019s on the cards today?';
+
+// ═══════════════════════════════════════════════════════════════
+// CATEGORIES + RECOMMENDATIONS
+// All 7 categories always shown. Recommended ones are visually
+// foregrounded and listed first. Non-recommended are fully available.
+// No lock, no grey-out. The user is sovereign.
+// ═══════════════════════════════════════════════════════════════
+const CAT_NAMES = ['Deep Work','Movement','Connection','Growth','Creative Play','Admin','Rest'];
+
+const RECOMMENDATIONS = {
+  A0: { recommended: ['Rest'],                                                       rationale: null },
+  A1: { recommended: ['Rest', 'Admin'],                                         rationale: 'It\u2019s a day to use kindly.' },
+  B1: { recommended: ['Deep Work', 'Growth'],                                        rationale: 'It\u2019s a focus day.' },
+  B2: { recommended: ['Admin', 'Connection'],                                   rationale: 'It\u2019s a hygge day.' },
+  B3: { recommended: ['Deep Work', 'Admin'],                                    rationale: 'It\u2019s a day for getting one hard thing done.' },
+  B4: { recommended: ['Admin', 'Rest'],                                         rationale: 'It\u2019s not an ideal day for deep focus.' },
+  C1: { recommended: ['Deep Work', 'Creative Play', 'Growth'],                       rationale: 'It\u2019s a day for the things that only you can do.' },
+  C2: { recommended: ['Deep Work', 'Growth', 'Creative Play'],                       rationale: 'It\u2019s a day for the ambitious stuff.' },
+  C3: { recommended: ['Creative Play', 'Movement'],                                  rationale: 'It\u2019s an expressive or physical day.' },
+  C4: { recommended: ['Deep Work', 'Growth', 'Admin'],                          rationale: 'It\u2019s a day for doing three things well.' },
+  D1: { recommended: ['Deep Work', 'Creative Play', 'Growth', 'Connection'],         rationale: 'Rare day. It\u2019s a day to make the most of.' },
+  D2: { recommended: ['Deep Work', 'Creative Play', 'Movement', 'Growth'],           rationale: 'It\u2019s a day where everything\u2019s on the cards.' },
+  D3: { recommended: ['Creative Play', 'Deep Work', 'Movement'],                     rationale: 'It\u2019s a day to channel, before it channels you.' },
+  D4: { recommended: ['Creative Play', 'Deep Work', 'Movement', 'Connection'],       rationale: 'It\u2019s a day where you can handle all of it.' },
+};
+
+// ═══════════════════════════════════════════════════════════════
+// PROFILE DETECTION
+// ═══════════════════════════════════════════════════════════════
+function getProfile(params) {
+  const { mental, physical, mindset, stress, load } = params;
+  const ec = 0.65 * mental + 0.35 * physical;
+  let ae = Math.min(5, Math.max(1, ec + (mindset - 3) * 0.25 + Math.max(0, (stress - 3)) * -0.5));
+  if (stress === 5) ae = Math.min(ae, 3.99);
+
+  // Determine tier
+  let tier;
+  if (ae < 1.5) tier = 'A0';
+  else if (ae < 2.0) tier = 'A1';
+  else if (ae < 3.0) tier = 'B';
+  else if (ae < 4.0) tier = 'C';
+  else tier = 'D';
+
+  // For A0/A1 no quadrant needed
+  if (tier === 'A0' || tier === 'A1') {
+    profileCode = tier;
+    currentProfile = PROFILES[tier];
+    return currentProfile;
+  }
+
+  // Determine quadrant for B/C/D
+  const stressHigh = stress >= 3;
+  const loadHigh = load >= 3;
+  let quad;
+  if (!stressHigh && !loadHigh) quad = 1;       // LL
+  else if (!stressHigh && loadHigh) quad = 2;    // LH
+  else if (stressHigh && !loadHigh) quad = 3;    // HL
+  else quad = 4;                                  // HH
+
+  profileCode = tier + quad;
+  currentProfile = PROFILES[profileCode];
+  return currentProfile;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CATEGORY SURFACING via RECOMMENDATIONS
+// All categories always shown. Recommended ones get 'promoted'.
+// ═══════════════════════════════════════════════════════════════
+function getCategories(code, params) {
+  const rec = RECOMMENDATIONS[code];
+  if (!rec) return [];
+
+  const recommended = new Set(rec.recommended || []);
+
+  // Build category objects — recommended = promoted, rest = offered
+  // A0 special case: Rest is auto-assigned, everything else offered
+  categories = CAT_NAMES.map(name => {
+    let status = 'offered';
+    if (code === 'A0' && name === 'Rest') status = 'auto-assigned';
+    else if (recommended.has(name)) status = 'promoted';
+    return { name, status, selected: status === 'auto-assigned' };
+  });
+
+  // Sort: recommended first (preserving order within RECOMMENDATIONS.recommended),
+  // then non-recommended in original CAT_NAMES order
+  const recOrder = rec.recommended || [];
+  categories.sort((a, b) => {
+    const aRec = recOrder.indexOf(a.name);
+    const bRec = recOrder.indexOf(b.name);
+    const aIdx = aRec >= 0 ? aRec : 100 + CAT_NAMES.indexOf(a.name);
+    const bIdx = bRec >= 0 ? bRec : 100 + CAT_NAMES.indexOf(b.name);
+    return aIdx - bIdx;
+  });
+
+  return categories;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SORT PHASE UI
+// ═══════════════════════════════════════════════════════════════
+function showSortPhase() {
+  const sortSection = document.getElementById('sort-section');
+  const pillsContainer = document.getElementById('category-pills');
+  const pickCounter = document.getElementById('pick-counter');
+  const sortPrompt = document.getElementById('sort-prompt');
+  const rationaleEl = document.getElementById('sort-rationale');
+  const lockBtn = document.getElementById('lock-btn');
+  const rec = RECOMMENDATIONS[profileCode];
+
+  // A0: auto-lock after 5s with Rest pre-selected
+  if (profileCode === 'A0') {
+    pillsContainer.innerHTML = '<div class="category-pill auto-assigned selected">Rest</div>';
+    sortPrompt.textContent = SORT_PROMPT;
+    rationaleEl.textContent = '';
+    pickCounter.textContent = '';
+    lockBtn.classList.add('ready');
+    sortSection.classList.add('visible');
+    setTimeout(() => { if (!dayLocked && profileCode === 'A0') lockDay(); }, 5000);
+    return;
+  }
+
+  // Render pills — recommended first (already sorted in getCategories)
+  pillsContainer.innerHTML = '';
+  selectedCount = 0;
+
+  categories.forEach((cat, idx) => {
+    const pill = document.createElement('div');
+    pill.className = 'category-pill ' + cat.status;
+    pill.textContent = cat.name;
+    pill.dataset.idx = idx;
+
+    if (cat.status === 'auto-assigned') {
+      pill.classList.add('selected');
+    }
+
+    if (cat.status !== 'auto-assigned') {
+      pill.addEventListener('click', (e) => { e.stopPropagation(); togglePill(pill, idx); });
+    }
+
+    pillsContainer.appendChild(pill);
+  });
+
+  // Universal sort prompt
+  sortPrompt.textContent = SORT_PROMPT;
+
+  // Rationale line — quiet italic, describes the day
+  rationaleEl.textContent = (rec && rec.rationale) ? rec.rationale : '';
+
+  updatePickCounter();
+  updateLockButton();
+
+  sortSection.classList.add('visible');
+}
+
+let pillDebounce = false;
+function togglePill(pillEl, idx) {
+  if (dayLocked || pillDebounce) return;
+  const cat = categories[idx];
+  if (cat.status === 'auto-assigned') return;
+
+  // Debounce — prevent double-tap toggling on/off
+  pillDebounce = true;
+  setTimeout(() => { pillDebounce = false; }, 150);
+
+  if (cat.selected) {
+    cat.selected = false;
+    selectedCount--;
+    pillEl.classList.remove('selected');
+  } else {
+    if (selectedCount >= currentProfile.picks) return;
+    cat.selected = true;
+    selectedCount++;
+    pillEl.classList.add('selected');
+    if (navigator.vibrate) navigator.vibrate(8);
+  }
+
+  updatePickCounter();
+  updateLockButton();
+}
+
+function updatePickCounter() {
+  const counter = document.getElementById('pick-counter');
+  if (!currentProfile || currentProfile.picks === 0) { counter.textContent = ''; return; }
+  counter.textContent = selectedCount + ' / ' + currentProfile.picks + ' cards';
+}
+
+function updateLockButton() {
+  const btn = document.getElementById('lock-btn');
+  if (!currentProfile) return;
+  if (selectedCount >= currentProfile.picks && currentProfile.picks > 0) {
+    btn.classList.add('ready');
+  } else {
+    btn.classList.remove('ready');
+  }
+}
+
+function lockDay() {
+  if (dayLocked) return;
+  dayLocked = true;
+
+  const card = document.getElementById('card');
+  const lockBtn = document.getElementById('lock-btn');
+  const pills = document.querySelectorAll('#category-pills .category-pill');
+
+  // Haptic
+  if (navigator.vibrate) navigator.vibrate(15);
+
+  // Card press animation
+  card.classList.add('locking');
+  setTimeout(() => card.classList.remove('locking'), 350);
+
+  // Phase 1 (0ms): Fade out sort prompt, rationale, counter, lock button
+  const sortPrompt = document.getElementById('sort-prompt');
+  const rationaleEl = document.getElementById('sort-rationale');
+  const pickCounter = document.getElementById('pick-counter');
+  sortPrompt.style.opacity = '0';
+  sortPrompt.style.transition = 'opacity 0.3s ease';
+  rationaleEl.style.opacity = '0';
+  rationaleEl.style.transition = 'opacity 0.3s ease';
+  pickCounter.style.opacity = '0';
+  pickCounter.style.transition = 'opacity 0.3s ease';
+  lockBtn.style.opacity = '0';
+  lockBtn.style.transition = 'opacity 0.3s ease';
+
+  // Phase 2: All unselected pills fade away together — quiet, not staggered
+  pills.forEach(pill => {
+    const idx = parseInt(pill.dataset.idx);
+    const cat = categories[idx];
+    if (cat && !cat.selected && cat.status !== 'auto-assigned') {
+      pill.classList.add('locked-out');
+    }
+  });
+
+  // Phase 3 (600ms): Selected pills fade + collapse sort section
+  setTimeout(() => {
+    pills.forEach(pill => {
+      const idx = parseInt(pill.dataset.idx);
+      const cat = categories[idx];
+      if (cat && (cat.selected || cat.status === 'auto-assigned')) {
+        pill.classList.add('locked-in');
+      }
+    });
+    document.getElementById('sort-section').classList.remove('visible');
+  }, 600);
+
+  // Phase 4 (800ms): Selected categories appear below focus line
+  setTimeout(() => {
+    const selected = categories.filter(c => c.selected);
+    const choicesEl = document.getElementById('locked-choices');
+    choicesEl.innerHTML = selected.map(c => `<span class="locked-choice-item">${c.name}</span>`).join('<span style="color:rgba(105,78,32,0.3)">\u00B7</span>');
+    choicesEl.classList.add('visible');
+  }, 800);
+
+  // Show GIF + reveal-actions
+  card.classList.add('day-locked');
+  setTimeout(() => {
+    document.getElementById('reveal-actions').classList.add('visible');
+  }, 1100);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WORD LABELS PER DIMENSION
+// ═══════════════════════════════════════════════════════════════
+const WORD_LABELS = {
+  sleep:    ['', 'terrible', 'poorly', 'ok', 'well', 'great'],
+  mental:   ['', 'empty', 'low', 'steady', 'good', 'sharp'],
+  physical: ['', 'drained', 'tired', 'ok', 'good', 'strong'],
+  mindset:  ['', 'flat', 'low', 'neutral', 'good', 'bright'],
+  stress:   ['', 'calm', 'mild', 'moderate', 'tense', 'overwhelmed'],
+  load:     ['', 'light', 'easy', 'moderate', 'busy', 'heavy']
+};
+
+// ═══════════════════════════════════════════════════════════════
+// PER-QUESTION COLOR MAP (for animated checkin backgrounds)
+// ═══════════════════════════════════════════════════════════════
+const CHECKIN_COLORS = {
+  name:     { hue: 30,  speed: 0.020, density: 5 },   // amber/orange — warm welcome
+  sleep:    { hue: 260, speed: 0.015, density: 4 },   // indigo — deep contemplative
+  mental:   { hue: 48,  speed: 0.028, density: 6 },   // golden — bright sparking thought
+  physical: { hue: 140, speed: 0.022, density: 5 },   // green — organic flowing vitality
+  mindset:  { hue: 210, speed: 0.020, density: 5 },   // blue — calm expansive sky
+  stress:   { hue: 10,  speed: 0.018, density: 6 },   // coral/red — warm tighter drift
+  load:     { hue: 25,  speed: 0.016, density: 5 }    // deep orange — weighty dense
+};
+
+let checkinHue = 30;
+let checkinHueTarget = 30;
+let checkinSpeed = 0.020;
+let checkinSpeedTarget = 0.020;
+let checkinDensity = 5;
+
+// ═══════════════════════════════════════════════════════════════
+// FORMULA
+// ═══════════════════════════════════════════════════════════════
+const DW_LOOKUP={A1:{LL:30,LH:30,HL:30,HH:30},B:{LL:60,LH:60,HL:45,HH:55},C:{LL:150,LH:150,HL:105,HH:120},D:{LL:180,LH:180,HL:120,HH:150}};
+const SLEEP_CEIL={1:0.55,2:0.70,3:0.82,4:0.93,5:1.00};
+
+function calcDeepWork(sl,me,ph,mi,st,lo){
+  const ec=0.65*me+0.35*ph;
+  let ae=Math.min(5,Math.max(1,ec+(mi-3)*0.25+Math.max(0,(st-3))*-0.5));
+  if(st===5)ae=Math.min(ae,3.99);
+  if(ae<1.5)return 0;
+  if(ae<2.0)return Math.round(30*SLEEP_CEIL[sl]);
+  let tier,floor;
+  if(ae<3.0){tier='B';floor=2;}else if(ae<4.0){tier='C';floor=3;}else{tier='D';floor=4;}
+  const tp=ae-floor,sh=(st-1)/4,lh=(lo-1)/4;
+  const qLL=(1-sh)*(1-lh),qLH=(1-sh)*lh,qHL=sh*(1-lh),qHH=sh*lh;
+  const blend=tr=>{const l=DW_LOOKUP[tr];return qLL*l.LL+qLH*l.LH+qHL*l.HL+qHH*l.HH;};
+  const pb=blend(tier),tiers=['B','C','D'],idx=tiers.indexOf(tier);
+  let pw,sb;
+  if(tp<0.5){pw=0.5+tp;sb=idx>0?blend(tiers[idx-1]):blend('A1');}
+  else{pw=0.5+(1-tp);sb=idx<2?blend(tiers[idx+1]):pb;}
+  return Math.min(180,Math.round((pw*pb+(1-pw)*sb)*SLEEP_CEIL[sl]));
+}
+
+function formatDW(m){if(m===0)return'0';const h=Math.floor(m/60),mm=m%60;if(h===0)return`${mm}m`;if(mm===0)return`${h}h`;return`${h}h${mm}`;}
+
+function formatDeepFocusLine(mins, code) {
+  if (code === 'A0') return null;
+  const time = formatDW(mins);
+  if (code === 'A1') return `Up to ${time} for deep focus, if the energy\u2019s there.`;
+  return `${time} to go deep on what matters most.`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DATE
+// ═══════════════════════════════════════════════════════════════
+const dateStr = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}).toUpperCase();
+
+// ═══════════════════════════════════════════════════════════════
+// PROGRESS DOTS
+// ═══════════════════════════════════════════════════════════════
+function updateDots() {
+  const dots = document.querySelectorAll('.progress-dot');
+  const qIndex = currentMoment - 1;
+  dots.forEach((dot, i) => {
+    dot.classList.remove('filled', 'current');
+    if (i < answeredCount) dot.classList.add('filled');
+    else if (i === qIndex) dot.classList.add('current');
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MOMENT TRANSITIONS
+// ═══════════════════════════════════════════════════════════════
+function showMoment(idx) {
+  const moments = document.querySelectorAll('.checkin-moment');
+  const current = document.querySelector('.checkin-moment.active');
+
+  if (current) {
+    current.classList.remove('active');
+    current.classList.add('exit-up');
+    current.addEventListener('animationend', function handler() {
+      current.removeEventListener('animationend', handler);
+      current.classList.remove('exit-up');
+    }, { once: true });
+  }
+
+  currentMoment = idx;
+
+  // Update checkin background color target
+  const momentKey = MOMENTS[idx];
+  const colorConfig = CHECKIN_COLORS[momentKey];
+  if (colorConfig) {
+    checkinHueTarget = colorConfig.hue;
+    checkinSpeedTarget = colorConfig.speed;
+    checkinDensity = colorConfig.density;
+  }
+
+  setTimeout(() => {
+    const next = moments[idx];
+    next.classList.add('enter-up');
+    next.classList.add('active');
+    next.addEventListener('animationend', function handler() {
+      next.removeEventListener('animationend', handler);
+      next.classList.remove('enter-up');
+    }, { once: true });
+
+    // Reset slider to default value for this moment
+    const wrap = next.querySelector('.slider-wrap');
+    if (wrap) {
+      const key = wrap.dataset.key;
+      const val = P[key];
+      updateSliderVisual(wrap, val);
+    }
+
+    updateDots();
+    advancing = false;
+  }, 250);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SLIDER VISUAL UPDATE
+// ═══════════════════════════════════════════════════════════════
+function updateSliderVisual(wrap, value) {
+  const key = wrap.dataset.key;
+  const track = wrap.querySelector('.slider-track');
+  const thumb = wrap.querySelector('.slider-thumb');
+  const fill = wrap.querySelector('.slider-fill');
+  const numEl = wrap.querySelector('.slider-number');
+  const wordEl = wrap.querySelector('.slider-word');
+  const trackH = track.getBoundingClientRect().height || 200;
+
+  // Value 5 = top (0%), value 1 = bottom (100%)
+  const pct = (5 - value) / 4;
+  const topPx = pct * trackH;
+
+  thumb.style.top = topPx + 'px';
+  fill.style.height = ((1 - pct) * 100) + '%';
+
+  // Fill color from checkin color map
+  const colorConfig = CHECKIN_COLORS[key];
+  if (colorConfig) {
+    fill.style.background = `hsla(${colorConfig.hue}, 30%, 55%, 0.10)`;
+  }
+
+  numEl.textContent = value;
+  wordEl.style.opacity = '0';
+  setTimeout(() => {
+    wordEl.textContent = WORD_LABELS[key][value];
+    wordEl.style.opacity = '1';
+  }, 80);
+
+  // Pop animation on number
+  numEl.classList.add('pop');
+  setTimeout(() => numEl.classList.remove('pop'), 250);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SLIDER INTERACTION — Pointer events with velocity + spring snap
+// ═══════════════════════════════════════════════════════════════
+let activeSlider = null;
+let activePointerId = null;
+let pointerHistory = [];
+let autoAdvanceTimer = null;
+
+function initSliders() {
+  document.querySelectorAll('.slider-wrap').forEach(wrap => {
+    wrap.addEventListener('pointerdown', onSliderDown);
+  });
+  // Global safety net: release stuck slider if pointer goes up anywhere
+  document.addEventListener('pointerup', () => { if (activeSlider) onSliderUp({}); });
+  document.addEventListener('pointercancel', () => { if (activeSlider) onSliderUp({}); });
+}
+
+function onSliderDown(e) {
+  if (advancing) return;
+  const wrap = e.currentTarget;
+  activeSlider = wrap;
+  activePointerId = e.pointerId;
+  pointerHistory = [];
+
+  wrap.setPointerCapture(e.pointerId);
+  wrap.addEventListener('pointermove', onSliderMove);
+  wrap.addEventListener('pointerup', onSliderUp);
+  wrap.addEventListener('pointercancel', onSliderUp);
+  wrap.addEventListener('lostpointercapture', onSliderUp);
+
+  // Disable spring transition during drag
+  const thumb = wrap.querySelector('.slider-thumb');
+  const fill = wrap.querySelector('.slider-fill');
+  thumb.style.transition = 'none';
+  fill.style.transition = 'none';
+
+  // Immediate move to tap position
+  moveSliderToPointer(wrap, e);
+}
+
+function onSliderMove(e) {
+  if (!activeSlider) return;
+  e.preventDefault(); // prevent residual scroll on Android
+  pointerHistory.push({ y: e.clientY, t: Date.now() });
+  if (pointerHistory.length > 5) pointerHistory.shift();
+  moveSliderToPointer(activeSlider, e);
+}
+
+function onSliderUp(e) {
+  if (!activeSlider) return;
+  const wrap = activeSlider;
+  activeSlider = null;
+
+  // Release pointer capture if still held
+  try { if (activePointerId != null) wrap.releasePointerCapture(activePointerId); } catch(_){}
+  activePointerId = null;
+
+  wrap.removeEventListener('pointermove', onSliderMove);
+  wrap.removeEventListener('pointerup', onSliderUp);
+  wrap.removeEventListener('pointercancel', onSliderUp);
+  wrap.removeEventListener('lostpointercapture', onSliderUp);
+
+  // Re-enable spring transition
+  const thumb = wrap.querySelector('.slider-thumb');
+  const fill = wrap.querySelector('.slider-fill');
+  thumb.style.transition = 'top 0.35s cubic-bezier(0.34,1.56,0.64,1)';
+  fill.style.transition = 'height 0.35s cubic-bezier(0.34,1.56,0.64,1)';
+
+  // Snap to nearest integer with velocity consideration
+  const key = wrap.dataset.key;
+  let snappedVal = P[key];
+
+  // Check for flick velocity
+  if (pointerHistory.length >= 2) {
+    const last = pointerHistory[pointerHistory.length - 1];
+    const prev = pointerHistory[Math.max(0, pointerHistory.length - 3)];
+    const dt = last.t - prev.t;
+    if (dt > 0 && dt < 200) {
+      const vy = (last.y - prev.y) / dt; // px/ms, negative = upward
+      if (Math.abs(vy) > 0.5) {
+        // Apply momentum: flick up = higher value, flick down = lower
+        const momentum = -vy * 1.5; // scale factor
+        snappedVal = Math.round(Math.min(5, Math.max(1, snappedVal + momentum)));
+      }
+    }
+  }
+
+  P[key] = snappedVal;
+  updateSliderVisual(wrap, snappedVal);
+
+  // Auto-advance after snap
+  answeredCount = currentMoment;
+  updateDots();
+
+  if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+  autoAdvanceTimer = setTimeout(() => {
+    advancing = true;
+    if (currentMoment < MOMENTS.length - 1) {
+      showMoment(currentMoment + 1);
+    } else {
+      goToPreReveal();
+    }
+  }, 1400);
+}
+
+function moveSliderToPointer(wrap, e) {
+  const track = wrap.querySelector('.slider-track');
+  const thumb = wrap.querySelector('.slider-thumb');
+  const fill = wrap.querySelector('.slider-fill');
+  const numEl = wrap.querySelector('.slider-number');
+  const wordEl = wrap.querySelector('.slider-word');
+  const key = wrap.dataset.key;
+
+  const rect = track.getBoundingClientRect();
+  const relY = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+  const pct = relY / rect.height; // 0 = top (value 5), 1 = bottom (value 1)
+
+  // Continuous position during drag
+  thumb.style.top = relY + 'px';
+  fill.style.height = ((1 - pct) * 100) + '%';
+
+  // Fill color
+  const colorConfig = CHECKIN_COLORS[key];
+  if (colorConfig) {
+    fill.style.background = `hsla(${colorConfig.hue}, 30%, 55%, 0.10)`;
+  }
+
+  // Derive snapped value for display
+  const continuous = 5 - pct * 4;
+  const snapped = Math.round(Math.min(5, Math.max(1, continuous)));
+
+  if (P[key] !== snapped) {
+    P[key] = snapped;
+    numEl.textContent = snapped;
+    wordEl.textContent = WORD_LABELS[key][snapped];
+    numEl.classList.add('pop');
+    setTimeout(() => numEl.classList.remove('pop'), 250);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NAME SUBMIT
+// ═══════════════════════════════════════════════════════════════
+function submitName() {
+  const inp = document.getElementById('nameInput');
+  const val = inp.value.trim();
+  if (!val) return;
+  inp.blur(); // dismiss mobile keyboard
+  userName = val;
+  document.getElementById('checkin-progress').classList.add('visible');
+  showMoment(1);
+}
+
+document.getElementById('nameSubmit').addEventListener('click', submitName);
+document.getElementById('nameInput').addEventListener('keydown', e => { if(e.key==='Enter') submitName(); });
+
+// ═══════════════════════════════════════════════════════════════
+// PRE-REVEAL — transition from check-in to reveal card
+// ═══════════════════════════════════════════════════════════════
+function goToPreReveal() {
+  answeredCount = 6;
+  updateDots();
+
+  // Compute profile + categories
+  const profile = getProfile(P);
+  getCategories(profileCode, P);
+
+  // Populate reveal data
+  const mins = calcDeepWork(P.sleep, P.mental, P.physical, P.mindset, P.stress, P.load);
+  const firstName = (userName || '').split(/[\s]+/)[0];
+  const shortDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  document.getElementById('card-header').textContent = firstName + ' \u00B7 ' + shortDate;
+  document.getElementById('card-state-name').textContent = profile.name;
+  document.getElementById('card-descriptor').textContent = profile.descriptor;
+  const focusLine = formatDeepFocusLine(mins, profileCode);
+  const focusEl = document.getElementById('card-focus-line');
+  focusEl.textContent = focusLine || '';
+  focusEl.style.display = focusLine ? '' : 'none';
+  document.getElementById('card-date-front').textContent = dateStr;
+
+  // Reset sort UI state
+  dayLocked = false;
+  selectedCount = 0;
+  document.getElementById('sort-section').classList.remove('visible');
+  document.getElementById('locked-choices').classList.remove('visible');
+  document.getElementById('locked-choices').textContent = '';
+  document.getElementById('category-pills').innerHTML = '';
+  document.getElementById('pick-counter').textContent = '';
+  const lockBtn = document.getElementById('lock-btn');
+  lockBtn.textContent = 'lock your day';
+  lockBtn.className = 'lock-btn';
+  lockBtn.style.display = '';
+  lockBtn.style.opacity = '';
+  lockBtn.style.transition = '';
+  const sortPromptEl = document.getElementById('sort-prompt');
+  sortPromptEl.style.opacity = '';
+  sortPromptEl.style.transition = '';
+  sortPromptEl.innerHTML = '';
+  const rationaleResetEl = document.getElementById('sort-rationale');
+  rationaleResetEl.style.opacity = '';
+  rationaleResetEl.style.transition = '';
+  rationaleResetEl.textContent = '';
+  const pickCounterEl = document.getElementById('pick-counter');
+  pickCounterEl.style.opacity = '';
+  pickCounterEl.style.transition = '';
+
+  // Reset reveal state
+  const card = document.getElementById('card');
+  card.classList.add('no-transition');
+  card.classList.remove('revealed', 'day-locked');
+  card.offsetHeight;
+  card.classList.remove('no-transition');
+  orbRevealed = false;
+
+  // Keep checkin bg running — shift to a rich amber anticipation hue
+  checkinHueTarget = 35;
+  checkinSpeedTarget = 0.012;
+  checkinDensity = 7;
+
+  // Fade out check-in layer but keep bg canvas showing through pre-content
+  document.getElementById('checkin-layer').classList.add('hidden');
+  document.getElementById('checkin-progress').classList.remove('visible');
+
+  // Show pre-content after checkin fades away
+  setTimeout(() => {
+    document.getElementById('pre-content').classList.add('visible');
+  }, 900);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// REVEAL (tap to reveal)
+// ═══════════════════════════════════════════════════════════════
+// Tap anywhere on the pre-content face to reveal (not just the small orb)
+document.getElementById('pre-content').addEventListener('click', function(e) {
+  e.stopPropagation();
+  handleReveal();
+});
+
+function handleReveal() {
+  if (orbRevealed) return;
+
+  // Start the dark orb
+  bgRunning = false;
+  sizeOrbCanvas();
+  if (!orbRunning) { orbRunning = true; drawOrb(); }
+
+  setTimeout(() => {
+    const card = document.getElementById('card');
+    card.classList.add('revealed');
+    orbRevealed = true;
+    // Don't show reveal-actions yet — they appear after lock
+  }, 150);
+
+  // After reveal stagger + reading time, show sort phase
+  setTimeout(() => {
+    showSortPhase();
+  }, 3500);
+}
+
+function handleCardTap() {
+  if (dayLocked) return;
+  // Don't toggle during pre-reveal (pre-content handles its own tap)
+  const pre = document.getElementById('pre-content');
+  if (pre.classList.contains('visible')) return;
+  if (document.getElementById('checkin-layer').classList.contains('hidden')) {
+    if (orbRevealed) {
+      const card = document.getElementById('card');
+      card.classList.add('no-transition');
+      card.classList.remove('revealed');
+      card.offsetHeight;
+      card.classList.remove('no-transition');
+      orbRevealed = false;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// START OVER
+// ═══════════════════════════════════════════════════════════════
+function startOver() {
+  const card = document.getElementById('card');
+
+  // Reset reveal state
+  card.classList.add('no-transition');
+  card.classList.remove('revealed', 'day-locked', 'locking');
+  card.offsetHeight;
+  card.classList.remove('no-transition');
+  orbRevealed = false;
+
+  // Stop the orb, reseed for new unique card
+  orbRunning = false;
+  orbT = Math.random() * 1000;
+
+  // Hide reveal actions
+  document.getElementById('reveal-actions').classList.remove('visible');
+
+  // Hide pre-content
+  document.getElementById('pre-content').classList.remove('visible');
+
+  // Reset sort state
+  dayLocked = false;
+  selectedCount = 0;
+  currentProfile = null;
+  profileCode = '';
+  categories = [];
+  document.getElementById('sort-section').classList.remove('visible');
+
+  document.getElementById('category-pills').innerHTML = '';
+  document.getElementById('locked-choices').classList.remove('visible');
+  document.getElementById('locked-choices').textContent = '';
+  document.getElementById('pick-counter').textContent = '';
+  const lockBtn = document.getElementById('lock-btn');
+  lockBtn.textContent = 'lock your day';
+  lockBtn.className = 'lock-btn';
+  lockBtn.style.display = '';
+  lockBtn.style.opacity = '';
+  lockBtn.style.transition = '';
+  const sortPromptEl = document.getElementById('sort-prompt');
+  sortPromptEl.style.opacity = '';
+  sortPromptEl.style.transition = '';
+  sortPromptEl.innerHTML = '';
+  const rationaleResetEl = document.getElementById('sort-rationale');
+  rationaleResetEl.style.opacity = '';
+  rationaleResetEl.style.transition = '';
+  rationaleResetEl.textContent = '';
+  const pickCounterEl = document.getElementById('pick-counter');
+  pickCounterEl.style.opacity = '';
+  pickCounterEl.style.transition = '';
+  // Clear inline tint from orb colour sync
+  const stateNameEl = document.getElementById('card-state-name');
+  if (stateNameEl) { stateNameEl.style.color = ''; stateNameEl.style.textShadow = ''; }
+  const focusLineEl = document.getElementById('card-focus-line');
+  if (focusLineEl) { focusLineEl.style.display = ''; }
+
+  // Reset parameters
+  P = { sleep:3, mental:3, physical:3, mindset:3, stress:2, load:3 };
+  answeredCount = 0;
+  currentMoment = 0;
+  advancing = false;
+
+  // Reset moments
+  document.querySelectorAll('.checkin-moment').forEach(m => m.classList.remove('active', 'exit-up', 'enter-up'));
+
+  // Show checkin layer
+  const checkinLayer = document.getElementById('checkin-layer');
+  checkinLayer.classList.remove('hidden');
+
+  // Restart checkin background
+  checkinHue = CHECKIN_COLORS.sleep.hue;
+  checkinHueTarget = CHECKIN_COLORS.sleep.hue;
+  checkinSpeed = CHECKIN_COLORS.sleep.speed;
+  checkinSpeedTarget = CHECKIN_COLORS.sleep.speed;
+  checkinDensity = CHECKIN_COLORS.sleep.density;
+  if (!bgRunning) { bgRunning = true; drawCheckinBg(); }
+
+  // Go to first question (skip name)
+  document.getElementById('moment-sleep').classList.add('active');
+  currentMoment = 1;
+  document.getElementById('checkin-progress').classList.add('visible');
+  updateDots();
+
+  // Reset sliders to default
+  document.querySelectorAll('.slider-wrap').forEach(wrap => {
+    const key = wrap.dataset.key;
+    updateSliderVisual(wrap, P[key]);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CANVAS SETUP
+// ═══════════════════════════════════════════════════════════════
+const orbCanvas = document.getElementById('orb-canvas'), orbCtx = orbCanvas.getContext('2d');
+
+function sizeOrbCanvas() {
+  const card = document.getElementById('card');
+  const rect = card.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  orbCanvas.width = Math.round(rect.width * dpr);
+  orbCanvas.height = Math.round(rect.height * dpr);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ANIMATED CHECKIN BACKGROUND ("screensaver")
+// Light-mode living color wash — soft glowing blobs on cream
+// ═══════════════════════════════════════════════════════════════
+function drawCheckinBg() {
+  const W = orbCanvas.width, H = orbCanvas.height;
+  if (W === 0 || H === 0) { if (bgRunning) requestAnimationFrame(drawCheckinBg); return; }
+
+  // Lerp hue and speed toward targets
+  checkinHue += (checkinHueTarget - checkinHue) * 0.04;
+  checkinSpeed += (checkinSpeedTarget - checkinSpeed) * 0.04;
+
+  // Background: warm cream base
+  orbCtx.fillStyle = 'hsl(38, 30%, 93%)';
+  orbCtx.fillRect(0, 0, W, H);
+
+  // Blobs — lava lamp quality: wobble edges, multi-harmonic breathing
+  orbCtx.save();
+  orbCtx.globalCompositeOperation = 'source-over';
+
+  for (let i = 0; i < checkinDensity; i++) {
+    const blobPhase = i * 1.618 + 0.3;
+    const hueOffset = (i - checkinDensity / 2) * 12;
+    const blobHue = checkinHue + hueOffset;
+
+    // Multi-harmonic breathing (matches reveal orb's DNA)
+    const breathe = Math.sin(bgT * 1.2 + i * 0.9) * 0.04
+                  + Math.sin(bgT * 0.7 + i * 1.4) * 0.03
+                  + Math.sin(bgT * 0.4 + i * 2.1) * 0.02;
+
+    // Multi-sine drift path — slow, organic
+    const driftX = Math.sin(bgT * 0.6 + blobPhase) * W * 0.30
+                 + Math.sin(bgT * 0.25 + blobPhase * 1.7) * W * 0.14
+                 + Math.cos(bgT * 0.4 + blobPhase * 0.6) * W * 0.06;
+    const driftY = Math.cos(bgT * 0.45 + blobPhase * 1.2) * H * 0.24
+                 + Math.sin(bgT * 0.2 + blobPhase * 0.9) * H * 0.10
+                 + Math.cos(bgT * 0.7 + blobPhase * 1.5) * H * 0.05;
+
+    const cx = W / 2 + driftX;
+    const cy = H / 2 + driftY;
+    const baseR = Math.max(W, H) * (0.22 + i * 0.035);
+    const rx = baseR * (1 + breathe);
+    const ry = baseR * (1 - breathe * 0.5);
+
+    const alpha = 0.07 + (i % 3) * 0.02;
+
+    // Wobble-edge blob (same 3-harmonic system as the reveal orb)
+    const wobble = 0.035;
+    orbCtx.beginPath();
+    for (let p = 0; p <= 48; p++) {
+      const angle = (p / 48) * Math.PI * 2;
+      const r = 1 + Math.sin(angle * 3 + bgT * 0.8 + i * 1.3) * wobble
+                  + Math.sin(angle * 5 - bgT * 0.6 + i * 2.1) * wobble * 0.4
+                  + Math.sin(angle * 2 + bgT * 0.3 + i * 0.7) * wobble * 0.3;
+      const px = cx + Math.cos(angle) * rx * r;
+      const py = cy + Math.sin(angle) * ry * r;
+      p === 0 ? orbCtx.moveTo(px, py) : orbCtx.lineTo(px, py);
+    }
+    orbCtx.closePath();
+
+    const grad = orbCtx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(rx, ry) * 1.1);
+    grad.addColorStop(0, `hsla(${blobHue}, 35%, 72%, ${alpha})`);
+    grad.addColorStop(0.35, `hsla(${blobHue + 8}, 28%, 76%, ${alpha * 0.65})`);
+    grad.addColorStop(0.65, `hsla(${blobHue + 16}, 20%, 82%, ${alpha * 0.25})`);
+    grad.addColorStop(1, `hsla(${blobHue + 24}, 15%, 88%, 0)`);
+    orbCtx.fillStyle = grad;
+    orbCtx.fill();
+  }
+
+  // Subtle warm specular highlight — echo of the reveal's specular
+  const specX = W * 0.5 + Math.sin(bgT * 0.4) * W * 0.08;
+  const specY = H * 0.38 + Math.cos(bgT * 0.3) * H * 0.05;
+  const specR = W * 0.15;
+  const sg = orbCtx.createRadialGradient(specX, specY, 0, specX, specY, specR);
+  sg.addColorStop(0, `hsla(${checkinHue + 10}, 40%, 85%, 0.06)`);
+  sg.addColorStop(0.5, `hsla(${checkinHue + 20}, 30%, 88%, 0.02)`);
+  sg.addColorStop(1, 'transparent');
+  orbCtx.fillStyle = sg;
+  orbCtx.fillRect(0, 0, W, H);
+
+  orbCtx.restore();
+
+  bgT += checkinSpeed;
+  if (bgRunning) requestAnimationFrame(drawCheckinBg);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GLOW CARD v3 — full-spectrum aurora renderer
+// Mindset → Hue RANGES (not single hue), Categories → Color
+// signatures + shape form language, Time of day → ambient feel
+// Real-time category influence during sort (not just post-lock)
+// ═══════════════════════════════════════════════════════════════
+
+// Shortest-path hue interpolation across 360° boundary
+function lerpHue(a,b,t){
+  let d=((b-a)%360+540)%360-180;
+  return((a+d*t)%360+360)%360;
+}
+
+// ═══ COLOUR UTILITIES ═══
+function hexToRgb(hex){
+  const n=parseInt(hex.replace('#',''),16);
+  return [(n>>16)&255,(n>>8)&255,n&255];
+}
+function rgbToHsl(r,g,b){
+  r/=255;g/=255;b/=255;
+  const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;
+  let h=0,s=0,l=(mx+mn)/2;
+  if(d>0){
+    s=l>0.5?d/(2-mx-mn):d/(mx+mn);
+    if(mx===r) h=((g-b)/d+(g<b?6:0))/6;
+    else if(mx===g) h=((b-r)/d+2)/6;
+    else h=((r-g)/d+4)/6;
+  }
+  return [h*360,s*100,l*100];
+}
+function lerpRgb(c1,c2,t){
+  return [c1[0]+(c2[0]-c1[0])*t, c1[1]+(c2[1]-c1[1])*t, c1[2]+(c2[2]-c1[2])*t];
+}
+
+// ═══ MINDSET TEMPERATURE SHIFT ═══
+// Post-process full-canvas rgba tint. 1=cool blue, 3=neutral, 5=warm amber.
+const MINDSET_TEMP_SHIFT=[
+  {r:80, g:110,b:180,maxAlpha:0.10}, // 1: cool blue
+  {r:100,g:130,b:160,maxAlpha:0.06}, // 2: cool-neutral
+  {r:0,  g:0,  b:0,  maxAlpha:0},    // 3: neutral (no shift)
+  {r:200,g:160,b:80, maxAlpha:0.06}, // 4: warm-neutral
+  {r:220,g:150,b:50, maxAlpha:0.10}, // 5: warm amber
+];
+
+// ═══ CATEGORY SHAPE MODIFIERS ═══
+// Form language: how each category alters layer geometry (shape only, no colour)
+const CATEGORY_SHAPES={
+  'Deep Work':     {type:'grid',      snapStrength:0.2,  scaleDown:0.9,  breatheMult:0.6, speedMult:0.7, pulseMult:0.5, stackOffset:0,    amplitudeReduce:0.2, quantize:0.2},
+  'Movement':      {type:'diagonal',  rotationBias:0.15, driftMult:1.3,  breatheMult:1.4, speedMult:1.3, pulseMult:1.0, stackOffset:0,    amplitudeReduce:0, quantize:0},
+  'Connection':    {type:'scatter',   bonusLayers:3,     scaleDown:0.4,  breatheMult:1.0, speedMult:0.9, pulseMult:1.3, stackOffset:0,    amplitudeReduce:0, quantize:0},
+  'Growth':        {type:'ascend',    yBias:-0.15,       stretchY:1.2,   breatheMult:1.1, speedMult:1.0, pulseMult:1.0, stackOffset:0.08, amplitudeReduce:0, quantize:0},
+  'Creative Play': {type:'organic',   scaleMult:1.35,    wobbleMult:1.6, breatheMult:1.2, speedMult:1.1, pulseMult:1.5, stackOffset:0,    amplitudeReduce:0, quantize:0},
+  'Admin':    {type:'grid',      snapStrength:0.3,  scaleDown:0.8,  breatheMult:0.7, speedMult:0.8, pulseMult:0.6, stackOffset:0,    amplitudeReduce:0, quantize:0.3},
+  'Rest':          {type:'minimal',   layerReduction:0.4,alphaMult:0.7,  breatheMult:0.5, speedMult:0.5, pulseMult:0.4, stackOffset:0,    amplitudeReduce:0.4, quantize:0},
+};
+
+// ═══ TIME OF DAY AMBIENT ═══
+function getTimeAmbient(){
+  const h=new Date().getHours();
+  if(h>=5&&h<10)  return {hueShift:15, brightMod:0.04, wash:[220,185,100],washA:0.04, label:'morning'};
+  if(h>=10&&h<17) return {hueShift:0,  brightMod:0,    wash:[0,0,0],      washA:0,    label:'afternoon'};
+  if(h>=17&&h<21) return {hueShift:-12,brightMod:-0.06, wash:[100,90,140], washA:0.035,label:'evening'};
+  return                  {hueShift:-25,brightMod:-0.12, wash:[40,50,90],   washA:0.06, label:'night'};
+}
+
+function drawOrb(){
+  const W=orbCanvas.width,H=orbCanvas.height;
+  if(W===0||H===0){if(orbRunning)requestAnimationFrame(drawOrb);return;}
+
+  // Normalize 1-5 → 0-1
+  const sleepN=(P.sleep-1)/4;
+  const mentalN=(P.mental-1)/4;
+  const physN=(P.physical-1)/4;
+  const mindsetN=(P.mindset-1)/4;
+  const stressN=(P.stress-1)/4;
+  const loadN=(P.load-1)/4;
+
+  const timeAmb=getTimeAmbient();
+
+  // ═══ PROFILE PALETTE (v4: profile = colour) ═══
+  const palette=PROFILE_PALETTES[profileCode]||PROFILE_PALETTES.A0;
+  const palPri=hexToRgb(palette.primary);
+  const palSec=hexToRgb(palette.secondary);
+  const palAcc=hexToRgb(palette.accent);
+  const palPriHsl=rgbToHsl(palPri[0],palPri[1],palPri[2]);
+  const palSecHsl=rgbToHsl(palSec[0],palSec[1],palSec[2]);
+  const palAccHsl=rgbToHsl(palAcc[0],palAcc[1],palAcc[2]);
+
+  // ═══ SLEEP → CLARITY / BLUR (0-8px) ═══
+  const blurPx=(1-sleepN)*8;
+
+  // ═══ MENTAL ENERGY → COLOR SATURATION (0.40-1.20) ═══
+  // Sleep caps mental saturation at 80% when sleep < half
+  const SAT_STEPS=[0.40,0.55,0.75,0.95,1.20];
+  const satIdx=mentalN*4;
+  const sLow=Math.floor(satIdx),sHigh=Math.min(4,sLow+1);
+  const satBase=SAT_STEPS[sLow]+(SAT_STEPS[sHigh]-SAT_STEPS[sLow])*(satIdx-sLow);
+  const sleepCap=sleepN<0.5?0.80:0.80+sleepN*0.20;
+  const effectiveSat=Math.min(satBase,satBase*sleepCap);
+
+  // ═══ PHYSICAL ENERGY → LIGHT INTENSITY + BLOOM ═══
+  const alphaMult=0.38+physN*0.62;
+  const bloomRadius=physN>0.6?(physN-0.6)*0.5:0; // bloom kicks in at high physical
+
+  // ═══ STRESS → TURBULENCE (freq 2-8, amp 0.01-0.19) ═══
+  const turbFreq=2+stressN*6;
+  const turbAmp=0.01+stressN*0.18;
+
+  // ═══ CATEGORY SHAPE COMPOSITES (shape only, no colour) ═══
+  const selCats=categories.filter(c=>c.selected);
+  const catCount=selCats.length;
+  const isDominant=catCount<=2;
+  const shapeDomBoost=isDominant?1.5:1;
+  let shapeRotBias=0, shapeDriftMult=1, shapeScaleMult=1, shapeWobbleMult=1;
+  let shapeYBias=0, shapeStretchY=1, shapeSnapStr=0, shapeAlphaMult=1;
+  let bonusScatterLayers=0;
+  let shapeBreatheMult=1, shapeSpeedMult=1, shapePulseMult=1;
+  let shapeStackOffset=0, shapeAmplitudeReduce=0, shapeQuantize=0;
+  if(catCount>0){
+    selCats.forEach(c=>{
+      const s=CATEGORY_SHAPES[c.name];
+      if(!s) return;
+      // Accumulate new shape properties
+      shapeBreatheMult*=1+(s.breatheMult-1)*shapeDomBoost;
+      shapeSpeedMult*=1+(s.speedMult-1)*shapeDomBoost;
+      shapePulseMult*=1+(s.pulseMult-1)*shapeDomBoost;
+      shapeStackOffset+=s.stackOffset*shapeDomBoost;
+      shapeAmplitudeReduce=Math.max(shapeAmplitudeReduce,s.amplitudeReduce);
+      shapeQuantize=Math.max(shapeQuantize,s.quantize);
+      // Legacy shape properties
+      if(s.type==='diagonal')  {shapeRotBias+=s.rotationBias*shapeDomBoost;shapeDriftMult*=1+(s.driftMult-1)*shapeDomBoost;}
+      if(s.type==='scatter')   bonusScatterLayers+=Math.round(s.bonusLayers*shapeDomBoost);
+      if(s.type==='ascend')    {shapeYBias+=s.yBias*shapeDomBoost;shapeStretchY*=1+(s.stretchY-1)*shapeDomBoost;}
+      if(s.type==='organic')   {shapeScaleMult*=1+(s.scaleMult-1)*shapeDomBoost;shapeWobbleMult*=1+(s.wobbleMult-1)*shapeDomBoost;}
+      if(s.type==='grid')      shapeSnapStr=Math.max(shapeSnapStr,s.snapStrength*shapeDomBoost);
+      if(s.type==='minimal')   shapeAlphaMult*=s.alphaMult;
+    });
+  }
+
+  // ═══ LOAD → DENSITY (3-14 layers + cream factor) ═══
+  let layerCount=Math.round(3+loadN*11);
+  // stress+load both high → additive layers
+  if(stressN>0.5&&loadN>0.5) layerCount+=Math.round((stressN+loadN-1)*3);
+  // Rest reduces layers
+  if(selCats.some(c=>c.name==='Rest'&&c.selected))
+    layerCount=Math.round(layerCount*CATEGORY_SHAPES['Rest'].layerReduction+layerCount*(1-CATEGORY_SHAPES['Rest'].layerReduction));
+  // Cream factor: low load = more cream visible through
+  const creamFactor=1-loadN*0.7; // 1.0 at load=1, 0.3 at load=5
+
+  // ═══ DARKNESS (gentle — don't suppress the magic) ═══
+  const darkBase=stressN*0.05+loadN*0.04;
+  const darkBoost=(stressN>0.5&&loadN>0.5)?stressN*loadN*0.05:0;
+  const totalDarkness=darkBase+darkBoost;
+
+  // ═══ BACKGROUND: WARM CREAM + load cream factor ═══
+  const bgL=93+timeAmb.brightMod*100*0.3;
+  orbCtx.fillStyle=`hsl(38, 30%, ${bgL.toFixed(1)}%)`;
+  orbCtx.fillRect(0,0,W,H);
+
+  // ═══ MAIN AURORA LAYERS (palette-driven) ═══
+  orbCtx.save();
+  if(blurPx>0.5) orbCtx.filter=`blur(${Math.min(blurPx,20).toFixed(1)}px)`;
+  orbCtx.globalCompositeOperation='multiply';
+
+  const totalLayers=layerCount+bonusScatterLayers;
+
+  for(let i=0;i<totalLayers;i++){
+    const isScatter=i>=layerCount;
+    const layerT=i/Math.max(1,totalLayers-1);
+    const depth=1-layerT*0.6;
+    let scale=0.35+depth*0.5;
+
+    if(isScatter) scale*=0.4;
+    scale*=shapeScaleMult;
+
+    // ═══ Per-layer colour: interpolate through 3-colour palette by depth ═══
+    // 0→primary, 0.5→secondary, 1→accent
+    let layerRgb;
+    if(layerT<0.5){
+      layerRgb=lerpRgb(palPri,palSec,layerT*2);
+    } else {
+      layerRgb=lerpRgb(palSec,palAcc,(layerT-0.5)*2);
+    }
+    const layerHsl=rgbToHsl(layerRgb[0],layerRgb[1],layerRgb[2]);
+
+    // Apply saturation modifier from mental energy
+    const sat=Math.max(15,layerHsl[1]*effectiveSat);
+    const lightL=Math.max(18,layerHsl[2]+physN*12+timeAmb.brightMod*100*0.5);
+
+    // Multi-harmonic breathing (shape-modulated)
+    const ampReduce=1-shapeAmplitudeReduce;
+    const breathe=(Math.sin(orbT*1.2*shapeSpeedMult+i*0.9)*0.06
+                 +Math.sin(orbT*0.7*shapeSpeedMult+i*1.4)*0.04
+                 +Math.sin(orbT*0.4*shapeSpeedMult+i*2.1)*physN*0.05)*shapeBreatheMult*ampReduce;
+    let scaleX=scale*(1+breathe);
+    let scaleY=scale*(1-breathe*0.3)*shapeStretchY;
+
+    // Stress displacement (turbulence-driven)
+    const sOffX=Math.sin(orbT*0.7+i*2.1)*stressN*0.10*W*0.15;
+    const sOffY=Math.cos(orbT*0.55+i*1.7)*stressN*0.10*H*0.12;
+
+    // Multi-sine drift path
+    let cx=W/2,cy=H/2;
+    cx+=Math.sin(i*1.1+orbT*0.16*shapeSpeedMult)*W*0.38*shapeDriftMult+Math.cos(i*0.7+orbT*0.1*shapeSpeedMult)*W*0.15;
+    cy+=Math.cos(i*0.9+orbT*0.12*shapeSpeedMult)*H*0.34+Math.sin(i*0.5+orbT*0.07*shapeSpeedMult)*H*0.12;
+
+    // Growth: horizontal band stacking
+    if(shapeStackOffset>0) cy+=shapeStackOffset*H*i/totalLayers;
+
+    // Category shape: Growth ascend bias
+    cy+=shapeYBias*H;
+
+    // Category shape: grid snap + quantize (Admin)
+    if(shapeSnapStr>0||shapeQuantize>0){
+      const gridSize=W*0.2;
+      const snapCx=Math.round(cx/gridSize)*gridSize;
+      const snapCy=Math.round(cy/gridSize)*gridSize;
+      const snapAmt=Math.max(shapeSnapStr,shapeQuantize);
+      cx+=(snapCx-cx)*snapAmt;
+      cy+=(snapCy-cy)*snapAmt;
+    }
+
+    // Category shape: diagonal rotation (Movement)
+    if(shapeRotBias!==0){
+      const rotAngle=shapeRotBias+Math.sin(orbT*0.15*shapeSpeedMult+i*0.5)*0.03;
+      const offX=cx-W/2, offY=cy-H/2;
+      cx=W/2+offX*Math.cos(rotAngle)-offY*Math.sin(rotAngle);
+      cy=H/2+offX*Math.sin(rotAngle)+offY*Math.cos(rotAngle);
+    }
+
+    // Scatter layers: random-ish positions (Connection)
+    if(isScatter){
+      const si=i-layerCount;
+      cx=W*(0.15+(si*0.618%1)*0.7)+Math.sin(orbT*0.12*shapeSpeedMult+si*2.3)*W*0.04;
+      cy=H*(0.15+(si*0.382%1)*0.7)+Math.cos(orbT*0.09*shapeSpeedMult+si*1.9)*H*0.03;
+    }
+
+    cx+=sOffX;cy+=sOffY;
+
+    const rx=W*0.48*scaleX,ry=H*0.40*scaleY;
+
+    // Alpha: palette-driven presence (floor raised so orb always visible)
+    const centerAlpha=(0.38+physN*0.40)*depth*(0.75+sleepN*0.25)*alphaMult*shapeAlphaMult;
+
+    // Radial gradient — palette colours with sat/brightness modifiers
+    const grad=orbCtx.createRadialGradient(cx,cy-ry*0.1,0,cx,cy,Math.max(rx,ry)*(1.1+bloomRadius));
+    grad.addColorStop(0,  `hsla(${layerHsl[0]},${Math.min(100,sat+30)}%,${Math.min(95,lightL+8)}%,${centerAlpha})`);
+    grad.addColorStop(0.2,`hsla(${layerHsl[0]},${Math.min(100,sat+26)}%,${Math.min(95,lightL+4)}%,${centerAlpha*0.88})`);
+    grad.addColorStop(0.5,`hsla(${palSecHsl[0]},${Math.min(100,sat+18)}%,${Math.min(95,lightL)}%,${centerAlpha*0.52})`);
+    grad.addColorStop(0.78,`hsla(${palAccHsl[0]},${Math.min(100,sat+8)}%,${Math.max(5,lightL-2)}%,${centerAlpha*0.16})`);
+    grad.addColorStop(1,  `hsla(${palAccHsl[0]},${sat}%,${Math.max(5,lightL-4)}%,0)`);
+
+    // Wobble edges (turbulence freq+amp from stress × category)
+    const wobbleAmp=turbAmp*shapeWobbleMult;
+    orbCtx.beginPath();
+    for(let p=0;p<=64;p++){
+      const angle=(p/64)*Math.PI*2;
+      const r=1+Math.sin(angle*turbFreq+orbT*0.8+i*1.3)*wobbleAmp
+              +Math.sin(angle*(turbFreq+2)-orbT*0.6+i*2.1)*wobbleAmp*0.4
+              +Math.sin(angle*2+orbT*0.3+i*0.7)*wobbleAmp*0.3;
+      p===0?orbCtx.moveTo(cx+Math.cos(angle)*rx*r,cy+Math.sin(angle)*ry*r)
+           :orbCtx.lineTo(cx+Math.cos(angle)*rx*r,cy+Math.sin(angle)*ry*r);
+    }
+    orbCtx.closePath();orbCtx.fillStyle=grad;orbCtx.fill();
+  }
+  orbCtx.restore();
+
+  // ═══ LUMINOUS HIGHLIGHT PASS (screen blend — palette HSL) ═══
+  orbCtx.save();
+  orbCtx.globalCompositeOperation='screen';
+  const hlCount=Math.max(3,Math.round(totalLayers*0.4));
+  for(let h=0;h<hlCount;h++){
+    const ht=h/Math.max(1,hlCount-1);
+    const hx=W/2+Math.sin(h*1.7+orbT*0.18*shapeSpeedMult)*W*0.25;
+    const hy=H/2+Math.cos(h*1.3+orbT*0.13*shapeSpeedMult)*H*0.20+shapeYBias*H*0.5;
+    const hr=W*(0.22+ht*0.18);
+    // Interpolate highlight hue through palette
+    const hlHue=ht<0.5?lerpHue(palPriHsl[0],palSecHsl[0],ht*2):lerpHue(palSecHsl[0],palAccHsl[0],(ht-0.5)*2);
+    const hlSat=Math.max(10,palPriHsl[1]*effectiveSat);
+    const hlAlpha=(0.28+physN*0.30)*(0.65+sleepN*0.35)*shapeAlphaMult;
+    const hg=orbCtx.createRadialGradient(hx,hy,0,hx,hy,hr);
+    hg.addColorStop(0,`hsla(${hlHue},${Math.min(100,hlSat+22)}%,${32+physN*14}%,${hlAlpha})`);
+    hg.addColorStop(0.35,`hsla(${hlHue},${Math.min(100,hlSat+16)}%,${26+physN*12}%,${hlAlpha*0.55})`);
+    hg.addColorStop(0.7,`hsla(${palAccHsl[0]},${Math.min(100,hlSat+8)}%,${22+physN*10}%,${hlAlpha*0.18})`);
+    hg.addColorStop(1,'transparent');
+    orbCtx.fillStyle=hg;
+    orbCtx.fillRect(hx-hr,hy-hr,hr*2,hr*2);
+  }
+  orbCtx.restore();
+
+  // ═══ ACCENT WASH (overlay blend — palette accent) ═══
+  orbCtx.save();
+  orbCtx.globalCompositeOperation='overlay';
+  const awx=W*0.5+Math.sin(orbT*0.22)*W*0.18;
+  const awy=H*0.45+Math.cos(orbT*0.17)*H*0.14;
+  const awr=W*0.40;
+  const awAlpha=(0.12+mentalN*0.10)*(0.7+sleepN*0.3);
+  const awg=orbCtx.createRadialGradient(awx,awy,0,awx,awy,awr);
+  awg.addColorStop(0,`hsla(${palAccHsl[0]},${Math.min(100,palAccHsl[1]*effectiveSat+25)}%,50%,${awAlpha})`);
+  awg.addColorStop(0.45,`hsla(${palAccHsl[0]},${Math.min(100,palAccHsl[1]*effectiveSat+15)}%,46%,${awAlpha*0.45})`);
+  awg.addColorStop(1,'transparent');
+  orbCtx.fillStyle=awg;
+  orbCtx.fillRect(0,0,W,H);
+  orbCtx.restore();
+
+  // ═══ SPECULAR HIGHLIGHT (screen — palette primary warm) ═══
+  orbCtx.save();
+  orbCtx.globalCompositeOperation='screen';
+  const lx=W*0.5+Math.sin(orbT*0.5)*physN*W*0.14;
+  const ly=H*0.4+Math.cos(orbT*0.35)*physN*H*0.08;
+  const specSize=(18+physN*48)*(W/280);
+  const specHue=lerpHue(palPriHsl[0],55,0.35);
+  const specA=(0.20+physN*0.30)*alphaMult;
+  const sg=orbCtx.createRadialGradient(lx,ly,0,lx,ly,specSize);
+  sg.addColorStop(0,`hsla(${specHue},24%,94%,${specA})`);
+  sg.addColorStop(0.25,`hsla(${specHue},18%,90%,${specA*0.6})`);
+  sg.addColorStop(0.55,`hsla(40,20%,86%,${(0.04+physN*0.06)*alphaMult})`);
+  sg.addColorStop(1,'transparent');
+  orbCtx.fillStyle=sg;orbCtx.fillRect(0,0,W,H);
+  orbCtx.restore();
+
+  // ═══ STRESS + LOAD DARKNESS OVERLAY ═══
+  orbCtx.save();
+  orbCtx.globalCompositeOperation='source-over';
+  if(totalDarkness>0.01){
+    orbCtx.fillStyle=`rgba(30,25,20,${totalDarkness})`;
+    orbCtx.fillRect(0,0,W,H);
+  }
+
+  // ═══ LOAD VIGNETTE (subtle — preserve luminosity) ═══
+  if(loadN>0.4){
+    const vigI=(loadN-0.4)*0.18;
+    const vg=orbCtx.createRadialGradient(W/2,H/2,W*0.2,W/2,H/2,W*0.7);
+    vg.addColorStop(0,'transparent');
+    vg.addColorStop(0.7,`rgba(25,20,15,${vigI*0.5})`);
+    vg.addColorStop(1,`rgba(25,20,15,${vigI})`);
+    orbCtx.fillStyle=vg;orbCtx.fillRect(0,0,W,H);
+  }
+
+  // ═══ TIME OF DAY COLOR WASH ═══
+  if(timeAmb.washA>0){
+    orbCtx.fillStyle=`rgba(${timeAmb.wash[0]},${timeAmb.wash[1]},${timeAmb.wash[2]},${timeAmb.washA})`;
+    orbCtx.fillRect(0,0,W,H);
+  }
+
+  // ═══ MINDSET POST-RENDER TEMPERATURE SHIFT ═══
+  // Interpolate between adjacent MINDSET_TEMP_SHIFT stops
+  const mindsetIdx=mindsetN*4;
+  const mLow=Math.floor(mindsetIdx), mHigh=Math.min(4,mLow+1);
+  const mFrac=mindsetIdx-mLow;
+  const tsLow=MINDSET_TEMP_SHIFT[mLow], tsHigh=MINDSET_TEMP_SHIFT[mHigh];
+  const tsR=tsLow.r+(tsHigh.r-tsLow.r)*mFrac;
+  const tsG=tsLow.g+(tsHigh.g-tsLow.g)*mFrac;
+  const tsB=tsLow.b+(tsHigh.b-tsLow.b)*mFrac;
+  const tsA=tsLow.maxAlpha+(tsHigh.maxAlpha-tsLow.maxAlpha)*mFrac;
+  if(tsA>0.001){
+    orbCtx.fillStyle=`rgba(${Math.round(tsR)},${Math.round(tsG)},${Math.round(tsB)},${tsA})`;
+    orbCtx.fillRect(0,0,W,H);
+  }
+  orbCtx.restore();
+
+  // ═══ TEXT TINT SYNC (palette primary HSL) ═══
+  const tintHue=(palPriHsl[0]+8)%360,tintSat=18+loadN*22;
+  const stateEl=document.getElementById('card-state-name');
+  if(stateEl){stateEl.style.color=`hsla(${tintHue},${Math.min(50,tintSat+15)}%,${22+mentalN*8}%,${0.85+mentalN*0.10})`;stateEl.style.textShadow=`0 0 40px hsla(${tintHue},${tintSat+10}%,50%,0.08)`;}
+
+  orbT+=0.01+physN*0.008;
+  if(orbRunning)requestAnimationFrame(drawOrb);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════════════════════
+let videoRecording = false;
+const EXPORT_SCALE = 3;
+const VIDEO_SCALE = 2;
+
+// ═══ CAPTURE CHROME OVERLAY (text/UI only, orb hidden) ═══
+function captureChrome(scale) {
+  const card = document.getElementById('card');
+  const orbEl = document.getElementById('orb-canvas');
+  const gifBtn = document.getElementById('gif-btn');
+  const gifProg = document.getElementById('gif-progress');
+  const preContent = document.querySelector('.pre-content');
+  const checkinLayer = document.getElementById('checkin-layer');
+  const sortSection = document.getElementById('sort-section');
+  const lockBtn = document.getElementById('lock-btn');
+  const saved = {
+    orbVis: orbEl.style.visibility,
+    btnDis: gifBtn.style.display,
+    progDis: gifProg.style.display,
+  };
+  orbEl.style.visibility = 'hidden';
+  gifBtn.style.display = 'none';
+  gifProg.style.display = 'none';
+  if (preContent) preContent.style.display = 'none';
+  if (checkinLayer) checkinLayer.style.display = 'none';
+  if (sortSection) sortSection.style.display = 'none';
+  if (lockBtn) lockBtn.style.display = 'none';
+  const restore = () => {
+    orbEl.style.visibility = saved.orbVis;
+    gifBtn.style.display = saved.btnDis;
+    gifProg.style.display = saved.progDis;
+    if (preContent) preContent.style.display = '';
+    if (checkinLayer) checkinLayer.style.display = '';
+    if (sortSection) sortSection.style.display = '';
+    if (lockBtn) lockBtn.style.display = '';
+  };
+  return html2canvas(card, { scale, backgroundColor: null, useCORS: true, logging: false })
+    .then(c => { restore(); return c; })
+    .catch(err => { restore(); throw err; });
+}
+
+// ═══ DOWNLOAD HELPERS ═══
+function triggerDownload(blob, ext) {
+  const u = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = u; a.download = 'joy-sort-' + dateStr.replace(/\s/g, '-').toLowerCase() + '.' + ext;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(u), 10000);
+}
+
+// Orb-only PNG (last resort)
+function downloadBgPng() {
+  try {
+    orbCanvas.toBlob(b => { if (b) triggerDownload(b, 'png'); }, 'image/png');
+  } catch (err) { console.error('BG PNG failed:', err); }
+}
+
+// Composite PNG: orb + chrome overlay
+function downloadCardPng() {
+  const cardRect = document.getElementById('card').getBoundingClientRect();
+  const w = Math.round(cardRect.width * EXPORT_SCALE);
+  const h = Math.round(cardRect.height * EXPORT_SCALE);
+  captureChrome(EXPORT_SCALE).then(chromeCanvas => {
+    const comp = document.createElement('canvas');
+    comp.width = w; comp.height = h;
+    const ctx = comp.getContext('2d');
+    const r = 24 * EXPORT_SCALE;
+    ctx.beginPath(); ctx.roundRect(0, 0, w, h, r); ctx.clip();
+    ctx.drawImage(orbCanvas, 0, 0, w, h);
+    ctx.drawImage(chromeCanvas, 0, 0, w, h);
+    comp.toBlob(b => { if (b) triggerDownload(b, 'png'); }, 'image/png');
+  }).catch(err => {
+    console.error('Card PNG composite failed:', err);
+    downloadBgPng();
+  });
+}
+
+// ═══ MP4 VIDEO CAPTURE (WebCodecs + mp4-muxer → real H.264 MP4) ═══
+function startVideoCapture(e) {
+  e.stopPropagation();
+  if (videoRecording) return;
+  const btn = document.getElementById('gif-btn');
+  const prog = document.getElementById('gif-progress');
+
+  videoRecording = true;
+  btn.style.opacity = '0'; btn.style.pointerEvents = 'none';
+  prog.classList.add('visible'); prog.textContent = 'day keepsake loading...';
+
+  const cleanup = () => {
+    videoRecording = false;
+    btn.style.opacity = ''; btn.style.pointerEvents = '';
+    prog.classList.remove('visible');
+    if (!orbRunning) { orbRunning = true; requestAnimationFrame(drawOrb); }
+  };
+
+  const fps = 30, duration = 8, total = fps * duration; // 2 full loops
+
+  captureChrome(VIDEO_SCALE).catch(err => {
+    console.warn('Chrome capture failed, proceeding without text overlay:', err);
+    return null; // continue with orb-only video
+  }).then(async chromeCanvas => {
+    const cardRect = document.getElementById('card').getBoundingClientRect();
+    // H.264 requires even dimensions
+    const vidW = Math.round(cardRect.width * VIDEO_SCALE / 2) * 2;
+    const vidH = Math.round(cardRect.height * VIDEO_SCALE / 2) * 2;
+
+    let chromeSized = null;
+    if (chromeCanvas) {
+      chromeSized = document.createElement('canvas');
+      chromeSized.width = vidW; chromeSized.height = vidH;
+      chromeSized.getContext('2d').drawImage(chromeCanvas, 0, 0, vidW, vidH);
+    }
+
+    const compCanvas = document.createElement('canvas');
+    compCanvas.width = vidW; compCanvas.height = vidH;
+    const compCtx = compCanvas.getContext('2d');
+    const cornerR = 24 * VIDEO_SCALE;
+    const clipFrame = () => {
+      compCtx.clearRect(0, 0, vidW, vidH);
+      compCtx.save();
+      compCtx.beginPath();
+      compCtx.roundRect(0, 0, vidW, vidH, cornerR);
+      compCtx.clip();
+    };
+
+    const savedOrbT = orbT;
+    const savedRunning = orbRunning;
+    orbRunning = false;
+
+    const restoreOrb = () => {
+      orbT = savedOrbT + Math.PI * 4;
+      orbRunning = savedRunning;
+      if (orbRunning) requestAnimationFrame(drawOrb);
+    };
+
+    // ── Primary: WebCodecs + mp4-muxer → true H.264 MP4 ──
+    console.log('VideoEncoder:', typeof VideoEncoder, 'Mp4Muxer:', typeof Mp4Muxer);
+    if (typeof VideoEncoder !== 'undefined' && typeof Mp4Muxer !== 'undefined') {
+      // Try multiple H.264 profiles in order of compatibility
+      const codecs = ['avc1.42001E','avc1.42E01E','avc1.4D0028','avc1.640028'];
+      let supportedCodec = null;
+      for (const c of codecs) {
+        try {
+          const r = await VideoEncoder.isConfigSupported({ codec: c, width: vidW, height: vidH, bitrate: 5_000_000, framerate: fps });
+          if (r.supported) { supportedCodec = c; break; }
+        } catch(e) { /* try next */ }
+      }
+      if (supportedCodec) {
+        try {
+          const muxer = new Mp4Muxer.Muxer({
+            target: new Mp4Muxer.ArrayBufferTarget(),
+            video: { codec: 'avc', width: vidW, height: vidH },
+            fastStart: 'in-memory',
+          });
+
+          let encError = false;
+          const encoder = new VideoEncoder({
+            output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+            error: (err) => { console.error('Encoder error:', err); encError = true; },
+          });
+
+          encoder.configure({
+            codec: supportedCodec,
+            width: vidW, height: vidH,
+            bitrate: 5_000_000,
+            framerate: fps,
+          });
+
+          let frames = 0;
+          const capFrame = () => {
+            if (encError) { restoreOrb(); cleanup(); downloadCardPng(); return; }
+            if (frames >= total) {
+              encoder.flush().then(() => {
+                muxer.finalize();
+                const blob = new Blob([muxer.target.buffer], { type: 'video/mp4' });
+                triggerDownload(blob, 'mp4');
+                restoreOrb(); cleanup();
+              }).catch(err => {
+                console.error('Encoder flush failed:', err);
+                restoreOrb(); cleanup(); downloadCardPng();
+              });
+              return;
+            }
+            orbT = savedOrbT + (frames / total) * Math.PI * 4;
+            drawOrb();
+            clipFrame();
+            compCtx.drawImage(orbCanvas, 0, 0, vidW, vidH);
+            if (chromeSized) compCtx.drawImage(chromeSized, 0, 0);
+            compCtx.restore();
+
+            const vf = new VideoFrame(compCanvas, { timestamp: frames * (1_000_000 / fps) });
+            encoder.encode(vf, { keyFrame: frames % 30 === 0 });
+            vf.close();
+
+            frames++;
+            prog.textContent = `day keepsake loading... ${Math.round((frames / total) * 100)}%`;
+            requestAnimationFrame(capFrame);
+          };
+          requestAnimationFrame(capFrame);
+          return; // exit — MP4 path active
+        } catch (err) {
+          console.warn('WebCodecs MP4 failed, trying MediaRecorder:', err);
+        }
+      } else {
+        console.warn('No supported H.264 codec found, trying MediaRecorder');
+      }
+    }
+
+    // ── Fallback: MediaRecorder → save as .mp4 extension regardless ──
+    console.log('Using MediaRecorder fallback');
+    const stream = compCanvas.captureStream(0);
+    const mimeType = ['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm']
+      .find(t => MediaRecorder.isTypeSupported(t)) || '';
+    console.log('MediaRecorder mime:', mimeType || 'NONE');
+    if (!mimeType) { restoreOrb(); cleanup(); downloadCardPng(); return; }
+    const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 5_000_000 });
+    const chunks = [];
+    recorder.ondataavailable = ev => { if (ev.data.size > 0) chunks.push(ev.data); };
+    recorder.onstop = () => {
+      triggerDownload(new Blob(chunks, { type: mimeType.split(';')[0] }), 'mp4');
+      cleanup();
+    };
+    recorder.onerror = (err) => { console.error('MediaRecorder error:', err); cleanup(); downloadCardPng(); };
+    let frames = 0;
+    recorder.start();
+    const capFrame = () => {
+      if (frames >= total) {
+        recorder.stop(); restoreOrb(); return;
+      }
+      orbT = savedOrbT + (frames / total) * Math.PI * 4;
+      drawOrb();
+      clipFrame();
+      compCtx.drawImage(orbCanvas, 0, 0, vidW, vidH);
+      if (chromeSized) compCtx.drawImage(chromeSized, 0, 0);
+      compCtx.restore();
+      const track = stream.getVideoTracks()[0];
+      if (track.requestFrame) track.requestFrame();
+      frames++;
+      prog.textContent = `day keepsake loading... ${Math.round((frames / total) * 100)}%`;
+      requestAnimationFrame(capFrame);
+    };
+    requestAnimationFrame(capFrame);
+
+  }).catch(err => {
+    console.error('Video capture failed:', err);
+    cleanup(); downloadCardPng();
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+window.addEventListener('resize', () => {
+  sizeOrbCanvas();
+  // Re-update slider positions on resize
+  document.querySelectorAll('.slider-wrap').forEach(wrap => {
+    const key = wrap.dataset.key;
+    if (P[key]) {
+      const thumb = wrap.querySelector('.slider-thumb');
+      const fill = wrap.querySelector('.slider-fill');
+      thumb.style.transition = 'none';
+      fill.style.transition = 'none';
+      updateSliderVisual(wrap, P[key]);
+      requestAnimationFrame(() => {
+        thumb.style.transition = '';
+        fill.style.transition = '';
+      });
+    }
+  });
+});
+
+// Start checkin background on page load
+sizeOrbCanvas();
+bgRunning = true;
+checkinHue = CHECKIN_COLORS.name.hue;
+checkinHueTarget = CHECKIN_COLORS.name.hue;
+checkinSpeed = CHECKIN_COLORS.name.speed;
+checkinSpeedTarget = CHECKIN_COLORS.name.speed;
+checkinDensity = CHECKIN_COLORS.name.density;
+drawCheckinBg();
+
+// Initialize sliders
+initSliders();
+
+// Initialize slider visuals after layout
+requestAnimationFrame(() => {
+  document.querySelectorAll('.slider-wrap').forEach(wrap => {
+    const key = wrap.dataset.key;
+    if (P[key]) updateSliderVisual(wrap, P[key]);
+  });
+});
+
+// Focus name input
+setTimeout(() => document.getElementById('nameInput').focus(), 400);
+</script>
+</body>
+</html>
