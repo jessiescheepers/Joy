@@ -1340,6 +1340,403 @@ function moveSliderToPointer(wrap, e) {
 // (Name submit removed — spirograph starts immediately)
 
 // ═══════════════════════════════════════════════════════════════
+// AMBIENT SOUND ENGINE — generative Endel-inspired soundscape
+// ═══════════════════════════════════════════════════════════════
+const SoundEngine = (() => {
+  // ── Philosophy ─────────────────────────────────────────────
+  // Einaudi: gentle forward motion through small repeating melodic cells.
+  //   Notes ring into each other like a held sustain pedal. Each
+  //   repetition feels inevitable, not random. Quiet narrative.
+  // Ghibli (Hisaishi): everything breathes and feels alive. Organic
+  //   vibrato on held tones. Occasional wider intervals that open up
+  //   like a window — wonder, not surprise. Wind, not static.
+  //   Handmade, not algorithmic.
+
+  let ctx = null, masterGain = null, filter = null;
+  let noiseSource = null, noiseGain = null;
+  let breathTimer = null, wonderTimer = null, running = false;
+  let activePads = [];
+
+  // ── Mood → harmonic colour (pentatonic, always consonant) ──
+  const MINOR_PENTA = [0, 3, 5, 7, 10];   // mood 1-2: Einaudi "Nuvole Bianche" feel
+  const MAJOR_PENTA = [0, 2, 4, 7, 9];    // mood 4-5: Hisaishi "One Summer's Day"
+  const MIXED_PENTA = [0, 2, 5, 7, 10];   // mood 3: suspended, neither sad nor bright
+
+  function midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
+
+  function pickScale(mood) {
+    if (mood <= 2) return MINOR_PENTA;
+    if (mood >= 4) return MAJOR_PENTA;
+    return MIXED_PENTA;
+  }
+
+  // Warm middle zone: D3(50)–E3(52), ~147–165 Hz. Never shrill, never muddy.
+  function pickRoot(mood, besttime) {
+    const base = 50 + Math.floor((mood - 1) * 0.5);
+    const timeShift = Math.round((2 - besttime) * 0.3);
+    return base + timeShift;
+  }
+
+  // Pink noise shaped to feel like wind through trees (Ghibli)
+  function createWindBuffer() {
+    const len = ctx.sampleRate * 6; // longer buffer = less audible loop point
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    let b0=0, b1=0, b2=0, b3=0, b4=0, b5=0, b6=0;
+    for (let i = 0; i < len; i++) {
+      const white = Math.random() * 2 - 1;
+      b0 = 0.99886*b0 + white*0.0555179;
+      b1 = 0.99332*b1 + white*0.0750759;
+      b2 = 0.96900*b2 + white*0.1538520;
+      b3 = 0.86650*b3 + white*0.3104856;
+      b4 = 0.55000*b4 + white*0.5329522;
+      b5 = -0.7616*b5 - white*0.0168980;
+      data[i] = (b0+b1+b2+b3+b4+b5+b6+white*0.5362) * 0.11;
+      b6 = white * 0.115926;
+    }
+    return buf;
+  }
+
+  // ── A single pad tone: bloom → ring → dissolve ─────────────
+  // Einaudi's sustain pedal: tones ring long, overlap their neighbours.
+  // Exponential curves feel more natural than linear.
+  function emitPad(freq, fadeIn, hold, fadeOut, gain, detuneCents) {
+    if (!ctx || !running) return;
+    const now = ctx.currentTime;
+    const totalDur = fadeIn + hold + fadeOut;
+
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, now);
+    if (detuneCents) osc.detune.setValueAtTime(detuneCents, now);
+
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0, now);
+    env.gain.exponentialRampToValueAtTime(Math.max(gain, 0.0001), now + fadeIn);
+    env.gain.setValueAtTime(Math.max(gain, 0.0001), now + fadeIn + hold * 0.1);
+    // Einaudi decay: not a cliff, a long exhalation
+    env.gain.exponentialRampToValueAtTime(Math.max(gain * 0.6, 0.0001), now + fadeIn + hold);
+    env.gain.exponentialRampToValueAtTime(0.0001, now + totalDur);
+
+    osc.connect(env);
+    env.connect(filter);
+    osc.start(now);
+    osc.stop(now + totalDur + 0.2);
+
+    const ref = { osc, env };
+    activePads.push(ref);
+    setTimeout(() => {
+      const idx = activePads.indexOf(ref);
+      if (idx > -1) activePads.splice(idx, 1);
+    }, (totalDur + 0.5) * 1000);
+  }
+
+  // ── Einaudi melodic cell: repeating 3-note figure ──────────
+  // Instead of random scale walking, builds a small motif from the
+  // current scale position and repeats it with gentle variation.
+  // Like the left hand of "Experience" — simple, inevitable, arriving.
+  function buildCell(scale, startIdx) {
+    const len = scale.length;
+    const a = startIdx % len;
+    const b = (startIdx + 1) % len;
+    const c = (startIdx + 2) % len;
+    // 3-note cell: root, step up, back or further — then repeat
+    return [
+      scale[a], scale[b], scale[a],  // call
+      scale[a], scale[b], scale[c],  // answer (opens up)
+    ];
+  }
+
+  // ── Breathing cycle with Einaudi cells ─────────────────────
+  function startBreathing(params, capacityPct) {
+    const { sleep, energy, mood, stress, load, besttime } = params;
+    const scale = pickScale(mood);
+    const root = pickRoot(mood, besttime || 1);
+    const cap01 = capacityPct / 100;
+
+    // Energy (35%) → breath pace
+    const breathInterval = 8.5 - (energy - 1) * 1.2; // 8.5s → 3.7s
+
+    // Sleep (30%) → envelope shape
+    const fadeIn  = 2.5 - (sleep - 1) * 0.3;  // 2.5s → 1.3s
+    const fadeOut = 4.5 - (sleep - 1) * 0.5;  // 4.5s → 2.5s
+    const hold   = 3.5 + (sleep - 1) * 0.8;   // 3.5s → 6.7s
+
+    // Stress (15%) → chorus softening
+    const detuneSpread = (stress - 1) * 0.75;
+
+    // Load → harmonic depth
+    const addFifth = load >= 3;
+
+    // Per-pad gain shaped by capacity
+    const padGain = 0.025 + cap01 * 0.035;
+
+    // Einaudi: build a melodic cell, repeat it, then shift
+    let cellPos = 0;       // position within current cell
+    let cellStart = 0;     // which scale degree the cell starts on
+    let cell = buildCell(scale, cellStart);
+    let cellRepeats = 0;   // how many times we've played this cell
+
+    function breathe() {
+      if (!running) return;
+
+      const degree = cell[cellPos % cell.length];
+      const midi = root + degree;
+
+      // Primary pad — the melodic voice
+      emitPad(midiToFreq(midi), fadeIn, hold, fadeOut, padGain, 0);
+
+      // Einaudi resonance: a ghost of the previous note still ringing
+      // (like the sustain pedal catching harmonics)
+      if (cellPos > 0) {
+        const prevDegree = cell[(cellPos - 1) % cell.length];
+        if (prevDegree !== degree) {
+          emitPad(midiToFreq(root + prevDegree),
+            fadeIn * 0.5, hold * 0.3, fadeOut * 1.4,
+            padGain * 0.12, 0);
+        }
+      }
+
+      // Stress chorus: slightly detuned shadow
+      if (detuneSpread > 0.2) {
+        const sign = (cellPos % 2 === 0) ? 1 : -1; // alternates, not random
+        emitPad(midiToFreq(midi), fadeIn * 1.1, hold, fadeOut * 1.1,
+          padGain * 0.3, sign * detuneSpread);
+      }
+
+      // Load → soft fifth, Einaudi's left-hand anchor
+      if (addFifth) {
+        emitPad(midiToFreq(midi + 7),
+          fadeIn * 1.4, hold * 0.5, fadeOut * 1.3,
+          padGain * 0.12, 0);
+      }
+
+      cellPos++;
+
+      // After completing the cell, either repeat or shift
+      if (cellPos >= cell.length) {
+        cellPos = 0;
+        cellRepeats++;
+        // Einaudi: repeat the cell 2-3 times, then shift
+        if (cellRepeats >= 2 + Math.floor(Math.random() * 2)) {
+          cellRepeats = 0;
+          cellStart = (cellStart + 1) % scale.length;
+          cell = buildCell(scale, cellStart);
+        }
+      }
+
+      const jitter = breathInterval * (0.88 + Math.random() * 0.24);
+      breathTimer = setTimeout(breathe, jitter * 1000);
+    }
+
+    breathe();
+  }
+
+  // ── Ghibli "wonder moments" ────────────────────────────────
+  // Every 20-35s, a pair of notes in a wider interval (fourth or fifth)
+  // blooms gently — like a window opening onto a landscape.
+  // Hisaishi's gift: making the ordinary feel magical.
+  function startWonder(params, capacityPct) {
+    const scale = pickScale(params.mood);
+    const root = pickRoot(params.mood, params.besttime || 1);
+    const cap01 = capacityPct / 100;
+    const gain = 0.015 + cap01 * 0.020;
+
+    function wonder() {
+      if (!running) return;
+
+      // Pick two notes a fourth or fifth apart
+      const baseIdx = Math.floor(Math.random() * scale.length);
+      const baseDeg = scale[baseIdx];
+      const intervals = [5, 7]; // perfect fourth, perfect fifth
+      const interval = intervals[Math.floor(Math.random() * intervals.length)];
+
+      const midi1 = root + baseDeg;
+      const midi2 = root + baseDeg + interval;
+
+      // Clamp: keep the upper note in the warm zone (max ~Bb3, midi 58)
+      if (midi2 <= 58) {
+        // First note, then the second slightly delayed
+        emitPad(midiToFreq(midi1), 3.0, 5.0, 4.0, gain, 0);
+        setTimeout(() => {
+          if (running) {
+            emitPad(midiToFreq(midi2), 3.5, 4.0, 4.5, gain * 0.7, 0);
+          }
+        }, 1200 + Math.random() * 800);
+      }
+
+      // Next wonder: 20-35s apart
+      const nextIn = (20 + Math.random() * 15) * 1000;
+      wonderTimer = setTimeout(wonder, nextIn);
+    }
+
+    // First wonder after 12-18s (let the main texture establish first)
+    wonderTimer = setTimeout(wonder, (12 + Math.random() * 6) * 1000);
+  }
+
+  // Immediate teardown (no fade) — used when restarting with new params
+  function hardStop() {
+    running = false;
+    if (breathTimer) { clearTimeout(breathTimer); breathTimer = null; }
+    if (wonderTimer) { clearTimeout(wonderTimer); wonderTimer = null; }
+    activePads.forEach(p => {
+      try { if (p.osc) p.osc.stop(); } catch (e) {}
+      try { if (p.env) p.env.disconnect(); } catch (e) {}
+    });
+    activePads = [];
+    try { if (noiseSource) { noiseSource.stop(); noiseSource = null; } } catch (e) {}
+    if (noiseGain) { noiseGain.disconnect(); noiseGain = null; }
+    if (filter) { filter.disconnect(); filter = null; }
+    if (masterGain) { masterGain.disconnect(); masterGain = null; }
+  }
+
+  return {
+    start(params, capacityPct) {
+      if (running) hardStop(); // clean slate, no lingering nodes
+
+      if (!ctx) {
+        ctx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (ctx.state === 'suspended') ctx.resume();
+
+      running = true;
+      const now = ctx.currentTime;
+      const cap01 = capacityPct / 100;
+
+      // ── Master gain — 2s fade-in ──
+      masterGain = ctx.createGain();
+      masterGain.gain.setValueAtTime(0, now);
+      const maxVol = 0.14 + cap01 * 0.11; // 0.14–0.25
+      masterGain.gain.linearRampToValueAtTime(maxVol, now + 2);
+      masterGain.connect(ctx.destination);
+
+      // ── Sleep (30%) → low-pass filter ──
+      // Poor sleep = soft, muffled (cutoff 500Hz).
+      // Great sleep = open, present (cutoff 4500Hz).
+      filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(500 + (params.sleep - 1) * 1000, now);
+      // Ghibli warmth: gentle resonance adds body, like a wooden room
+      filter.Q.setValueAtTime(0.8, now);
+      filter.connect(masterGain);
+
+      // ── Held root drone (Ghibli: a living, breathing cello) ──
+      const droneRoot = pickRoot(params.mood, params.besttime || 1);
+      const droneOsc = ctx.createOscillator();
+      droneOsc.type = 'sine';
+      droneOsc.frequency.setValueAtTime(midiToFreq(droneRoot - 12), now);
+      const droneEnv = ctx.createGain();
+      const droneLvl = 0.018 + (params.sleep - 1) * 0.009; // 0.018–0.054
+      droneEnv.gain.setValueAtTime(0, now);
+      droneEnv.gain.linearRampToValueAtTime(droneLvl, now + 5);
+      droneOsc.connect(droneEnv);
+      droneEnv.connect(filter);
+      droneOsc.start(now);
+      activePads.push({ osc: droneOsc, env: droneEnv, isDrone: true });
+
+      // Ghibli vibrato: slow organic pitch drift on the drone,
+      // like a cellist's hand. Feels alive, not synthesised.
+      const vibrato = ctx.createOscillator();
+      vibrato.type = 'sine';
+      vibrato.frequency.setValueAtTime(0.15, now); // ~9 bpm — like slow breathing
+      const vibGain = ctx.createGain();
+      vibGain.gain.setValueAtTime(2.5, now); // ±2.5 cents — barely perceptible
+      vibrato.connect(vibGain);
+      vibGain.connect(droneOsc.detune);
+      vibrato.start(now);
+      activePads.push({ osc: vibrato, env: vibGain, isVibrato: true });
+
+      // ── Volume LFO on drone — energy-driven breathing ──
+      const lfo = ctx.createOscillator();
+      lfo.type = 'sine';
+      lfo.frequency.setValueAtTime(0.06 + (params.energy - 1) * 0.035, now); // 0.06–0.20 Hz
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.setValueAtTime(droneLvl * 0.25, now);
+      lfo.connect(lfoGain);
+      lfoGain.connect(droneEnv.gain);
+      lfo.start(now);
+      activePads.push({ osc: lfo, env: lfoGain, isLfo: true });
+
+      // ── Stress (15%) → wind noise bed (Ghibli: wind through trees) ──
+      const noiseLvl = (params.stress - 1) * 0.007;
+      if (noiseLvl > 0.001) {
+        const windBuf = createWindBuffer();
+        noiseSource = ctx.createBufferSource();
+        noiseSource.buffer = windBuf;
+        noiseSource.loop = true;
+
+        // Shaped as wind: low-pass + gentle modulation
+        const windFilter = ctx.createBiquadFilter();
+        windFilter.type = 'lowpass';
+        windFilter.frequency.setValueAtTime(500 + (params.stress - 1) * 100, now);
+        windFilter.Q.setValueAtTime(0.2, now);
+
+        // Wind gusts: very slow LFO on noise volume
+        const windLfo = ctx.createOscillator();
+        windLfo.type = 'sine';
+        windLfo.frequency.setValueAtTime(0.08, now); // slow gusts
+        const windLfoGain = ctx.createGain();
+        windLfoGain.gain.setValueAtTime(noiseLvl * 0.4, now);
+
+        noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0, now);
+        noiseGain.gain.linearRampToValueAtTime(noiseLvl, now + 5);
+
+        windLfo.connect(windLfoGain);
+        windLfoGain.connect(noiseGain.gain);
+        windLfo.start(now);
+
+        noiseSource.connect(windFilter);
+        windFilter.connect(noiseGain);
+        noiseGain.connect(masterGain);
+        noiseSource.start(now);
+        activePads.push({ osc: windLfo, env: windLfoGain, isWindLfo: true });
+      }
+
+      // ── Start Einaudi breathing pads + Ghibli wonder moments ──
+      startBreathing(params, capacityPct);
+      startWonder(params, capacityPct);
+    },
+
+    stop() {
+      running = false;
+      if (breathTimer) { clearTimeout(breathTimer); breathTimer = null; }
+      if (wonderTimer) { clearTimeout(wonderTimer); wonderTimer = null; }
+
+      if (masterGain && ctx) {
+        const now = ctx.currentTime;
+        // Ghibli scene dissolve: 4s fade, unhurried like credits rolling
+        masterGain.gain.cancelScheduledValues(now);
+        masterGain.gain.setValueAtTime(masterGain.gain.value, now);
+        masterGain.gain.linearRampToValueAtTime(0, now + 4);
+
+        activePads.forEach(p => {
+          if (p.env && p.env.gain) {
+            try {
+              p.env.gain.cancelScheduledValues(now);
+              p.env.gain.setValueAtTime(p.env.gain.value, now);
+              p.env.gain.linearRampToValueAtTime(0, now + 4);
+            } catch (e) {}
+          }
+        });
+
+        setTimeout(() => {
+          activePads.forEach(p => {
+            try { if (p.osc) p.osc.stop(); } catch (e) {}
+            try { if (p.env) p.env.disconnect(); } catch (e) {}
+          });
+          activePads = [];
+          try { if (noiseSource) { noiseSource.stop(); noiseSource = null; } } catch (e) {}
+          if (noiseGain) { noiseGain.disconnect(); noiseGain = null; }
+          if (filter) { filter.disconnect(); filter = null; }
+          if (masterGain) { masterGain.disconnect(); masterGain = null; }
+        }, 4500);
+      }
+    }
+  };
+})();
+
+// ═══════════════════════════════════════════════════════════════
 // DONE STATE — after all sliders answered
 // ═══════════════════════════════════════════════════════════════
 function showDoneState() {
@@ -1367,6 +1764,9 @@ function showDoneState() {
   // Show reveal (staggered fade-in via CSS animation-delay)
   setTimeout(() => {
     document.getElementById('reveal-overlay').classList.add('visible');
+    // Restart soundscape with final params (sound already playing from spiroStart,
+    // but user's answers have changed P since then — refresh the sonic fingerprint)
+    SoundEngine.start(P, glow.capacityPct);
   }, 400);
 
   // Show done actions after reveal content has arrived
@@ -1381,6 +1781,9 @@ function showDoneState() {
 // START OVER
 // ═══════════════════════════════════════════════════════════════
 function startOver() {
+  // Fade out ambient sound
+  SoundEngine.stop();
+
   // Clear any pending auto-advance timer
   if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
 
@@ -1684,6 +2087,9 @@ function spiroStart() {
   orbCtx.fillStyle = 'hsl(38, 30%, 93%)';
   orbCtx.fillRect(0, 0, W, H);
   requestAnimationFrame(spiroFrame);
+  // Start ambient soundscape with current params (inside user gesture for iOS)
+  const earlyGlow = computeGlow(P);
+  SoundEngine.start(P, earlyGlow.capacityPct);
 }
 
 function spiroReset() {
