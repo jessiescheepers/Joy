@@ -16,8 +16,6 @@ import ContactOrb from "./components/ContactOrb";
 
 export default function Home() {
   const [activeSection, setActiveSection] = useState<string>("home");
-  const [glowExpanded, setGlowExpanded] = useState(false);
-  const [glowName, setGlowName] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
@@ -42,7 +40,6 @@ export default function Home() {
 
   // Section refs for intersection observer
   const heroRef = useRef<HTMLElement>(null);
-  const glowRef = useRef<HTMLElement>(null);
   const howRef = useRef<HTMLElement>(null);
   const aboutRef = useRef<HTMLElement>(null);
   const contactRef = useRef<HTMLElement>(null);
@@ -51,8 +48,6 @@ export default function Home() {
   const auroraRef = useRef<HTMLDivElement>(null);
   const scrollBarRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLButtonElement>(null);
-  const glowCardRef = useRef<HTMLDivElement>(null);
-  const glowAuraRef = useRef<HTMLDivElement>(null);
 
   // Intersection observer for active nav
   useEffect(() => {
@@ -85,18 +80,6 @@ export default function Home() {
     );
     document.querySelectorAll(".reveal-section").forEach((el) => obs.observe(el));
     return () => obs.disconnect();
-  }, []);
-
-  // Listen for glow iframe requesting fullscreen (on name submit)
-  useEffect(() => {
-    const handler = (e: MessageEvent) => {
-      if (e.data?.type === "glow-fullscreen") {
-        if (e.data.name) setGlowName(e.data.name);
-        setGlowExpanded(true);
-      }
-    };
-    window.addEventListener("message", handler);
-    return () => window.removeEventListener("message", handler);
   }, []);
 
   // Cursor aurora + hero orb parallax (desktop only)
@@ -225,16 +208,16 @@ export default function Home() {
       </div>
 
       {/* Orb narrative system — scroll-driven transforms */}
-      <OrbSystem glowExpanded={glowExpanded} theme={theme} />
+      <OrbSystem glowExpanded={false} theme={theme} />
 
       {/* Page content */}
       <div className="relative z-[5]">
 
         {/* ═══ TOP NAV — glass morphism ═══ */}
         <nav
-          className={`fixed top-0 left-0 right-0 z-50 px-6 md:px-12 h-16 flex items-center justify-between transition-opacity duration-300 ${glowExpanded ? "opacity-0 pointer-events-none" : ""}`}
+          className="fixed top-0 left-0 right-0 z-50 px-6 md:px-12 h-16 flex items-center justify-between"
           style={{
-            opacity: glowExpanded ? undefined : 0.7,
+            opacity: 0.7,
             background: t.navBg,
             backdropFilter: t.backdropSaturate,
             WebkitBackdropFilter: t.backdropSaturate,
@@ -507,200 +490,6 @@ export default function Home() {
           >
             Every productivity tool starts with output.<br />We start somewhere else:<br /><em className="text-gradient-pulse" data-text="if humans succeed, productivity follows." style={{ fontStyle: "italic" }}>if humans succeed, productivity follows.</em><br />Here&apos;s how we&apos;ll make that happen.
           </p>
-        </section>
-
-        {/* ═══ INTERACTIVE / GLOW SECTION (hidden — may return later) ═══ */}
-        <section
-          id="glow"
-          ref={glowRef}
-          className="min-h-screen flex flex-col items-center justify-center px-6 py-24 md:px-12 lg:px-20 text-center"
-          style={{ borderTop: "1px solid var(--border)", display: "none" }}
-          onMouseMove={(e) => {
-            if (isMobile || glowExpanded || !glowCardRef.current || !glowAuraRef.current) return;
-            const rect = glowCardRef.current.getBoundingClientRect();
-            const cx = rect.left + rect.width / 2;
-            const cy = rect.top + rect.height / 2;
-            const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
-            const intensity = Math.max(0, 1 - dist / 500);
-            glowAuraRef.current.style.opacity = (intensity * 0.5).toString();
-          }}
-        >
-          {/* Framing text */}
-          <div className="max-w-[600px] mx-auto mb-12 md:mb-16 reveal-section">
-            <h1
-              className="leading-[1.3] tracking-[-0.02em] mb-4"
-              style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1rem, 2.5vw, 1.6rem)", color: "var(--text-secondary)" }}
-            >
-              On your best days, you have 3 hours for deep work. Joy helps you use them on what matters.
-            </h1>
-            <p
-              className="mt-4 text-xs md:text-sm tracking-wide"
-              style={{ fontFamily: "var(--font-body)", fontStyle: "italic", color: t.logoColor }}
-            >
-              How are you today? &rarr; What&apos;s on your plate? &rarr; Joy sorts your day
-            </p>
-          </div>
-
-          {/* Fortune Teller Card */}
-          {glowExpanded ? (
-            <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center" style={{ background: "var(--bg)" }}>
-              <div className="flex flex-col items-center py-1 shrink-0">
-                <JoyLogo width={70} height={37} color={t.logoColor} />
-                <p className="text-base md:text-lg tracking-wide" style={{ fontFamily: "var(--font-display)", color: "var(--text)" }}>
-                  daily glow
-                </p>
-              </div>
-              <iframe
-                src={`/glow/index.html${glowName ? `?name=${encodeURIComponent(glowName)}` : ""}`}
-                scrolling="no"
-                title="Daily Glow interactive experience"
-                className="border-0 mx-auto block"
-                style={{ overflow: "hidden", background: "transparent", width: "min(90vw, 480px)", height: "min(calc(100dvh - 100px), 680px)", display: "block", borderRadius: 24 }}
-              />
-              <button
-                onClick={() => {
-                  setGlowExpanded(false);
-                  setTimeout(() => {
-                    document.querySelectorAll("#glow .reveal-section").forEach((el) => el.classList.add("visible"));
-                  }, 50);
-                }}
-                className="w-10 h-10 flex items-center justify-center rounded-full transition-colors cursor-pointer"
-                style={{ position: "absolute", top: 12, right: 12, zIndex: 101, background: t.closeButtonBg, border: "1px solid var(--border)" }}
-                title="Close fullscreen"
-              >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M15 5L5 15M5 5l10 10" stroke={t.closeStroke} strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-              </button>
-            </div>
-          ) : (
-            <div className="relative reveal-section flex items-center justify-center">
-              {/* Proximity aura */}
-              <div
-                ref={glowAuraRef}
-                className="absolute pointer-events-none"
-                style={{
-                  inset: -80,
-                  borderRadius: 60,
-                  background: t.auraGlow,
-                  opacity: 0,
-                  transition: "opacity 0.3s ease-out",
-                }}
-              />
-
-              {/* Levitation wrapper */}
-              <div style={{ animation: "levitate 6s ease-in-out infinite" }}>
-                <div
-                  ref={glowCardRef}
-                  className="w-[280px] h-[480px] md:w-[340px] lg:w-[380px] rounded-[24px] holo-border"
-                  onClick={isMobile ? () => setGlowExpanded(true) : undefined}
-                  onMouseMove={(e) => {
-                    if (isMobile || !glowCardRef.current) return;
-                    const rect = glowCardRef.current.getBoundingClientRect();
-                    const x = (e.clientX - rect.left) / rect.width - 0.5;
-                    const y = (e.clientY - rect.top) / rect.height - 0.5;
-                    glowCardRef.current.style.transform = `perspective(800px) rotateY(${x * 8}deg) rotateX(${-y * 8}deg) scale(1.02)`;
-                  }}
-                  onMouseLeave={() => {
-                    if (glowCardRef.current) glowCardRef.current.style.transform = "";
-                  }}
-                  style={{
-                    padding: 3,
-                    cursor: isMobile ? "pointer" : undefined,
-                    transition: "transform 0.2s ease-out",
-                    boxShadow: t.cardShadow,
-                  }}
-                >
-                  {/* Card background — matches iframe dark theme */}
-                  <div style={{
-                    position: "absolute",
-                    inset: 0,
-                    borderRadius: 22,
-                    background: t.cardBg,
-                    zIndex: 0,
-                  }} />
-                  {/* Warm orb — z-1: above bg, below iframe text */}
-                  <div
-                    className="card-orb-overlay"
-                    style={{
-                      position: "absolute",
-                      top: "-50%",
-                      left: "50%",
-                      transform: "translate(-50%, -50%)",
-                      width: 340,
-                      height: 340,
-                      zIndex: 1,
-                      opacity: 0,
-                      pointerEvents: "none",
-                    }}
-                  >
-                    {/* Warm glow bleed */}
-                    <div style={{
-                      position: "absolute",
-                      inset: "-50%",
-                      background: t.cardOrbWarmGlow,
-                      filter: "blur(40px)",
-                      animation: "hero-orb-glow-swell 5s ease-in-out infinite",
-                    }} />
-                    {/* Heart glow */}
-                    <div style={{
-                      position: "absolute",
-                      inset: "0%",
-                      background: t.cardOrbHeartGlow,
-                      filter: t.cardOrbHeartFilter,
-                      animation: "hero-orb-heart 5s ease-in-out infinite",
-                      mixBlendMode: t.cardOrbBlend,
-                    }} />
-                    {/* Breathe → Rotate → Image */}
-                    <div style={{ width: "100%", height: "100%", animation: "hero-orb-breathe 5s ease-in-out infinite" }}>
-                      <div style={{ width: "100%", height: "100%", animation: "hero-orb-rotate 90s ease-in-out infinite" }}>
-                        <img
-                          src="/orb-hero.png"
-                          alt=""
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "contain",
-                            opacity: t.cardOrbImgOpacity,
-                            mixBlendMode: t.cardOrbBlend,
-                            WebkitMaskImage: "radial-gradient(circle, black 30%, transparent 68%)",
-                            maskImage: "radial-gradient(circle, black 30%, transparent 68%)",
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <iframe
-                    src="/glow/index.html"
-                    scrolling="no"
-                    title="Daily Glow interactive experience"
-                    className="w-[320px] h-[500px] md:w-[380px] lg:w-[420px] border-0 rounded-[22px]"
-                    onLoad={(e) => {
-                      try {
-                        const doc = (e.target as HTMLIFrameElement).contentDocument;
-                        if (doc) {
-                          const s = doc.createElement("style");
-                          s.textContent = "html, body { background: transparent !important; } .card, .opening-card { background: transparent !important; } .opening-orb-wrapper { display: none !important; } .card-bg { display: none !important; } .card::before { display: none !important; } .header h1 { color: #202532 !important; } .opening-card .opening-title { color: #202532 !important; } .opening-tap { color: #202532 !important; } .opening-card .opening-input { color: rgba(40,41,56,0.70) !important; } .opening-card .opening-input::placeholder { color: rgba(40,41,56,0.70) !important; }";
-                          doc.head.appendChild(s);
-                        }
-                      } catch { /* cross-origin guard */ }
-                    }}
-                    style={{ overflow: "hidden", display: "block", marginLeft: -23, marginTop: -13, pointerEvents: isMobile ? "none" : undefined, background: "transparent", position: "relative", zIndex: 2 }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* CTA below card */}
-          {!glowExpanded && (
-            <p
-              className="mt-10 text-xs md:text-sm tracking-wide reveal-section"
-              style={{ fontFamily: "var(--font-display)", color: "var(--text-tertiary)" }}
-            >
-              {isMobile ? "tap the card to begin" : "enter your name to begin"}
-            </p>
-          )}
         </section>
 
         {/* ═══ VISION SECTION ═══ */}
@@ -1046,8 +835,8 @@ export default function Home() {
 
       {/* ═══ FOOTER ═══ */}
       <footer
-        className={`fixed bottom-0 left-0 right-0 z-[6] px-6 py-4 md:px-12 transition-opacity duration-300 ${glowExpanded ? "opacity-0 pointer-events-none" : ""}`}
-        style={{ opacity: glowExpanded ? undefined : 0.7, borderTop: "1px solid var(--border)", background: t.footerBg, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
+        className="fixed bottom-0 left-0 right-0 z-[6] px-6 py-4 md:px-12"
+        style={{ opacity: 0.7, borderTop: "1px solid var(--border)", background: t.footerBg, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
       >
         <div className="max-w-[1400px] mx-auto">
           {/* Mobile: links centered */}
