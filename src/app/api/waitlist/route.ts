@@ -2,11 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 
+const ALLOWED_ORIGINS = [
+  "https://feeljoy.ai",
+  "https://www.feeljoy.ai",
+];
+
+if (process.env.NODE_ENV === "development") {
+  ALLOWED_ORIGINS.push("http://localhost:3000");
+}
+
 function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  // Prefer the anon key (least privilege) with RLS; fall back to service role
+  const key =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+    process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, key);
 }
 
 function getResend() {
@@ -40,6 +50,15 @@ async function isRateLimited(
 }
 
 export async function POST(request: NextRequest) {
+  // CSRF: reject requests from unknown origins
+  const origin = request.headers.get("origin");
+  if (!origin || !ALLOWED_ORIGINS.includes(origin)) {
+    return NextResponse.json(
+      { error: "Forbidden" },
+      { status: 403 }
+    );
+  }
+
   const supabase = getSupabase();
   const resend = getResend();
   try {
@@ -59,6 +78,11 @@ export async function POST(request: NextRequest) {
 
     if (!email || typeof email !== "string") {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
+    }
+
+    // RFC 5321: max email length is 254 characters
+    if (email.length > 254) {
+      return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
     }
 
     // Basic email validation
