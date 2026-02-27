@@ -703,7 +703,7 @@ body {
 
   <button class="share-row" onclick="shareTwitter()">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="rgba(130,95,35,0.8)"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.742l7.733-8.835L1.254 2.25H8.08l4.26 5.632zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-    <span class="share-row-label">post to x</span>
+    <span class="share-row-label">post to X</span>
     <svg class="share-row-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
   </button>
 
@@ -1901,30 +1901,31 @@ async function shareTwitter() {
   window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(text), '_blank');
 }
 
-// Share on LinkedIn — native share on mobile, else copy image + open LinkedIn compose
+// Share on LinkedIn — copy image + text to clipboard, open LinkedIn
 async function shareLinkedIn() {
   closeShareSheet();
   const blob = await getCardPngBlob();
   if (!blob) return;
-  const fname = 'joy-sort-' + dateStr.replace(/\s/g, '-').toLowerCase() + '.png';
-  const file = new File([blob], fname, { type: 'image/png' });
-  if (IS_MOBILE && navigator.canShare && navigator.canShare({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], title: 'My Glow', text: 'feeljoy.ai' });
-      return;
-    } catch (e) { if (e.name === 'AbortError') return; }
-  }
-  // Desktop: copy image to clipboard, then open LinkedIn compose
+  const text = getGlowText() + '\nfeeljoy.ai';
   let copied = false;
   try {
     if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      await navigator.clipboard.write([new ClipboardItem({
+        'image/png': blob,
+        'text/plain': new Blob([text], { type: 'text/plain' })
+      })]);
       copied = true;
     }
   } catch (_) {}
-  if (!copied) triggerDownload(blob, 'png');
+  if (!copied) {
+    // Fallback: save image, copy text only
+    triggerDownload(blob, 'png');
+    try { if (navigator.clipboard) await navigator.clipboard.writeText(text); } catch (_) {}
+  }
   window.open('https://www.linkedin.com/feed/', '_blank');
-  showShareHint(copied ? 'Image copied — paste into your LinkedIn post' : 'Image saved — upload it to your LinkedIn post');
+  showShareHint(copied
+    ? 'Image + text copied — paste into your LinkedIn post'
+    : 'Image saved, text copied — paste into your post and attach the image');
 }
 
 // Copy link
