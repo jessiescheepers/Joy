@@ -1609,8 +1609,9 @@ function showDoneState() {
   // Populate reveal overlay (matches Daily Calculator B28-B30)
   document.getElementById('reveal-date').textContent = dateStr;
   document.getElementById('reveal-capacity').textContent = glow.capacityLine;
-  document.getElementById('reveal-timing').textContent = glow.timingLine;
-  document.getElementById('reveal-nudge').textContent = glow.nudgeLine;
+  // Split two-sentence lines onto separate lines (better copywriting)
+  document.getElementById('reveal-timing').innerHTML = glow.timingLine.replace(/\. (?=[A-Z])/g, '.<br>');
+  document.getElementById('reveal-nudge').innerHTML = glow.nudgeLine.replace(/\. (?=[A-Z])/g, '.<br>');
 
   // Hide checkin bar, top label, and logo for reveal
   document.getElementById('checkin-bar').classList.add('hidden');
