@@ -352,7 +352,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding: calc(12% + 36px) 32px 88px;
+  padding: 48px 32px 88px;
   text-align: center;
   pointer-events: none;
   opacity: 0;
@@ -500,7 +500,7 @@ body {
   :root { --card-h: calc(100dvh - 20px); }
   .slider-number { font-size: 22px; }
   .question-label { margin-bottom: 8px; }
-  .reveal-overlay { padding: calc(12% + 36px) 24px 72px; }
+  .reveal-overlay { padding: 32px 24px 72px; }
   .reveal-capacity { font-size: 22px; }
   .reveal-timing { font-size: 13px; }
   .reveal-nudge { font-size: 13px; }
@@ -1348,9 +1348,10 @@ function showDoneState() {
   document.getElementById('reveal-timing').textContent = glow.timingLine;
   document.getElementById('reveal-nudge').textContent = glow.nudgeLine;
 
-  // Hide checkin bar and top label (keep Joy logo visible on reveal)
+  // Hide checkin bar, top label, and logo for reveal
   document.getElementById('checkin-bar').classList.add('hidden');
   document.getElementById('top-label').classList.add('hidden');
+  document.getElementById('joy-logo').classList.add('hidden');
 
   // Show reveal (staggered fade-in via CSS animation-delay)
   setTimeout(() => {
