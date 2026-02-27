@@ -573,6 +573,9 @@ body {
   </symbol>
 </svg>
 
+<!-- iOS audio session activator -->
+<audio id="audio-kick" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=" preload="auto"></audio>
+
 <button class="sound-toggle" id="sound-toggle" aria-label="Mute sound" onclick="document.getElementById('sound-toggle').classList.toggle('muted', SoundEngine.toggleMute())">
   <svg class="sound-icon-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg>
   <svg class="sound-icon-off" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
@@ -1369,120 +1372,93 @@ function moveSliderToPointer(wrap, e) {
 // ═══════════════════════════════════════════════════════════════
 // AMBIENT SOUND ENGINE — River Flows in You × Studio Ghibli
 // ═══════════════════════════════════════════════════════════════
-const SoundEngine = (() => {
-  // ── 7 soundscapes — one per day of the week ─────────────────
-  // Primary: Yiruma "River Flows in You" — ascending broken chords
-  // in A major, piano dynamics (pp–p), sustain pedal held throughout.
-  // Secondary: Studio Ghibli — barely-there bass warmth, vibrato.
-  // All frequencies ≥ 277 Hz (C#4) for phone-speaker audibility.
-  const SONGS = [
-    { // Sunday — "Still Water": slow, reflective. A → E → F#m → D
-      name: 'Still Water',
-      chords: [[61,64,69,73], [64,68,71,76], [61,66,69,73], [62,66,69,74]],
-      bass: 69, tempo: 540, attack: 0.025, sustain: 1.0, release: 2.2,
-      noteGain: 0.048, bassGain: 0.012,
-      masterVol: 0.28, filterCut: 3200, vibratoDepth: 2, vibratoRate: 0.12
-    },
-    { // Monday — "First Light": hopeful, gentle. A → D → E → A(high)
-      name: 'First Light',
-      chords: [[61,64,69,73], [62,66,69,74], [64,68,71,76], [64,69,73,76]],
-      bass: 69, tempo: 500, attack: 0.025, sustain: 0.9, release: 2.0,
-      noteGain: 0.050, bassGain: 0.014,
-      masterVol: 0.30, filterCut: 3800, vibratoDepth: 1.8, vibratoRate: 0.10
-    },
-    { // Tuesday — "Quiet River": deeper, contemplative. F#m → D → A → E
-      name: 'Quiet River',
-      chords: [[66,69,73,78], [62,66,69,74], [61,64,69,73], [64,68,71,76]],
-      bass: 66, tempo: 560, attack: 0.03, sustain: 1.1, release: 2.4,
-      noteGain: 0.045, bassGain: 0.015,
-      masterVol: 0.26, filterCut: 2800, vibratoDepth: 2.5, vibratoRate: 0.08
-    },
-    { // Wednesday — "Midweek": suspended. D → A → F#m → E
-      name: 'Midweek',
-      chords: [[62,66,69,74], [61,64,69,73], [61,66,69,73], [64,68,71,76]],
-      bass: 62, tempo: 520, attack: 0.025, sustain: 1.0, release: 2.2,
-      noteGain: 0.047, bassGain: 0.013,
-      masterVol: 0.27, filterCut: 3200, vibratoDepth: 2, vibratoRate: 0.11
-    },
-    { // Thursday — "Gathering": forward momentum. A → F#m → D → E
-      name: 'Gathering',
-      chords: [[61,64,69,73], [61,66,69,73], [62,66,69,74], [64,68,71,76]],
-      bass: 69, tempo: 470, attack: 0.025, sustain: 0.85, release: 1.9,
-      noteGain: 0.052, bassGain: 0.014,
-      masterVol: 0.30, filterCut: 3800, vibratoDepth: 1.8, vibratoRate: 0.10
-    },
-    { // Friday — "Open Window": bright, released. E → A → D → F#m
-      name: 'Open Window',
-      chords: [[64,68,71,76], [64,69,73,76], [62,66,69,74], [66,69,73,78]],
-      bass: 64, tempo: 490, attack: 0.025, sustain: 0.9, release: 2.0,
-      noteGain: 0.045, bassGain: 0.012,
-      masterVol: 0.26, filterCut: 3500, vibratoDepth: 1.8, vibratoRate: 0.10
-    },
-    { // Saturday — "Long Morning": spacious, unhurried. A → C#m → D → E
-      name: 'Long Morning',
-      chords: [[61,64,69,73], [61,64,68,73], [62,66,69,74], [64,68,71,76]],
-      bass: 69, tempo: 580, attack: 0.03, sustain: 1.1, release: 2.5,
-      noteGain: 0.044, bassGain: 0.015,
-      masterVol: 0.25, filterCut: 2800, vibratoDepth: 2.5, vibratoRate: 0.07
-    }
+const SoundEngine = (function() {
+  // ── 7 soundscapes in A major — one per day ──────────────────
+  // Hypnotic: up-and-back arpeggio pattern, each chord sustained
+  // for 2 full cycles (~7s) before changing. Breathing tempo
+  // oscillates ±10% over 20s. Dynamic swell within each cycle.
+  // Piano pp with sustain pedal — notes wash into each other.
+  var SONGS = [
+    { name:'Still Water',   chords:[[61,64,69,73],[64,68,71,76],[61,66,69,73],[62,66,69,74]], bass:69, tempo:620, attack:0.025, sustain:1.0, release:2.2, noteGain:0.050, bassGain:0.012, masterVol:0.28, filterCut:3200, vibratoDepth:2, vibratoRate:0.12 },
+    { name:'First Light',   chords:[[61,64,69,73],[62,66,69,74],[64,68,71,76],[64,69,73,76]], bass:69, tempo:580, attack:0.025, sustain:0.9, release:2.0, noteGain:0.052, bassGain:0.014, masterVol:0.30, filterCut:3800, vibratoDepth:1.8, vibratoRate:0.10 },
+    { name:'Quiet River',   chords:[[66,69,73,78],[62,66,69,74],[61,64,69,73],[64,68,71,76]], bass:66, tempo:650, attack:0.03,  sustain:1.1, release:2.4, noteGain:0.046, bassGain:0.015, masterVol:0.26, filterCut:2800, vibratoDepth:2.5, vibratoRate:0.08 },
+    { name:'Midweek',       chords:[[62,66,69,74],[61,64,69,73],[61,66,69,73],[64,68,71,76]], bass:62, tempo:610, attack:0.025, sustain:1.0, release:2.2, noteGain:0.048, bassGain:0.013, masterVol:0.27, filterCut:3200, vibratoDepth:2, vibratoRate:0.11 },
+    { name:'Gathering',     chords:[[61,64,69,73],[61,66,69,73],[62,66,69,74],[64,68,71,76]], bass:69, tempo:560, attack:0.025, sustain:0.85,release:1.9, noteGain:0.054, bassGain:0.014, masterVol:0.30, filterCut:3800, vibratoDepth:1.8, vibratoRate:0.10 },
+    { name:'Open Window',   chords:[[64,68,71,76],[64,69,73,76],[62,66,69,74],[66,69,73,78]], bass:64, tempo:590, attack:0.025, sustain:0.9, release:2.0, noteGain:0.047, bassGain:0.012, masterVol:0.26, filterCut:3500, vibratoDepth:1.8, vibratoRate:0.10 },
+    { name:'Long Morning',  chords:[[61,64,69,73],[61,64,68,73],[62,66,69,74],[64,68,71,76]], bass:69, tempo:660, attack:0.03,  sustain:1.1, release:2.5, noteGain:0.044, bassGain:0.015, masterVol:0.25, filterCut:2800, vibratoDepth:2.5, vibratoRate:0.07 }
   ];
 
-  let ctx = null, masterGain = null, filter = null;
-  let arpeggioTimer = null, running = false, muted = false;
-  let activePads = [];
+  // Up-and-back: ascend through chord tones then descend.
+  // Creates a rocking, flowing motion — no clear start/end.
+  var PATTERN = [0, 1, 2, 3, 2, 1];
+  // Dynamic swell: gentle crescendo up, diminuendo back.
+  var DYNAMICS = [0.82, 0.92, 1.0, 0.88, 0.78, 0.72];
+  var REPEATS_PER_CHORD = 2; // ~7s per chord at 600ms
+
+  var ctx = null, masterGain = null, filter = null;
+  var arpeggioTimer = null, running = false, muted = false;
+  var activePads = [];
 
   function midiToFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
 
   // ── Note: piano pp with sustain pedal ─────────────────────
-  // Soft onset → note holds at ~45% (pedal keeps dampers off
-  // the strings) → long gentle release. Notes overlap and blend
-  // into each other like Yiruma's sustained passages.
-  function emitNote(midi, s) {
-    if (!ctx || !running) return;
-    const now = ctx.currentTime;
-    const freq = midiToFreq(midi);
-    const dur = s.attack + s.sustain + s.release;
-    const g = Math.max(s.noteGain, 0.0001);
+  function emitNote(midi, s, dyn) {
+    if (!ctx || !running || ctx.state !== 'running') return;
+    var now = ctx.currentTime;
+    var freq = midiToFreq(midi);
+    var dur = s.attack + s.sustain + s.release;
+    var g = Math.max(s.noteGain * (dyn || 1), 0.0001);
 
-    const osc = ctx.createOscillator();
+    var osc = ctx.createOscillator();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, now);
-    const env = ctx.createGain();
+    var env = ctx.createGain();
     env.gain.setValueAtTime(0.0001, now);
-    // Soft bloom to peak (piano pp)
     env.gain.exponentialRampToValueAtTime(g, now + s.attack);
-    // Sustain pedal — note rings at ~45% of peak
     env.gain.exponentialRampToValueAtTime(Math.max(g * 0.45, 0.0001),
       now + s.attack + s.sustain);
-    // Gradual release (string resonance fading)
     env.gain.exponentialRampToValueAtTime(0.0001, now + dur);
     osc.connect(env);
     env.connect(filter);
     osc.start(now);
     osc.stop(now + dur + 0.1);
 
-    const ref = { osc, env };
+    var ref = { osc: osc, env: env };
     activePads.push(ref);
-    setTimeout(() => {
-      const i = activePads.indexOf(ref);
+    setTimeout(function() {
+      var i = activePads.indexOf(ref);
       if (i > -1) activePads.splice(i, 1);
     }, (dur + 0.3) * 1000);
   }
 
-  // ── Arpeggiator: ascending broken chords ─────────────────
+  // ── Arpeggiator: flowing up-and-back with breathing tempo ──
   function startArpeggio(s) {
-    let chordIdx = 0, noteIdx = 0;
+    var chordIdx = 0, noteIdx = 0, repeats = 0;
+    var t0 = Date.now();
+
     function tick() {
       if (!running) return;
-      const chord = s.chords[chordIdx];
-      emitNote(chord[noteIdx], s);
+      var chord = s.chords[chordIdx];
+      var patIdx = PATTERN[noteIdx % PATTERN.length];
+      var dyn = DYNAMICS[noteIdx % DYNAMICS.length];
+
+      emitNote(chord[patIdx], s, dyn);
+
       noteIdx++;
-      if (noteIdx >= chord.length) {
+      if (noteIdx >= PATTERN.length) {
         noteIdx = 0;
-        chordIdx = (chordIdx + 1) % s.chords.length;
+        repeats++;
+        if (repeats >= REPEATS_PER_CHORD) {
+          repeats = 0;
+          chordIdx = (chordIdx + 1) % s.chords.length;
+        }
       }
-      const jitter = (Math.random() - 0.5) * 30;
-      arpeggioTimer = setTimeout(tick, s.tempo + jitter);
+
+      // Breathing tempo: slow sinusoidal oscillation (20s period)
+      var elapsed = (Date.now() - t0) / 1000;
+      var breathe = 1.0 + 0.1 * Math.sin(elapsed * 2 * Math.PI / 20);
+      var jitter = (Math.random() - 0.5) * 30;
+      arpeggioTimer = setTimeout(tick, s.tempo * breathe + jitter);
     }
     tick();
   }
@@ -1490,7 +1466,7 @@ const SoundEngine = (() => {
   function hardStop() {
     running = false;
     if (arpeggioTimer) { clearTimeout(arpeggioTimer); arpeggioTimer = null; }
-    activePads.forEach(p => {
+    activePads.forEach(function(p) {
       try { if (p.osc) p.osc.stop(); } catch(e) {}
       try { if (p.env) p.env.disconnect(); } catch(e) {}
     });
@@ -1499,20 +1475,19 @@ const SoundEngine = (() => {
     if (masterGain) { masterGain.disconnect(); masterGain = null; }
   }
 
-  // ── iOS/WebKit audio unlock ───────────────────────────────
-  let unlocked = false;
+  // ── iOS audio unlock ──────────────────────────────────────
+  function kickAudio() {
+    try { document.getElementById('audio-kick').play(); } catch(e) {}
+  }
   function unlock() {
-    if (unlocked) return;
+    kickAudio();
     try {
       if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
       if (ctx.state === 'suspended') ctx.resume();
       var b = ctx.createBuffer(1, 1, ctx.sampleRate);
-      var src = ctx.createBufferSource();
-      src.buffer = b;
-      src.connect(ctx.destination);
-      src.start();
+      var s = ctx.createBufferSource();
+      s.buffer = b; s.connect(ctx.destination); s.start();
     } catch(e) {}
-    if (ctx && ctx.state === 'running') unlocked = true;
   }
   ['touchstart','touchend','mousedown','click'].forEach(function(evt) {
     document.addEventListener(evt, unlock, true);
@@ -1533,7 +1508,6 @@ const SoundEngine = (() => {
     filter.Q.setValueAtTime(0.5, now);
     filter.connect(masterGain);
 
-    // Ghibli bass warmth
     var bass = ctx.createOscillator();
     bass.type = 'sine';
     bass.frequency.setValueAtTime(midiToFreq(s.bass), now);
@@ -1562,37 +1536,15 @@ const SoundEngine = (() => {
     start: function() {
       if (running) return;
       if (masterGain) hardStop();
-
       if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
-
-      // Force resume + silent buffer
+      kickAudio();
       try {
         ctx.resume();
         var b = ctx.createBuffer(1, 1, ctx.sampleRate);
         var src = ctx.createBufferSource();
-        src.buffer = b;
-        src.connect(ctx.destination);
-        src.start();
+        src.buffer = b; src.connect(ctx.destination); src.start();
       } catch(e) {}
-
-      var s = SONGS[new Date().getDay()];
-
-      if (ctx.state === 'running') {
-        launch(s);
-      } else {
-        // Simple polling — no statechange, no promises
-        var attempts = 0;
-        var poll = setInterval(function() {
-          attempts++;
-          if (running) { clearInterval(poll); return; }
-          try { ctx.resume(); } catch(e) {}
-          if (ctx.state === 'running') {
-            clearInterval(poll);
-            launch(s);
-          }
-          if (attempts > 30) clearInterval(poll);
-        }, 100);
-      }
+      launch(SONGS[new Date().getDay()]);
     },
 
     stop: function() {
