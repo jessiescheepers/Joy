@@ -13,26 +13,30 @@ function getResend() {
   return new Resend(process.env.RESEND_API_KEY);
 }
 
-// Simple in-memory rate limiting (resets on server restart)
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour
+const RATE_LIMIT_WINDOW_SECONDS = 3600; // 1 hour
 const RATE_LIMIT_MAX = 5; // 5 signups per IP per hour
 
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const record = rateLimitMap.get(ip);
+async function isRateLimited(
+  supabase: ReturnType<typeof getSupabase>,
+  ip: string
+): Promise<boolean> {
+  const windowStart = new Date(
+    Date.now() - RATE_LIMIT_WINDOW_SECONDS * 1000
+  ).toISOString();
 
-  if (!record || now > record.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+  const { count, error } = await supabase
+    .from("waitlist")
+    .select("*", { count: "exact", head: true })
+    .eq("ip", ip)
+    .gte("created_at", windowStart);
+
+  if (error) {
+    // If rate-limit check fails, allow the request (fail open)
+    console.error("Rate limit check error:", error);
     return false;
   }
 
-  if (record.count >= RATE_LIMIT_MAX) {
-    return true;
-  }
-
-  record.count++;
-  return false;
+  return (count ?? 0) >= RATE_LIMIT_MAX;
 }
 
 export async function POST(request: NextRequest) {
@@ -44,7 +48,7 @@ export async function POST(request: NextRequest) {
     const ip = forwarded ? forwarded.split(",")[0].trim() : request.headers.get("x-real-ip") ?? "unknown";
 
     // Check rate limit
-    if (isRateLimited(ip)) {
+    if (await isRateLimited(supabase, ip)) {
       return NextResponse.json(
         { error: "Too many requests. Please try again later." },
         { status: 429 }
@@ -68,13 +72,13 @@ export async function POST(request: NextRequest) {
     let country: string | null = null;
 
     try {
-      const geoRes = await fetch(`http://ip-api.com/json/${ip}?fields=city,country`, {
+      const geoRes = await fetch(`https://ipapi.co/${ip}/json/`, {
         signal: AbortSignal.timeout(3000),
       });
       if (geoRes.ok) {
         const geo = await geoRes.json();
         city = geo.city || null;
-        country = geo.country || null;
+        country = geo.country_name || null;
       }
     } catch {
       // Geolocation is best-effort; continue without it
