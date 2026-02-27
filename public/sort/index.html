@@ -1370,102 +1370,142 @@ function moveSliderToPointer(wrap, e) {
 // (Name submit removed — spirograph starts immediately)
 
 // ═══════════════════════════════════════════════════════════════
-// AMBIENT SOUND ENGINE — River Flows in You × Studio Ghibli
+// AMBIENT SOUND ENGINE — Endel × Amélie × Cinematic Orchestra
 // ═══════════════════════════════════════════════════════════════
 const SoundEngine = (function() {
-  // ── 7 soundscapes in A major — one per day ──────────────────
-  // Hypnotic: up-and-back arpeggio pattern, each chord sustained
-  // for 2 full cycles (~7s) before changing. Breathing tempo
-  // oscillates ±10% over 20s. Dynamic swell within each cycle.
-  // Piano pp with sustain pedal — notes wash into each other.
+  // Generative ambient trance (Endel) with film-score harmonic
+  // beauty (Amélie, To Build A Home). NOT a piano arpeggiator —
+  // individual tones drift in and out at random intervals over a
+  // slowly evolving chord bed. Lightness from River Flows in You.
+  //
+  // Three layers:
+  //   Sparkle — random bell-like tones from the current chord,
+  //             appearing every 1.2–3s, each with its own dynamics
+  //   Pad     — 2 sustained chord tones, very slow bloom/fade,
+  //             creating the harmonic bed underneath
+  //   Bass    — barely-there drone with organic vibrato (Ghibli)
+  //
+  // A minor scale throughout: warm, emotional, Amélie-adjacent.
+  // All notes ≥ C4 (262 Hz) for phone speakers.
+
+  var SCALE = [60,62,64,65,67,69,71,72,74,76]; // Am: C4–E5
+
   var SONGS = [
-    { name:'Still Water',   chords:[[61,64,69,73],[64,68,71,76],[61,66,69,73],[62,66,69,74]], bass:69, tempo:620, attack:0.025, sustain:1.0, release:2.2, noteGain:0.050, bassGain:0.012, masterVol:0.28, filterCut:3200, vibratoDepth:2, vibratoRate:0.12 },
-    { name:'First Light',   chords:[[61,64,69,73],[62,66,69,74],[64,68,71,76],[64,69,73,76]], bass:69, tempo:580, attack:0.025, sustain:0.9, release:2.0, noteGain:0.052, bassGain:0.014, masterVol:0.30, filterCut:3800, vibratoDepth:1.8, vibratoRate:0.10 },
-    { name:'Quiet River',   chords:[[66,69,73,78],[62,66,69,74],[61,64,69,73],[64,68,71,76]], bass:66, tempo:650, attack:0.03,  sustain:1.1, release:2.4, noteGain:0.046, bassGain:0.015, masterVol:0.26, filterCut:2800, vibratoDepth:2.5, vibratoRate:0.08 },
-    { name:'Midweek',       chords:[[62,66,69,74],[61,64,69,73],[61,66,69,73],[64,68,71,76]], bass:62, tempo:610, attack:0.025, sustain:1.0, release:2.2, noteGain:0.048, bassGain:0.013, masterVol:0.27, filterCut:3200, vibratoDepth:2, vibratoRate:0.11 },
-    { name:'Gathering',     chords:[[61,64,69,73],[61,66,69,73],[62,66,69,74],[64,68,71,76]], bass:69, tempo:560, attack:0.025, sustain:0.85,release:1.9, noteGain:0.054, bassGain:0.014, masterVol:0.30, filterCut:3800, vibratoDepth:1.8, vibratoRate:0.10 },
-    { name:'Open Window',   chords:[[64,68,71,76],[64,69,73,76],[62,66,69,74],[66,69,73,78]], bass:64, tempo:590, attack:0.025, sustain:0.9, release:2.0, noteGain:0.047, bassGain:0.012, masterVol:0.26, filterCut:3500, vibratoDepth:1.8, vibratoRate:0.10 },
-    { name:'Long Morning',  chords:[[61,64,69,73],[61,64,68,73],[62,66,69,74],[64,68,71,76]], bass:69, tempo:660, attack:0.03,  sustain:1.1, release:2.5, noteGain:0.044, bassGain:0.015, masterVol:0.25, filterCut:2800, vibratoDepth:2.5, vibratoRate:0.07 }
+    { name:'Comptine',    chords:[[60,64,69,72,76],[60,65,69,72],[60,64,67,72],[62,67,71,74]], bass:69, sparkleMin:1200, sparkleMax:3000, chordDur:18000, sparkleGain:0.07, padGain:0.028, masterVol:0.32, filterCut:3500, bassGain:0.012, vibratoDepth:2, vibratoRate:0.12 },
+    { name:'First Light', chords:[[60,64,67,72],[62,67,71,74],[60,64,69,72,76],[60,65,69,72]], bass:60, sparkleMin:1000, sparkleMax:2600, chordDur:16000, sparkleGain:0.075, padGain:0.030, masterVol:0.34, filterCut:4000, bassGain:0.013, vibratoDepth:1.8, vibratoRate:0.10 },
+    { name:'Still River', chords:[[60,64,69,72,76],[64,67,71,76],[60,65,69,72],[60,64,67,72]], bass:64, sparkleMin:1400, sparkleMax:3200, chordDur:20000, sparkleGain:0.065, padGain:0.032, masterVol:0.30, filterCut:2800, bassGain:0.015, vibratoDepth:2.5, vibratoRate:0.08 },
+    { name:'Midweek',     chords:[[60,65,69,72],[60,64,67,72],[60,64,69,72,76],[62,67,71,74]], bass:65, sparkleMin:1200, sparkleMax:2800, chordDur:17000, sparkleGain:0.068, padGain:0.028, masterVol:0.31, filterCut:3200, bassGain:0.013, vibratoDepth:2, vibratoRate:0.11 },
+    { name:'Gathering',   chords:[[60,64,69,72,76],[62,65,69,74],[62,67,71,74],[60,64,67,72]], bass:69, sparkleMin:1000, sparkleMax:2400, chordDur:15000, sparkleGain:0.078, padGain:0.026, masterVol:0.34, filterCut:4000, bassGain:0.012, vibratoDepth:1.8, vibratoRate:0.10 },
+    { name:'Open Window', chords:[[60,64,67,72],[60,64,69,72,76],[60,65,69,72],[62,67,71,74]], bass:60, sparkleMin:1100, sparkleMax:2700, chordDur:16000, sparkleGain:0.072, padGain:0.030, masterVol:0.33, filterCut:3800, bassGain:0.013, vibratoDepth:1.8, vibratoRate:0.10 },
+    { name:'Long Morning',chords:[[60,64,69,72,76],[60,65,69,72],[62,65,69,74],[64,67,71,76]], bass:69, sparkleMin:1500, sparkleMax:3500, chordDur:22000, sparkleGain:0.060, padGain:0.034, masterVol:0.28, filterCut:2600, bassGain:0.016, vibratoDepth:3, vibratoRate:0.07 }
   ];
 
-  // Up-and-back: ascend through chord tones then descend.
-  // Creates a rocking, flowing motion — no clear start/end.
-  var PATTERN = [0, 1, 2, 3, 2, 1];
-  // Dynamic swell: gentle crescendo up, diminuendo back.
-  var DYNAMICS = [0.82, 0.92, 1.0, 0.88, 0.78, 0.72];
-  var REPEATS_PER_CHORD = 2; // ~7s per chord at 600ms
+  // Shared envelope shapes (define the "character")
+  var SP_ATK = 0.035, SP_SUS = 0.7, SP_REL = 1.8;
+  var PD_ATK = 3.5, PD_HOLD = 12, PD_REL = 5;
 
-  var ctx = null, masterGain = null, filter = null;
-  var arpeggioTimer = null, running = false, muted = false;
-  var activePads = [];
+  var ctx, masterGain, filter;
+  var sparkleTimer, chordTimer, running = false, muted = false;
+  var activePads = [], currentChord = 0;
 
   function midiToFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
 
-  // ── Note: piano pp with sustain pedal ─────────────────────
-  function emitNote(midi, s, dyn) {
-    if (!ctx || !running || ctx.state !== 'running') return;
-    var now = ctx.currentTime;
-    var freq = midiToFreq(midi);
-    var dur = s.attack + s.sustain + s.release;
-    var g = Math.max(s.noteGain * (dyn || 1), 0.0001);
-
-    var osc = ctx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, now);
-    var env = ctx.createGain();
-    env.gain.setValueAtTime(0.0001, now);
-    env.gain.exponentialRampToValueAtTime(g, now + s.attack);
-    env.gain.exponentialRampToValueAtTime(Math.max(g * 0.45, 0.0001),
-      now + s.attack + s.sustain);
-    env.gain.exponentialRampToValueAtTime(0.0001, now + dur);
-    osc.connect(env);
-    env.connect(filter);
-    osc.start(now);
-    osc.stop(now + dur + 0.1);
-
+  function track(osc, env, dur) {
     var ref = { osc: osc, env: env };
     activePads.push(ref);
     setTimeout(function() {
       var i = activePads.indexOf(ref);
       if (i > -1) activePads.splice(i, 1);
-    }, (dur + 0.3) * 1000);
+    }, (dur + 0.5) * 1000);
   }
 
-  // ── Arpeggiator: flowing up-and-back with breathing tempo ──
-  function startArpeggio(s) {
-    var chordIdx = 0, noteIdx = 0, repeats = 0;
-    var t0 = Date.now();
+  // ── Sparkle: bell-like tone, drifts in then fades ─────────
+  function emitSparkle(midi, s) {
+    if (!ctx || !running || ctx.state !== 'running') return;
+    var now = ctx.currentTime;
+    var dur = SP_ATK + SP_SUS + SP_REL;
+    // Each sparkle has its own dynamics (0.65–1.0×) — organic variation
+    var g = Math.max(s.sparkleGain * (0.65 + Math.random() * 0.35), 0.0001);
 
-    function tick() {
+    var osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(midiToFreq(midi), now);
+    // Slight random detune: ±3 cents — Endel phasing quality
+    osc.detune.setValueAtTime((Math.random() - 0.5) * 6, now);
+
+    var env = ctx.createGain();
+    env.gain.setValueAtTime(0.0001, now);
+    env.gain.exponentialRampToValueAtTime(g, now + SP_ATK);
+    env.gain.exponentialRampToValueAtTime(Math.max(g * 0.4, 0.0001),
+      now + SP_ATK + SP_SUS);
+    env.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+    osc.connect(env); env.connect(filter);
+    osc.start(now); osc.stop(now + dur + 0.1);
+    track(osc, env, dur);
+  }
+
+  // ── Pad: slow-bloom sustained tone, harmonic bed ──────────
+  function emitPad(midi, s) {
+    if (!ctx || !running || ctx.state !== 'running') return;
+    var now = ctx.currentTime;
+    var dur = PD_ATK + PD_HOLD + PD_REL;
+    var g = Math.max(s.padGain, 0.0001);
+
+    var osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(midiToFreq(midi), now);
+
+    var env = ctx.createGain();
+    env.gain.setValueAtTime(0.0001, now);
+    env.gain.exponentialRampToValueAtTime(g, now + PD_ATK);
+    env.gain.setValueAtTime(g, now + PD_ATK + 0.1);
+    env.gain.exponentialRampToValueAtTime(Math.max(g * 0.65, 0.0001),
+      now + PD_ATK + PD_HOLD);
+    env.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+    osc.connect(env); env.connect(filter);
+    osc.start(now); osc.stop(now + dur + 0.1);
+    track(osc, env, dur);
+  }
+
+  // ── Sparkle scheduler: random timing, random notes ────────
+  function startSparkles(s) {
+    function spark() {
       if (!running) return;
-      var chord = s.chords[chordIdx];
-      var patIdx = PATTERN[noteIdx % PATTERN.length];
-      var dyn = DYNAMICS[noteIdx % DYNAMICS.length];
-
-      emitNote(chord[patIdx], s, dyn);
-
-      noteIdx++;
-      if (noteIdx >= PATTERN.length) {
-        noteIdx = 0;
-        repeats++;
-        if (repeats >= REPEATS_PER_CHORD) {
-          repeats = 0;
-          chordIdx = (chordIdx + 1) % s.chords.length;
-        }
+      var chord = s.chords[currentChord];
+      var note;
+      // 80% chord tone (consonant), 20% scale tone (passing colour)
+      if (Math.random() < 0.2) {
+        note = SCALE[Math.floor(Math.random() * SCALE.length)];
+      } else {
+        note = chord[Math.floor(Math.random() * chord.length)];
       }
-
-      // Breathing tempo: slow sinusoidal oscillation (20s period)
-      var elapsed = (Date.now() - t0) / 1000;
-      var breathe = 1.0 + 0.1 * Math.sin(elapsed * 2 * Math.PI / 20);
-      var jitter = (Math.random() - 0.5) * 30;
-      arpeggioTimer = setTimeout(tick, s.tempo * breathe + jitter);
+      emitSparkle(note, s);
+      var wait = s.sparkleMin + Math.random() * (s.sparkleMax - s.sparkleMin);
+      sparkleTimer = setTimeout(spark, wait);
     }
-    tick();
+    sparkleTimer = setTimeout(spark, 600);
+  }
+
+  // ── Chord scheduler: emit pads, advance harmony ───────────
+  function startChords(s) {
+    function next() {
+      if (!running) return;
+      var chord = s.chords[currentChord];
+      // 2 pad tones: root + middle of chord voicing
+      emitPad(chord[0], s);
+      emitPad(chord[Math.floor(chord.length / 2)], s);
+      chordTimer = setTimeout(function() {
+        currentChord = (currentChord + 1) % s.chords.length;
+        next();
+      }, s.chordDur);
+    }
+    next();
   }
 
   function hardStop() {
     running = false;
-    if (arpeggioTimer) { clearTimeout(arpeggioTimer); arpeggioTimer = null; }
+    if (sparkleTimer) { clearTimeout(sparkleTimer); sparkleTimer = null; }
+    if (chordTimer) { clearTimeout(chordTimer); chordTimer = null; }
     activePads.forEach(function(p) {
       try { if (p.osc) p.osc.stop(); } catch(e) {}
       try { if (p.env) p.env.disconnect(); } catch(e) {}
@@ -1495,11 +1535,12 @@ const SoundEngine = (function() {
 
   function launch(s) {
     running = true;
+    currentChord = 0;
     var now = ctx.currentTime;
 
     masterGain = ctx.createGain();
     masterGain.gain.setValueAtTime(0, now);
-    masterGain.gain.linearRampToValueAtTime(muted ? 0 : s.masterVol, now + 1.5);
+    masterGain.gain.linearRampToValueAtTime(muted ? 0 : s.masterVol, now + 2);
     masterGain.connect(ctx.destination);
 
     filter = ctx.createBiquadFilter();
@@ -1508,14 +1549,14 @@ const SoundEngine = (function() {
     filter.Q.setValueAtTime(0.5, now);
     filter.connect(masterGain);
 
+    // Ghibli bass warmth
     var bass = ctx.createOscillator();
     bass.type = 'sine';
     bass.frequency.setValueAtTime(midiToFreq(s.bass), now);
     var bassEnv = ctx.createGain();
     bassEnv.gain.setValueAtTime(0, now);
-    bassEnv.gain.linearRampToValueAtTime(s.bassGain, now + 5);
-    bass.connect(bassEnv);
-    bassEnv.connect(filter);
+    bassEnv.gain.linearRampToValueAtTime(s.bassGain, now + 6);
+    bass.connect(bassEnv); bassEnv.connect(filter);
     bass.start(now);
     activePads.push({ osc: bass, env: bassEnv });
 
@@ -1524,12 +1565,12 @@ const SoundEngine = (function() {
     vib.frequency.setValueAtTime(s.vibratoRate, now);
     var vibG = ctx.createGain();
     vibG.gain.setValueAtTime(s.vibratoDepth, now);
-    vib.connect(vibG);
-    vibG.connect(bass.detune);
+    vib.connect(vibG); vibG.connect(bass.detune);
     vib.start(now);
     activePads.push({ osc: vib, env: vibG });
 
-    startArpeggio(s);
+    startSparkles(s);
+    startChords(s);
   }
 
   return {
@@ -1549,7 +1590,8 @@ const SoundEngine = (function() {
 
     stop: function() {
       running = false;
-      if (arpeggioTimer) { clearTimeout(arpeggioTimer); arpeggioTimer = null; }
+      if (sparkleTimer) { clearTimeout(sparkleTimer); sparkleTimer = null; }
+      if (chordTimer) { clearTimeout(chordTimer); chordTimer = null; }
       if (masterGain && ctx) {
         var now = ctx.currentTime;
         masterGain.gain.cancelScheduledValues(now);
