@@ -96,9 +96,11 @@ body {
 }
 .checkin-moment.exit-up {
   animation: momentExitUp 0.4s cubic-bezier(0.4,0,0.2,1) forwards;
+  pointer-events: none !important;
 }
 .checkin-moment.enter-up {
   animation: momentEnterUp 0.45s cubic-bezier(0.16,1,0.3,1) forwards;
+  pointer-events: auto !important;
 }
 
 @keyframes momentExitUp {
@@ -1050,10 +1052,17 @@ function showMoment(idx) {
     const ql = next.querySelector('.question-label');
     if (ql) { topLabel.innerHTML = ql.innerHTML; }
     topLabel.classList.remove('hidden');
+    // Force style recalc so animation starts cleanly
+    void next.offsetWidth;
+
     next.addEventListener('animationend', function handler() {
       next.removeEventListener('animationend', handler);
       next.classList.remove('enter-up');
+      advancing = false; // Unlock interaction only after animation completes
     }, { once: true });
+
+    // Safety: if animationend never fires (e.g. reduced-motion), unlock after timeout
+    setTimeout(() => { advancing = false; }, 500);
 
     // Reset slider to default value for this moment
     const wrap = next.querySelector('.slider-wrap');
@@ -1064,7 +1073,6 @@ function showMoment(idx) {
     }
 
     updateDots();
-    advancing = false;
   }, 250);
 }
 
@@ -1177,13 +1185,13 @@ function onSliderKey(e) {
 }
 
 function onSliderDown(e) {
+  e.preventDefault(); // Must be first — prevents Safari scroll during transition dead zone
+
   if (advancing) return;
 
   // Only respond to the active moment's slider
   const moment = e.currentTarget.closest('.checkin-moment');
   if (!moment || !moment.classList.contains('active')) return;
-
-  e.preventDefault();
 
   // Clear any pending auto-advance so slider isn't yanked away mid-drag
   if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
@@ -1914,12 +1922,22 @@ async function shareTwitter() {
   window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(text), '_blank');
 }
 
-// Share on LinkedIn — copy image + text to clipboard, open LinkedIn
+// Share on LinkedIn — mobile: native share (routes to LI app), desktop: clipboard + open LI
 async function shareLinkedIn() {
   closeShareSheet();
   const blob = await getCardPngBlob();
   if (!blob) return;
   const text = getGlowText() + '\nfeeljoy.ai';
+  const fname = 'joy-sort-' + dateStr.replace(/\s/g, '-').toLowerCase() + '.png';
+  const file = new File([blob], fname, { type: 'image/png' });
+  // Mobile: native share sheet — user picks LinkedIn app directly
+  if (IS_MOBILE && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], text });
+      return;
+    } catch (e) { if (e.name === 'AbortError') return; }
+  }
+  // Desktop: copy image + text to clipboard, open LinkedIn
   let copied = false;
   try {
     if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
@@ -1931,7 +1949,6 @@ async function shareLinkedIn() {
     }
   } catch (_) {}
   if (!copied) {
-    // Fallback: save image, copy text only
     triggerDownload(blob, 'png');
     try { if (navigator.clipboard) await navigator.clipboard.writeText(text); } catch (_) {}
   }
