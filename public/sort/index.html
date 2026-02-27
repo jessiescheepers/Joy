@@ -1373,69 +1373,71 @@ const SoundEngine = (() => {
   // ── 7 curated soundscapes — one per day of the week ────────
   // Einaudi: repeating melodic cells, sustain-pedal resonance.
   // Ghibli: organic vibrato, wonder moments, wind textures.
-  // All in the warm D3–Bb3 zone (~147–233 Hz). Never shrill.
+  // D4–E4 root zone (~294–330 Hz). Audible on phone speakers (can't
+  // reproduce below ~250 Hz), warm on desktop. Drone sits at root
+  // (same octave), pads walk within one octave above.
   const SONGS = [
     { // Sunday — "Soft Close": reflective, tender, minor. End-of-week exhale.
       name: 'Soft Close',
-      root: 50, scale: [0, 3, 5, 7, 10], // D3, minor pentatonic
+      root: 62, scale: [0, 3, 5, 7, 10], // D4, minor pentatonic
       breath: 8.5, fadeIn: 2.4, hold: 7, fadeOut: 4.5,
       padGain: 0.038, fifth: false, detune: 0, masterVol: 0.18,
       droneLvl: 0.035, vibratoDepth: 3, lfoRate: 0.07,
-      filterCut: 2200, filterQ: 0.9,
+      filterCut: 3000, filterQ: 0.9,
       windLvl: 0, wonderGain: 0.015, wonderEvery: 30
     },
     { // Monday — "First Light": fresh, open, major. Gentle momentum.
       name: 'First Light',
-      root: 50, scale: [0, 2, 4, 7, 9], // D3, major pentatonic
+      root: 62, scale: [0, 2, 4, 7, 9], // D4, major pentatonic
       breath: 5.5, fadeIn: 1.8, hold: 5.5, fadeOut: 3,
       padGain: 0.042, fifth: true, detune: 0, masterVol: 0.22,
       droneLvl: 0.038, vibratoDepth: 2.5, lfoRate: 0.10,
-      filterCut: 3800, filterQ: 0.8,
+      filterCut: 5000, filterQ: 0.8,
       windLvl: 0, wonderGain: 0.020, wonderEvery: 22
     },
     { // Tuesday — "Steady Ground": grounded, warm, suspended. Settled.
       name: 'Steady Ground',
-      root: 51, scale: [0, 2, 5, 7, 10], // Eb3, mixed pentatonic
+      root: 63, scale: [0, 2, 5, 7, 10], // Eb4, mixed pentatonic
       breath: 7, fadeIn: 2.2, hold: 6, fadeOut: 3.5,
       padGain: 0.040, fifth: true, detune: 1, masterVol: 0.20,
       droneLvl: 0.042, vibratoDepth: 2, lfoRate: 0.08,
-      filterCut: 2600, filterQ: 0.9,
+      filterCut: 3500, filterQ: 0.9,
       windLvl: 0.003, wonderGain: 0.012, wonderEvery: 28
     },
     { // Wednesday — "Still Water": spacious, clear, contemplative midweek.
       name: 'Still Water',
-      root: 52, scale: [0, 2, 4, 7, 9], // E3, major pentatonic
+      root: 64, scale: [0, 2, 4, 7, 9], // E4, major pentatonic
       breath: 6.5, fadeIn: 2, hold: 6.5, fadeOut: 3.5,
       padGain: 0.036, fifth: false, detune: 0.5, masterVol: 0.19,
       droneLvl: 0.032, vibratoDepth: 3, lfoRate: 0.09,
-      filterCut: 3200, filterQ: 0.7,
+      filterCut: 4200, filterQ: 0.7,
       windLvl: 0, wonderGain: 0.018, wonderEvery: 25
     },
     { // Thursday — "Gathering": building, layered, forward momentum.
       name: 'Gathering',
-      root: 50, scale: [0, 2, 4, 7, 9], // D3, major pentatonic
+      root: 62, scale: [0, 2, 4, 7, 9], // D4, major pentatonic
       breath: 5, fadeIn: 1.6, hold: 5, fadeOut: 2.8,
       padGain: 0.044, fifth: true, detune: 0.8, masterVol: 0.23,
       droneLvl: 0.038, vibratoDepth: 2, lfoRate: 0.12,
-      filterCut: 3600, filterQ: 0.8,
+      filterCut: 4800, filterQ: 0.8,
       windLvl: 0.002, wonderGain: 0.020, wonderEvery: 20
     },
     { // Friday — "Open Window": luminous, released, lightest of all.
       name: 'Open Window',
-      root: 52, scale: [0, 2, 4, 7, 9], // E3, major pentatonic
+      root: 64, scale: [0, 2, 4, 7, 9], // E4, major pentatonic
       breath: 5.5, fadeIn: 1.8, hold: 6, fadeOut: 3,
       padGain: 0.042, fifth: true, detune: 0, masterVol: 0.22,
       droneLvl: 0.034, vibratoDepth: 2.5, lfoRate: 0.10,
-      filterCut: 4200, filterQ: 0.8,
+      filterCut: 5500, filterQ: 0.8,
       windLvl: 0, wonderGain: 0.024, wonderEvery: 18
     },
     { // Saturday — "Long Morning": unhurried, spacious, most room to breathe.
       name: 'Long Morning',
-      root: 50, scale: [0, 2, 5, 7, 10], // D3, mixed pentatonic
+      root: 62, scale: [0, 2, 5, 7, 10], // D4, mixed pentatonic
       breath: 9.5, fadeIn: 3, hold: 8, fadeOut: 5,
       padGain: 0.034, fifth: false, detune: 0.5, masterVol: 0.18,
       droneLvl: 0.042, vibratoDepth: 3.5, lfoRate: 0.06,
-      filterCut: 2800, filterQ: 0.9,
+      filterCut: 3800, filterQ: 0.9,
       windLvl: 0.002, wonderGain: 0.015, wonderEvery: 35
     }
   ];
@@ -1565,7 +1567,7 @@ const SoundEngine = (() => {
       const iv = intervals[Math.floor(Math.random() * 2)];
       const m1 = s.root + deg, m2 = s.root + deg + iv;
 
-      if (m2 <= 58) {
+      if (m2 <= 76) { // cap at E5 (~659 Hz) — warm, not shrill
         emitPad(midiToFreq(m1), 3, 5, 4, s.wonderGain, 0);
         setTimeout(() => {
           if (running) emitPad(midiToFreq(m2), 3.5, 4, 4.5, s.wonderGain*0.7, 0);
@@ -1590,6 +1592,20 @@ const SoundEngine = (() => {
     if (filter) { filter.disconnect(); filter = null; }
     if (masterGain) { masterGain.disconnect(); masterGain = null; }
   }
+
+  // iOS Chrome/Safari: pre-warm AudioContext on first touch anywhere.
+  // This guarantees the context is unlocked before start() runs.
+  let iosUnlocked = false;
+  function iosUnlock() {
+    if (iosUnlocked) return;
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(() => { iosUnlocked = true; });
+    } else { iosUnlocked = true; }
+  }
+  document.addEventListener('touchstart', iosUnlock, { once: false, passive: true });
+  document.addEventListener('touchend', iosUnlock, { once: false, passive: true });
+  document.addEventListener('click', iosUnlock, { once: false, passive: true });
 
   return {
     start() {
@@ -1618,7 +1634,7 @@ const SoundEngine = (() => {
       // Held root drone (Ghibli: living cello)
       const droneOsc = ctx.createOscillator();
       droneOsc.type = 'sine';
-      droneOsc.frequency.setValueAtTime(midiToFreq(s.root - 12), now);
+      droneOsc.frequency.setValueAtTime(midiToFreq(s.root), now);
       const droneEnv = ctx.createGain();
       droneEnv.gain.setValueAtTime(0, now);
       droneEnv.gain.linearRampToValueAtTime(s.droneLvl, now + 5);
