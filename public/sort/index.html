@@ -1367,340 +1367,279 @@ function moveSliderToPointer(wrap, e) {
 // (Name submit removed — spirograph starts immediately)
 
 // ═══════════════════════════════════════════════════════════════
-// AMBIENT SOUND ENGINE — generative Endel-inspired soundscape
+// AMBIENT SOUND ENGINE — Amélie × Cinematic Orchestra
 // ═══════════════════════════════════════════════════════════════
 const SoundEngine = (() => {
-  // ── 7 curated soundscapes — one per day of the week ────────
-  // Einaudi: repeating melodic cells, sustain-pedal resonance.
-  // Ghibli: organic vibrato, wonder moments, wind textures.
-  // D4–E4 root zone (~294–330 Hz). Audible on phone speakers (can't
-  // reproduce below ~250 Hz), warm on desktop. Drone sits at root
-  // (same octave), pads walk within one octave above.
+  // ── 7 soundscapes — one per day of the week ─────────────────
+  // Amélie (Yann Tiersen): arpeggiated broken chords, sustain-
+  // pedal resonance, fast attack / long release sine tones.
+  // Cinematic Orchestra ("To Build A Home"): held bass drone
+  // with cellist vibrato, spacious intervals, meditative.
+  // All frequencies ≥ 262 Hz (C4) for phone-speaker audibility.
   const SONGS = [
-    { // Sunday — "Soft Close": reflective, tender, minor. End-of-week exhale.
-      name: 'Soft Close',
-      root: 62, scale: [0, 3, 5, 7, 10], // D4, minor pentatonic
-      breath: 8.5, fadeIn: 2.4, hold: 7, fadeOut: 4.5,
-      padGain: 0.038, fifth: false, detune: 0, masterVol: 0.18,
-      droneLvl: 0.035, vibratoDepth: 3, lfoRate: 0.07,
-      filterCut: 3000, filterQ: 0.9,
-      windLvl: 0, wonderGain: 0.015, wonderEvery: 30
+    { // Sunday — "Comptine": reflective, tender. Am → F → C → G
+      name: 'Comptine',
+      chords: [[60,64,69,72], [60,65,69,72], [60,64,67,72], [62,67,71,74]],
+      bass: 60, tempo: 520, attack: 0.045, sustain: 2.2, release: 3.0,
+      noteGain: 0.055, octaveGain: 0.008, bassGain: 0.032,
+      masterVol: 0.20, filterCut: 3200, vibratoDepth: 2.5, vibratoRate: 0.12
     },
-    { // Monday — "First Light": fresh, open, major. Gentle momentum.
+    { // Monday — "First Light": hopeful, fresh. C → G → Am → F
       name: 'First Light',
-      root: 62, scale: [0, 2, 4, 7, 9], // D4, major pentatonic
-      breath: 5.5, fadeIn: 1.8, hold: 5.5, fadeOut: 3,
-      padGain: 0.042, fifth: true, detune: 0, masterVol: 0.22,
-      droneLvl: 0.038, vibratoDepth: 2.5, lfoRate: 0.10,
-      filterCut: 5000, filterQ: 0.8,
-      windLvl: 0, wonderGain: 0.020, wonderEvery: 22
+      chords: [[60,64,67,72], [62,67,71,74], [60,64,69,72], [60,65,69,72]],
+      bass: 60, tempo: 460, attack: 0.04, sustain: 2.0, release: 2.8,
+      noteGain: 0.058, octaveGain: 0.009, bassGain: 0.035,
+      masterVol: 0.22, filterCut: 4000, vibratoDepth: 2.0, vibratoRate: 0.10
     },
-    { // Tuesday — "Steady Ground": grounded, warm, suspended. Settled.
-      name: 'Steady Ground',
-      root: 63, scale: [0, 2, 5, 7, 10], // Eb4, mixed pentatonic
-      breath: 7, fadeIn: 2.2, hold: 6, fadeOut: 3.5,
-      padGain: 0.040, fifth: true, detune: 1, masterVol: 0.20,
-      droneLvl: 0.042, vibratoDepth: 2, lfoRate: 0.08,
-      filterCut: 3500, filterQ: 0.9,
-      windLvl: 0.003, wonderGain: 0.012, wonderEvery: 28
+    { // Tuesday — "Still River": deep, contemplative. Am → Em → F → C
+      name: 'Still River',
+      chords: [[60,64,69,72], [64,67,71,76], [60,65,69,72], [60,64,67,72]],
+      bass: 60, tempo: 560, attack: 0.05, sustain: 2.5, release: 3.2,
+      noteGain: 0.052, octaveGain: 0.007, bassGain: 0.038,
+      masterVol: 0.20, filterCut: 2800, vibratoDepth: 3.0, vibratoRate: 0.08
     },
-    { // Wednesday — "Still Water": spacious, clear, contemplative midweek.
-      name: 'Still Water',
-      root: 64, scale: [0, 2, 4, 7, 9], // E4, major pentatonic
-      breath: 6.5, fadeIn: 2, hold: 6.5, fadeOut: 3.5,
-      padGain: 0.036, fifth: false, detune: 0.5, masterVol: 0.19,
-      droneLvl: 0.032, vibratoDepth: 3, lfoRate: 0.09,
-      filterCut: 4200, filterQ: 0.7,
-      windLvl: 0, wonderGain: 0.018, wonderEvery: 25
+    { // Wednesday — "Midweek": suspended, spacious. Dm → Am → Em → F
+      name: 'Midweek',
+      chords: [[62,65,69,74], [60,64,69,72], [64,67,71,76], [60,65,69,72]],
+      bass: 62, tempo: 500, attack: 0.045, sustain: 2.2, release: 3.0,
+      noteGain: 0.054, octaveGain: 0.008, bassGain: 0.034,
+      masterVol: 0.20, filterCut: 3400, vibratoDepth: 2.5, vibratoRate: 0.11
     },
-    { // Thursday — "Gathering": building, layered, forward momentum.
+    { // Thursday — "Gathering": forward momentum. Am → C → F → G
       name: 'Gathering',
-      root: 62, scale: [0, 2, 4, 7, 9], // D4, major pentatonic
-      breath: 5, fadeIn: 1.6, hold: 5, fadeOut: 2.8,
-      padGain: 0.044, fifth: true, detune: 0.8, masterVol: 0.23,
-      droneLvl: 0.038, vibratoDepth: 2, lfoRate: 0.12,
-      filterCut: 4800, filterQ: 0.8,
-      windLvl: 0.002, wonderGain: 0.020, wonderEvery: 20
+      chords: [[60,64,69,72], [60,64,67,72], [60,65,69,72], [62,67,71,74]],
+      bass: 60, tempo: 440, attack: 0.04, sustain: 1.8, release: 2.5,
+      noteGain: 0.060, octaveGain: 0.010, bassGain: 0.036,
+      masterVol: 0.23, filterCut: 4200, vibratoDepth: 2.0, vibratoRate: 0.10
     },
-    { // Friday — "Open Window": luminous, released, lightest of all.
+    { // Friday — "Open Window": bright, released. C → Am → F → G
       name: 'Open Window',
-      root: 64, scale: [0, 2, 4, 7, 9], // E4, major pentatonic
-      breath: 5.5, fadeIn: 1.8, hold: 6, fadeOut: 3,
-      padGain: 0.042, fifth: true, detune: 0, masterVol: 0.22,
-      droneLvl: 0.034, vibratoDepth: 2.5, lfoRate: 0.10,
-      filterCut: 5500, filterQ: 0.8,
-      windLvl: 0, wonderGain: 0.024, wonderEvery: 18
+      chords: [[64,67,72,76], [64,69,72,76], [65,69,72,77], [62,67,71,74]],
+      bass: 64, tempo: 470, attack: 0.04, sustain: 2.0, release: 2.8,
+      noteGain: 0.058, octaveGain: 0.009, bassGain: 0.034,
+      masterVol: 0.22, filterCut: 4500, vibratoDepth: 2.0, vibratoRate: 0.10
     },
-    { // Saturday — "Long Morning": unhurried, spacious, most room to breathe.
+    { // Saturday — "Long Morning": unhurried, spacious. Am → Dm → G → C
       name: 'Long Morning',
-      root: 62, scale: [0, 2, 5, 7, 10], // D4, mixed pentatonic
-      breath: 9.5, fadeIn: 3, hold: 8, fadeOut: 5,
-      padGain: 0.034, fifth: false, detune: 0.5, masterVol: 0.18,
-      droneLvl: 0.042, vibratoDepth: 3.5, lfoRate: 0.06,
-      filterCut: 3800, filterQ: 0.9,
-      windLvl: 0.002, wonderGain: 0.015, wonderEvery: 35
+      chords: [[60,64,69,72], [62,65,69,74], [62,67,71,74], [60,64,67,72]],
+      bass: 60, tempo: 580, attack: 0.05, sustain: 2.5, release: 3.5,
+      noteGain: 0.050, octaveGain: 0.007, bassGain: 0.040,
+      masterVol: 0.19, filterCut: 2800, vibratoDepth: 3.5, vibratoRate: 0.07
     }
   ];
 
   let ctx = null, masterGain = null, filter = null;
-  let noiseSource = null, noiseGain = null;
-  let breathTimer = null, wonderTimer = null, running = false;
-  let muted = false;
+  let arpeggioTimer = null, running = false, muted = false;
   let activePads = [];
 
-  function midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
+  function midiToFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
 
-  function createWindBuffer() {
-    const len = ctx.sampleRate * 6;
-    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-    const data = buf.getChannelData(0);
-    let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
-    for (let i = 0; i < len; i++) {
-      const w = Math.random() * 2 - 1;
-      b0=0.99886*b0+w*0.0555179; b1=0.99332*b1+w*0.0750759;
-      b2=0.96900*b2+w*0.1538520; b3=0.86650*b3+w*0.3104856;
-      b4=0.55000*b4+w*0.5329522; b5=-0.7616*b5-w*0.0168980;
-      data[i]=(b0+b1+b2+b3+b4+b5+b6+w*0.5362)*0.11;
-      b6=w*0.115926;
-    }
-    return buf;
-  }
-
-  // ── Pad: bloom → ring → dissolve (Einaudi sustain pedal) ───
-  function emitPad(freq, fadeIn, hold, fadeOut, gain, detuneCents) {
+  // ── Note: bloom → sustain → dissolve (piano + sustain pedal) ──
+  function emitNote(midi, s) {
     if (!ctx || !running) return;
     const now = ctx.currentTime;
-    const dur = fadeIn + hold + fadeOut;
-    const g = Math.max(gain, 0.0001);
+    const freq = midiToFreq(midi);
+    const dur = s.attack + s.sustain + s.release;
+    const g = Math.max(s.noteGain, 0.0001);
+    const decay = Math.max(g * 0.45, 0.0001);
 
+    // Primary sine (piano fundamental)
     const osc = ctx.createOscillator();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, now);
-    if (detuneCents) osc.detune.setValueAtTime(detuneCents, now);
-
     const env = ctx.createGain();
     env.gain.setValueAtTime(0.0001, now);
-    env.gain.exponentialRampToValueAtTime(g, now + fadeIn);
-    env.gain.setValueAtTime(g, now + fadeIn + hold * 0.1);
-    env.gain.exponentialRampToValueAtTime(Math.max(g * 0.6, 0.0001), now + fadeIn + hold);
+    env.gain.exponentialRampToValueAtTime(g, now + s.attack);
+    env.gain.exponentialRampToValueAtTime(decay, now + s.attack + s.sustain);
     env.gain.exponentialRampToValueAtTime(0.0001, now + dur);
-
     osc.connect(env);
     env.connect(filter);
     osc.start(now);
-    osc.stop(now + dur + 0.2);
+    osc.stop(now + dur + 0.1);
 
     const ref = { osc, env };
     activePads.push(ref);
     setTimeout(() => {
       const i = activePads.indexOf(ref);
       if (i > -1) activePads.splice(i, 1);
-    }, (dur + 0.5) * 1000);
-  }
+    }, (dur + 0.3) * 1000);
 
-  // ── Einaudi cell: 3-note call-and-answer figure ────────────
-  function buildCell(scale, idx) {
-    const n = scale.length;
-    const a = idx % n, b = (idx+1) % n, c = (idx+2) % n;
-    return [scale[a],scale[b],scale[a], scale[a],scale[b],scale[c]];
-  }
-
-  // ── Breathing pads ─────────────────────────────────────────
-  function startBreathing(s) {
-    let cellPos = 0, cellStart = 0, cellRepeats = 0;
-    let cell = buildCell(s.scale, 0);
-
-    function breathe() {
-      if (!running) return;
-      const deg = cell[cellPos % cell.length];
-      const midi = s.root + deg;
-
-      emitPad(midiToFreq(midi), s.fadeIn, s.hold, s.fadeOut, s.padGain, 0);
-
-      // Resonance ghost: previous note still ringing (sustain pedal)
-      if (cellPos > 0) {
-        const prev = cell[(cellPos-1) % cell.length];
-        if (prev !== deg) {
-          emitPad(midiToFreq(s.root + prev),
-            s.fadeIn*0.5, s.hold*0.3, s.fadeOut*1.4, s.padGain*0.12, 0);
-        }
-      }
-
-      // Chorus shadow (detune > 0 adds warmth)
-      if (s.detune > 0.2) {
-        const sign = (cellPos % 2 === 0) ? 1 : -1;
-        emitPad(midiToFreq(midi), s.fadeIn*1.1, s.hold, s.fadeOut*1.1,
-          s.padGain*0.3, sign * s.detune);
-      }
-
-      // Fifth harmonic (Einaudi left-hand anchor)
-      if (s.fifth) {
-        emitPad(midiToFreq(midi + 7),
-          s.fadeIn*1.4, s.hold*0.5, s.fadeOut*1.3, s.padGain*0.12, 0);
-      }
-
-      cellPos++;
-      if (cellPos >= cell.length) {
-        cellPos = 0;
-        cellRepeats++;
-        if (cellRepeats >= 2 + Math.floor(Math.random() * 2)) {
-          cellRepeats = 0;
-          cellStart = (cellStart + 1) % s.scale.length;
-          cell = buildCell(s.scale, cellStart);
-        }
-      }
-
-      const jitter = s.breath * (0.88 + Math.random() * 0.24);
-      breathTimer = setTimeout(breathe, jitter * 1000);
+    // Ghost harmonic — octave above at low volume (bell-like piano quality)
+    if (s.octaveGain > 0 && midi + 12 <= 84) {
+      const osc2 = ctx.createOscillator();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(midiToFreq(midi + 12), now);
+      const env2 = ctx.createGain();
+      const og = Math.max(s.octaveGain, 0.0001);
+      env2.gain.setValueAtTime(0.0001, now);
+      env2.gain.exponentialRampToValueAtTime(og, now + s.attack * 0.8);
+      env2.gain.exponentialRampToValueAtTime(Math.max(og * 0.3, 0.0001),
+        now + s.attack + s.sustain * 0.6);
+      env2.gain.exponentialRampToValueAtTime(0.0001, now + dur * 0.8);
+      osc2.connect(env2);
+      env2.connect(filter);
+      osc2.start(now);
+      osc2.stop(now + dur);
+      const ref2 = { osc: osc2, env: env2 };
+      activePads.push(ref2);
+      setTimeout(() => {
+        const i = activePads.indexOf(ref2);
+        if (i > -1) activePads.splice(i, 1);
+      }, (dur + 0.3) * 1000);
     }
-    breathe();
   }
 
-  // ── Wonder moments (Ghibli: a window opens onto a landscape) ─
-  function startWonder(s) {
-    if (!s.wonderGain) return;
-    function wonder() {
+  // ── Arpeggiator: ascending broken chords with sustain overlap ──
+  function startArpeggio(s) {
+    let chordIdx = 0, noteIdx = 0;
+    function tick() {
       if (!running) return;
-      const idx = Math.floor(Math.random() * s.scale.length);
-      const deg = s.scale[idx];
-      const intervals = [5, 7]; // fourth, fifth
-      const iv = intervals[Math.floor(Math.random() * 2)];
-      const m1 = s.root + deg, m2 = s.root + deg + iv;
-
-      if (m2 <= 76) { // cap at E5 (~659 Hz) — warm, not shrill
-        emitPad(midiToFreq(m1), 3, 5, 4, s.wonderGain, 0);
-        setTimeout(() => {
-          if (running) emitPad(midiToFreq(m2), 3.5, 4, 4.5, s.wonderGain*0.7, 0);
-        }, 1200 + Math.random() * 800);
+      const chord = s.chords[chordIdx];
+      emitNote(chord[noteIdx], s);
+      noteIdx++;
+      if (noteIdx >= chord.length) {
+        noteIdx = 0;
+        chordIdx = (chordIdx + 1) % s.chords.length;
       }
-      wonderTimer = setTimeout(wonder, (s.wonderEvery * (0.8 + Math.random() * 0.4)) * 1000);
+      const jitter = (Math.random() - 0.5) * 30; // ±15ms humanization
+      arpeggioTimer = setTimeout(tick, s.tempo + jitter);
     }
-    wonderTimer = setTimeout(wonder, (12 + Math.random() * 6) * 1000);
+    tick();
   }
 
   function hardStop() {
     running = false;
-    if (breathTimer) { clearTimeout(breathTimer); breathTimer = null; }
-    if (wonderTimer) { clearTimeout(wonderTimer); wonderTimer = null; }
+    if (arpeggioTimer) { clearTimeout(arpeggioTimer); arpeggioTimer = null; }
     activePads.forEach(p => {
       try { if (p.osc) p.osc.stop(); } catch(e) {}
       try { if (p.env) p.env.disconnect(); } catch(e) {}
     });
     activePads = [];
-    try { if (noiseSource) { noiseSource.stop(); noiseSource = null; } } catch(e) {}
-    if (noiseGain) { noiseGain.disconnect(); noiseGain = null; }
     if (filter) { filter.disconnect(); filter = null; }
     if (masterGain) { masterGain.disconnect(); masterGain = null; }
   }
 
-  // iOS Chrome/Safari: pre-warm AudioContext on first touch anywhere.
-  // This guarantees the context is unlocked before start() runs.
-  let iosUnlocked = false;
-  function iosUnlock() {
-    if (iosUnlocked) return;
-    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
-    if (ctx.state === 'suspended') {
-      ctx.resume().then(() => { iosUnlocked = true; });
-    } else { iosUnlocked = true; }
+  // ── iOS/WebKit audio unlock — gold standard silent-buffer trick ──
+  // Chrome on iOS is WebKit underneath. AudioContext must be unlocked
+  // by playing audio within a user gesture. We listen on EVERY gesture
+  // type in capture phase and play a silent 1-sample buffer.
+  let unlocked = false;
+  function unlock() {
+    if (unlocked) return;
+    try {
+      if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (ctx.state === 'suspended') ctx.resume();
+      // Play silent 1-sample buffer — THE key to unlocking iOS audio
+      const b = ctx.createBuffer(1, 1, ctx.sampleRate);
+      const src = ctx.createBufferSource();
+      src.buffer = b;
+      src.connect(ctx.destination);
+      src.start();
+      src.onended = () => { try { src.disconnect(); } catch(e) {} };
+    } catch(e) {}
+    if (ctx && ctx.state === 'running') unlocked = true;
+    if (ctx) ctx.onstatechange = () => {
+      if (ctx.state === 'running') unlocked = true;
+    };
   }
-  document.addEventListener('touchstart', iosUnlock, { once: false, passive: true });
-  document.addEventListener('touchend', iosUnlock, { once: false, passive: true });
-  document.addEventListener('click', iosUnlock, { once: false, passive: true });
+  ['touchstart','touchend','mousedown','click'].forEach(evt => {
+    document.addEventListener(evt, unlock, { capture: true, passive: true });
+  });
+
+  // ── Launch: sets up audio graph once context is running ─────
+  function launch(s) {
+    running = true;
+    const now = ctx.currentTime;
+
+    // Master gain
+    masterGain = ctx.createGain();
+    masterGain.gain.setValueAtTime(0, now);
+    masterGain.gain.linearRampToValueAtTime(muted ? 0 : s.masterVol, now + 2);
+    masterGain.connect(ctx.destination);
+
+    // Low-pass filter (warmth)
+    filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(s.filterCut, now);
+    filter.Q.setValueAtTime(0.7, now);
+    filter.connect(masterGain);
+
+    // Held bass drone (Cinematic Orchestra cello)
+    const bass = ctx.createOscillator();
+    bass.type = 'sine';
+    bass.frequency.setValueAtTime(midiToFreq(s.bass), now);
+    const bassEnv = ctx.createGain();
+    bassEnv.gain.setValueAtTime(0, now);
+    bassEnv.gain.linearRampToValueAtTime(s.bassGain, now + 4);
+    bass.connect(bassEnv);
+    bassEnv.connect(filter);
+    bass.start(now);
+    activePads.push({ osc: bass, env: bassEnv });
+
+    // Organic vibrato on bass (cellist's hand)
+    const vib = ctx.createOscillator();
+    vib.type = 'sine';
+    vib.frequency.setValueAtTime(s.vibratoRate, now);
+    const vibG = ctx.createGain();
+    vibG.gain.setValueAtTime(s.vibratoDepth, now);
+    vib.connect(vibG);
+    vibG.connect(bass.detune);
+    vib.start(now);
+    activePads.push({ osc: vib, env: vibG });
+
+    // Volume LFO on bass (slow breathing)
+    const lfo = ctx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.setValueAtTime(s.vibratoRate * 0.6, now);
+    const lfoG = ctx.createGain();
+    lfoG.gain.setValueAtTime(s.bassGain * 0.2, now);
+    lfo.connect(lfoG);
+    lfoG.connect(bassEnv.gain);
+    lfo.start(now);
+    activePads.push({ osc: lfo, env: lfoG });
+
+    // Start arpeggio
+    startArpeggio(s);
+  }
 
   return {
     start() {
       if (running) hardStop();
-
       if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
-      if (ctx.state === 'suspended') ctx.resume();
 
-      running = true;
-      const now = ctx.currentTime;
       const s = SONGS[new Date().getDay()];
 
-      // Master gain
-      masterGain = ctx.createGain();
-      masterGain.gain.setValueAtTime(0, now);
-      masterGain.gain.linearRampToValueAtTime(muted ? 0 : s.masterVol, now + 2);
-      masterGain.connect(ctx.destination);
+      const go = () => { if (!running) launch(s); };
 
-      // Low-pass filter (warmth + room character)
-      filter = ctx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(s.filterCut, now);
-      filter.Q.setValueAtTime(s.filterQ, now);
-      filter.connect(masterGain);
-
-      // Held root drone (Ghibli: living cello)
-      const droneOsc = ctx.createOscillator();
-      droneOsc.type = 'sine';
-      droneOsc.frequency.setValueAtTime(midiToFreq(s.root), now);
-      const droneEnv = ctx.createGain();
-      droneEnv.gain.setValueAtTime(0, now);
-      droneEnv.gain.linearRampToValueAtTime(s.droneLvl, now + 5);
-      droneOsc.connect(droneEnv);
-      droneEnv.connect(filter);
-      droneOsc.start(now);
-      activePads.push({ osc: droneOsc, env: droneEnv });
-
-      // Organic vibrato on drone (cellist's hand)
-      const vib = ctx.createOscillator();
-      vib.type = 'sine';
-      vib.frequency.setValueAtTime(0.15, now);
-      const vibG = ctx.createGain();
-      vibG.gain.setValueAtTime(s.vibratoDepth, now);
-      vib.connect(vibG);
-      vibG.connect(droneOsc.detune);
-      vib.start(now);
-      activePads.push({ osc: vib, env: vibG });
-
-      // Volume LFO on drone (slow breathing)
-      const lfo = ctx.createOscillator();
-      lfo.type = 'sine';
-      lfo.frequency.setValueAtTime(s.lfoRate, now);
-      const lfoG = ctx.createGain();
-      lfoG.gain.setValueAtTime(s.droneLvl * 0.25, now);
-      lfo.connect(lfoG);
-      lfoG.connect(droneEnv.gain);
-      lfo.start(now);
-      activePads.push({ osc: lfo, env: lfoG });
-
-      // Wind bed (Ghibli: wind through trees)
-      if (s.windLvl > 0.001) {
-        const wb = createWindBuffer();
-        noiseSource = ctx.createBufferSource();
-        noiseSource.buffer = wb;
-        noiseSource.loop = true;
-        const wf = ctx.createBiquadFilter();
-        wf.type = 'lowpass';
-        wf.frequency.setValueAtTime(550, now);
-        wf.Q.setValueAtTime(0.2, now);
-        const wLfo = ctx.createOscillator();
-        wLfo.type = 'sine';
-        wLfo.frequency.setValueAtTime(0.08, now);
-        const wLfoG = ctx.createGain();
-        wLfoG.gain.setValueAtTime(s.windLvl * 0.4, now);
-        noiseGain = ctx.createGain();
-        noiseGain.gain.setValueAtTime(0, now);
-        noiseGain.gain.linearRampToValueAtTime(s.windLvl, now + 5);
-        wLfo.connect(wLfoG);
-        wLfoG.connect(noiseGain.gain);
-        wLfo.start(now);
-        noiseSource.connect(wf);
-        wf.connect(noiseGain);
-        noiseGain.connect(masterGain);
-        noiseSource.start(now);
-        activePads.push({ osc: wLfo, env: wLfoG });
+      if (ctx.state !== 'running') {
+        // iOS: play silent buffer + resume within user gesture
+        try {
+          const b = ctx.createBuffer(1, 1, ctx.sampleRate);
+          const src = ctx.createBufferSource();
+          src.buffer = b;
+          src.connect(ctx.destination);
+          src.start();
+        } catch(e) {}
+        ctx.resume().then(go);
+        ctx.addEventListener('statechange', function h() {
+          if (ctx.state === 'running') {
+            ctx.removeEventListener('statechange', h);
+            go();
+          }
+        });
+        // Nuclear fallback — try after 500ms regardless
+        setTimeout(() => {
+          if (ctx.state === 'suspended') ctx.resume();
+          go();
+        }, 500);
+      } else {
+        launch(s);
       }
-
-      startBreathing(s);
-      startWonder(s);
     },
 
     stop() {
       running = false;
-      if (breathTimer) { clearTimeout(breathTimer); breathTimer = null; }
-      if (wonderTimer) { clearTimeout(wonderTimer); wonderTimer = null; }
+      if (arpeggioTimer) { clearTimeout(arpeggioTimer); arpeggioTimer = null; }
       if (masterGain && ctx) {
         const now = ctx.currentTime;
         masterGain.gain.cancelScheduledValues(now);
@@ -1721,8 +1660,6 @@ const SoundEngine = (() => {
             try { if (p.env) p.env.disconnect(); } catch(e) {}
           });
           activePads = [];
-          try { if (noiseSource) { noiseSource.stop(); noiseSource = null; } } catch(e) {}
-          if (noiseGain) { noiseGain.disconnect(); noiseGain = null; }
           if (filter) { filter.disconnect(); filter = null; }
           if (masterGain) { masterGain.disconnect(); masterGain = null; }
         }, 4500);
