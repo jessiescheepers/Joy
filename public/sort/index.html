@@ -351,7 +351,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   padding: calc(12% + 36px) 32px 88px;
   text-align: center;
   pointer-events: none;
@@ -381,10 +381,9 @@ body {
   align-items: center;
   flex-shrink: 0;
 }
-/* Shape spacer — reserves the visual zone where the spirograph lives */
+/* Shape spacer — pushes bottom text down, flexes to fill available space */
 .reveal-spacer {
-  min-height: 320px;
-  flex-shrink: 1;
+  flex: 1;
 }
 /* Bottom text group */
 .reveal-text-bottom {
@@ -502,7 +501,6 @@ body {
   .slider-number { font-size: 22px; }
   .question-label { margin-bottom: 8px; }
   .reveal-overlay { padding: calc(12% + 36px) 24px 72px; }
-  .reveal-spacer { min-height: 220px; }
   .reveal-capacity { font-size: 22px; }
   .reveal-timing { font-size: 13px; }
   .reveal-nudge { font-size: 13px; }
