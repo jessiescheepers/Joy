@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback } from "react";
 
 interface OrbSystemProps {
   glowExpanded: boolean;
+  theme?: "dark" | "light";
 }
 
 /**
@@ -11,7 +12,8 @@ interface OrbSystemProps {
  * 5 layers: warm glow, heart, drift, breathe, rotate + masked image.
  * Slight timing offsets per instance keep them organic, not synced.
  */
-function FullOrb({ src, offset = 0 }: { src: string; offset?: number }) {
+function FullOrb({ src, offset = 0, theme = "dark" }: { src: string; offset?: number; theme?: "dark" | "light" }) {
+  const isLight = theme === "light";
   const glowDur = 5 + offset * 0.4;
   const heartDur = 5 + offset * 0.3;
   const driftDur = 10 + offset * 1.2;
@@ -26,8 +28,9 @@ function FullOrb({ src, offset = 0 }: { src: string; offset?: number }) {
         className="absolute"
         style={{
           inset: "-35%",
-          background:
-            "radial-gradient(circle, rgba(212,165,116,0.35) 0%, rgba(212,165,116,0.12) 45%, transparent 70%)",
+          background: isLight
+            ? "radial-gradient(circle, rgba(180,130,60,0.3) 0%, rgba(180,130,60,0.1) 45%, transparent 70%)"
+            : "radial-gradient(circle, rgba(212,165,116,0.35) 0%, rgba(212,165,116,0.12) 45%, transparent 70%)",
           filter: "blur(60px)",
           animation: `hero-orb-glow-swell ${glowDur}s ease-in-out infinite`,
         }}
@@ -37,11 +40,12 @@ function FullOrb({ src, offset = 0 }: { src: string; offset?: number }) {
         className="absolute"
         style={{
           inset: "0%",
-          background:
-            "radial-gradient(circle at 50% 40%, rgba(224,140,120,1) 0%, rgba(200,110,90,0.5) 35%, transparent 70%)",
-          filter: "blur(40px) brightness(1.4)",
+          background: isLight
+            ? "radial-gradient(circle at 50% 40%, rgba(180,120,50,1) 0%, rgba(160,100,40,0.5) 35%, transparent 70%)"
+            : "radial-gradient(circle at 50% 40%, rgba(224,140,120,1) 0%, rgba(200,110,90,0.5) 35%, transparent 70%)",
+          filter: isLight ? "blur(40px) brightness(1.1)" : "blur(40px) brightness(1.4)",
           animation: `hero-orb-heart ${heartDur}s ease-in-out infinite`,
-          mixBlendMode: "screen",
+          mixBlendMode: isLight ? "multiply" : "screen",
         }}
       />
       {/* Drift → Breathe → Rotate → Image */}
@@ -55,8 +59,8 @@ function FullOrb({ src, offset = 0 }: { src: string; offset?: number }) {
                 width: "100%",
                 height: "100%",
                 objectFit: "contain",
-                opacity: 0.85,
-                mixBlendMode: "screen",
+                opacity: isLight ? 0.6 : 0.85,
+                mixBlendMode: isLight ? "multiply" : "screen",
                 WebkitMaskImage: "radial-gradient(circle, black 30%, transparent 70%)",
                 maskImage: "radial-gradient(circle, black 30%, transparent 70%)",
               }}
@@ -68,7 +72,7 @@ function FullOrb({ src, offset = 0 }: { src: string; offset?: number }) {
   );
 }
 
-export default function OrbSystem({ glowExpanded }: OrbSystemProps) {
+export default function OrbSystem({ glowExpanded, theme = "dark" }: OrbSystemProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const primaryRef = useRef<HTMLDivElement>(null);
   const ctxRef = useRef<{ revert: () => void } | null>(null);
@@ -500,7 +504,7 @@ export default function OrbSystem({ glowExpanded }: OrbSystemProps) {
       style={{
         zIndex: 2,
         overflow: "hidden",
-        opacity: glowExpanded ? 0 : 1,
+        opacity: glowExpanded ? 0 : theme === "light" ? 0.2 : 1,
         transition: "opacity 0.3s ease",
       }}
     >
@@ -516,7 +520,7 @@ export default function OrbSystem({ glowExpanded }: OrbSystemProps) {
           willChange: "transform, opacity, filter", backfaceVisibility: "hidden",
         }}
       >
-        <FullOrb src="/orb-hero.png" offset={0} />
+        <FullOrb src="/orb-hero.png" offset={0} theme={theme} />
       </div>
 
     </div>

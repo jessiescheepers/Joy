@@ -6,7 +6,7 @@ declare global {
   }
 }
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import JoyLogo from "./components/JoyLogo";
 import OrbSystem from "./components/OrbSystem";
 import LeadersOrb from "./components/LeadersOrb";
@@ -16,14 +16,22 @@ import ContactOrb from "./components/ContactOrb";
 
 export default function Home() {
   const [activeSection, setActiveSection] = useState<string>("home");
-  const [glowExpanded, setGlowExpanded] = useState(false);
-  const [glowName, setGlowName] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
 
   useEffect(() => {
     setIsMobile(window.matchMedia("(max-width: 768px)").matches);
+    const saved = localStorage.getItem("joy-theme");
+    if (saved === "light" || saved === "dark") setTheme(saved);
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem("joy-theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  const isLight = theme === "light";
 
   // Waitlist form state
   const [formEmail, setFormEmail] = useState("");
@@ -32,7 +40,6 @@ export default function Home() {
 
   // Section refs for intersection observer
   const heroRef = useRef<HTMLElement>(null);
-  const glowRef = useRef<HTMLElement>(null);
   const howRef = useRef<HTMLElement>(null);
   const aboutRef = useRef<HTMLElement>(null);
   const contactRef = useRef<HTMLElement>(null);
@@ -41,8 +48,6 @@ export default function Home() {
   const auroraRef = useRef<HTMLDivElement>(null);
   const scrollBarRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLButtonElement>(null);
-  const glowCardRef = useRef<HTMLDivElement>(null);
-  const glowAuraRef = useRef<HTMLDivElement>(null);
 
   // Intersection observer for active nav
   useEffect(() => {
@@ -75,18 +80,6 @@ export default function Home() {
     );
     document.querySelectorAll(".reveal-section").forEach((el) => obs.observe(el));
     return () => obs.disconnect();
-  }, []);
-
-  // Listen for glow iframe requesting fullscreen (on name submit)
-  useEffect(() => {
-    const handler = (e: MessageEvent) => {
-      if (e.data?.type === "glow-fullscreen") {
-        if (e.data.name) setGlowName(e.data.name);
-        setGlowExpanded(true);
-      }
-    };
-    window.addEventListener("message", handler);
-    return () => window.removeEventListener("message", handler);
   }, []);
 
   // Cursor aurora + hero orb parallax (desktop only)
@@ -126,8 +119,61 @@ export default function Home() {
     { label: "joy code", href: "/joy-code", external: false },
   ];
 
+  const t = {
+    navBg: isLight ? "rgba(250,250,248,0.7)" : "rgba(8,11,20,0.6)",
+    mobileBg: isLight ? "rgba(250,250,248,0.95)" : "rgba(8,11,20,0.95)",
+    footerBg: isLight ? "rgba(250,250,248,0.7)" : "rgba(8,11,20,0.6)",
+    logoColor: isLight ? "#1A1A2E" : "#FFFFFF",
+    inputBg: isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.06)",
+    heroTextShadow: isLight
+      ? "0 0 44px rgba(180,130,60,0.2), 0 0 84px rgba(180,130,60,0.08)"
+      : "0 0 44px rgba(212,165,116,0.3), 0 0 84px rgba(212,165,116,0.1)",
+    warmGlow: isLight
+      ? "radial-gradient(ellipse, rgba(180,130,60,0.06) 0%, rgba(160,100,120,0.02) 40%, transparent 70%)"
+      : "radial-gradient(ellipse, rgba(232,180,106,0.06) 0%, rgba(212,160,168,0.02) 40%, transparent 70%)",
+    coolGlow: isLight
+      ? "radial-gradient(ellipse, rgba(90,138,184,0.06) 0%, rgba(120,152,184,0.02) 40%, transparent 70%)"
+      : "radial-gradient(ellipse, rgba(137,180,220,0.06) 0%, rgba(168,196,224,0.02) 40%, transparent 70%)",
+    sectionGlow06: isLight
+      ? "radial-gradient(ellipse, rgba(180,130,60,0.06) 0%, transparent 60%)"
+      : "radial-gradient(ellipse, rgba(232,180,106,0.06) 0%, transparent 60%)",
+    sectionGlow08: isLight
+      ? "radial-gradient(ellipse, rgba(180,130,60,0.08) 0%, transparent 60%)"
+      : "radial-gradient(ellipse, rgba(232,180,106,0.08) 0%, transparent 60%)",
+    cardBg: isLight ? "#F5F2ED" : "#0E1221",
+    cardShadow: isLight
+      ? "0 10px 40px rgba(0,0,0,0.08), 0 0 40px rgba(200,146,46,0.15), 0 0 80px rgba(200,146,46,0.08)"
+      : "0 20px 80px rgba(0,0,0,0.5), 0 0 40px rgba(232,180,106,0.12), 0 0 80px rgba(232,180,106,0.06)",
+    cardOrbWarmGlow: isLight
+      ? "radial-gradient(circle, rgba(180,130,60,0.3) 0%, rgba(180,130,60,0.1) 45%, transparent 70%)"
+      : "radial-gradient(circle, rgba(232,180,106,0.35) 0%, rgba(212,165,116,0.12) 45%, transparent 70%)",
+    cardOrbHeartGlow: isLight
+      ? "radial-gradient(circle at 50% 40%, rgba(180,120,50,1) 0%, rgba(160,100,40,0.5) 35%, transparent 70%)"
+      : "radial-gradient(circle at 50% 40%, rgba(232,180,106,1) 0%, rgba(220,160,80,0.5) 35%, transparent 70%)",
+    cardOrbHeartFilter: isLight ? "blur(25px) brightness(1.1)" : "blur(25px) brightness(1.3)",
+    cardOrbBlend: (isLight ? "multiply" : "screen") as React.CSSProperties["mixBlendMode"],
+    cardOrbImgOpacity: isLight ? 0.6 : 0.9,
+    statColor: isLight ? "#1A1A2E" : "#FFFFFF",
+    hamburgerBg: isLight ? "bg-[#1A1A2E]" : "bg-white",
+    navDotBg: isLight ? "var(--glow-honey)" : "var(--glow-moon)",
+    navDotShadow: isLight
+      ? "0 0 12px var(--glow-honey), 0 0 30px rgba(176,120,32,0.3)"
+      : "0 0 12px var(--glow-moon), 0 0 30px rgba(250,248,232,0.3)",
+    backdropSaturate: isLight ? "blur(40px) saturate(1.2)" : "blur(40px) saturate(1.8)",
+    closeButtonBg: isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)",
+    closeStroke: isLight ? "#1A1A2E" : "#F5F0EA",
+    auraGlow: isLight
+      ? "radial-gradient(circle, rgba(180,130,60,0.15) 0%, rgba(160,100,120,0.06) 40%, transparent 70%)"
+      : "radial-gradient(circle, rgba(232,180,106,0.2) 0%, rgba(212,160,168,0.08) 40%, transparent 70%)",
+    heroSubShadow: isLight
+      ? "0 0 34px rgba(180,130,60,0.15)"
+      : "0 0 34px rgba(212,165,116,0.2)",
+    earlyAccessBg: isLight ? "#E8E4DD" : "#171E33",
+    earlyAccessColor: isLight ? "#1A1A2E" : "#FFFFFF",
+  };
+
   return (
-    <div className="relative min-h-screen overflow-x-hidden">
+    <div data-theme={theme} className="relative min-h-screen overflow-x-hidden" style={{ backgroundColor: isLight ? "#F5F3EE" : undefined, color: isLight ? "#1A1A2E" : undefined }}>
       {/* Cursor aurora — ambient glow following mouse (desktop only) */}
       {!isMobile && <div ref={auroraRef} className="cursor-aurora" />}
 
@@ -146,7 +192,7 @@ export default function Home() {
           width: "50vw",
           height: "60vh",
           borderRadius: "50%",
-          background: "radial-gradient(ellipse, rgba(232,180,106,0.06) 0%, rgba(212,160,168,0.02) 40%, transparent 70%)",
+          background: t.warmGlow,
           filter: "blur(80px)",
         }} />
         <div style={{
@@ -156,36 +202,36 @@ export default function Home() {
           width: "50vw",
           height: "60vh",
           borderRadius: "50%",
-          background: "radial-gradient(ellipse, rgba(137,180,220,0.06) 0%, rgba(168,196,224,0.02) 40%, transparent 70%)",
+          background: t.coolGlow,
           filter: "blur(80px)",
         }} />
       </div>
 
       {/* Orb narrative system — scroll-driven transforms */}
-      <OrbSystem glowExpanded={glowExpanded} />
+      <OrbSystem glowExpanded={false} theme={theme} />
 
       {/* Page content */}
       <div className="relative z-[5]">
 
         {/* ═══ TOP NAV — glass morphism ═══ */}
         <nav
-          className={`fixed top-0 left-0 right-0 z-50 px-6 md:px-12 h-16 flex items-center justify-between transition-opacity duration-300 ${glowExpanded ? "opacity-0 pointer-events-none" : ""}`}
+          className="fixed top-0 left-0 right-0 z-50 px-6 md:px-12 h-16 flex items-center justify-between"
           style={{
-            opacity: glowExpanded ? undefined : 0.7,
-            background: "rgba(8,11,20,0.6)",
-            backdropFilter: "blur(40px) saturate(1.8)",
-            WebkitBackdropFilter: "blur(40px) saturate(1.8)",
+            opacity: 0.7,
+            background: t.navBg,
+            backdropFilter: t.backdropSaturate,
+            WebkitBackdropFilter: t.backdropSaturate,
             borderBottom: "1px solid var(--border)",
           }}
         >
           {/* Logo left */}
           <a href="#hero" className="relative">
-            <JoyLogo width={50} height={26} color="#FFFFFF" />
+            <JoyLogo width={50} height={26} color={t.logoColor} />
             <span
               className="absolute -top-0.5 -right-2.5 w-[7px] h-[7px] rounded-full"
               style={{
-                background: "var(--glow-moon)",
-                boxShadow: "0 0 12px var(--glow-moon), 0 0 30px rgba(250,248,232,0.3)",
+                background: t.navDotBg,
+                boxShadow: t.navDotShadow,
                 animation: "breathe 3s ease-in-out infinite",
               }}
             />
@@ -208,13 +254,29 @@ export default function Home() {
                 </a>
               );
             })}
+            <button
+              onClick={toggleTheme}
+              className="w-8 h-8 flex items-center justify-center rounded-full transition-all duration-300"
+              style={{ background: isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.08)", border: "1px solid var(--border)" }}
+              aria-label="Toggle theme"
+            >
+              {isLight ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.logoColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.logoColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                </svg>
+              )}
+            </button>
             <a
               href="#hero"
-              className="btn-ghost px-5 py-2 rounded-full text-xs font-medium tracking-wide"
+              className="holo-border-pill px-5 py-2 rounded-full text-xs font-medium tracking-wide transition-all duration-300 hover:shadow-[0_0_30px_rgba(224,160,173,0.35)]"
               style={{
                 fontFamily: "var(--font-display)",
-                border: "1px solid var(--border)",
-                color: "var(--text-secondary)",
+                background: t.earlyAccessBg,
+                color: t.earlyAccessColor,
               }}
             >
               early access
@@ -228,9 +290,9 @@ export default function Home() {
             aria-label="Toggle menu"
           >
             <div className="flex flex-col gap-[5px]">
-              <span className={`block w-5 h-[1.5px] bg-white transition-all duration-300 ${mobileMenuOpen ? "rotate-45 translate-y-[6.5px]" : ""}`} />
-              <span className={`block w-5 h-[1.5px] bg-white transition-all duration-300 ${mobileMenuOpen ? "opacity-0" : ""}`} />
-              <span className={`block w-5 h-[1.5px] bg-white transition-all duration-300 ${mobileMenuOpen ? "-rotate-45 -translate-y-[6.5px]" : ""}`} />
+              <span className={`block w-5 h-[1.5px] ${t.hamburgerBg} transition-all duration-300 ${mobileMenuOpen ? "rotate-45 translate-y-[6.5px]" : ""}`} />
+              <span className={`block w-5 h-[1.5px] ${t.hamburgerBg} transition-all duration-300 ${mobileMenuOpen ? "opacity-0" : ""}`} />
+              <span className={`block w-5 h-[1.5px] ${t.hamburgerBg} transition-all duration-300 ${mobileMenuOpen ? "-rotate-45 -translate-y-[6.5px]" : ""}`} />
             </div>
           </button>
         </nav>
@@ -238,7 +300,7 @@ export default function Home() {
         {/* ═══ MOBILE MENU OVERLAY ═══ */}
         <div
           className={`fixed inset-0 z-40 md:hidden transition-all duration-300 ${mobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
-          style={{ background: "rgba(8,11,20,0.95)", backdropFilter: "blur(40px)", WebkitBackdropFilter: "blur(40px)" }}
+          style={{ background: t.mobileBg, backdropFilter: "blur(40px)", WebkitBackdropFilter: "blur(40px)" }}
         >
           <div className="flex flex-col items-center justify-center h-full gap-8">
             {navItems.map((item) => (
@@ -252,11 +314,27 @@ export default function Home() {
                 {item.label}
               </a>
             ))}
+            <button
+              onClick={toggleTheme}
+              className="w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300"
+              style={{ background: isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.08)", border: "1px solid var(--border)" }}
+              aria-label="Toggle theme"
+            >
+              {isLight ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.logoColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.logoColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                </svg>
+              )}
+            </button>
             <a
               href="#hero"
               onClick={() => setMobileMenuOpen(false)}
-              className="btn-ghost mt-4 px-7 py-3 rounded-full text-sm font-medium tracking-wide"
-              style={{ fontFamily: "var(--font-display)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
+              className="holo-border-pill mt-4 px-7 py-3 rounded-full text-sm font-medium tracking-wide"
+              style={{ fontFamily: "var(--font-display)", background: t.earlyAccessBg, color: t.earlyAccessColor }}
             >
               early access
             </a>
@@ -272,7 +350,7 @@ export default function Home() {
           <div className="w-full max-w-[900px] mx-auto flex flex-col items-center relative z-10">
             {/* Joy Logo */}
             <div className="mb-[42px] md:mb-[54px] animate-hero-1 relative inline-flex">
-              <JoyLogo width={80} height={42} color="#FFFFFF" />
+              <JoyLogo width={80} height={42} color={t.logoColor} />
             </div>
 
             {/* H1 — with prismatic gradient + ambient glow */}
@@ -284,7 +362,7 @@ export default function Home() {
                 fontSize: "clamp(1.1rem, 2.8vw, 2.2rem)",
                 letterSpacing: "-0.02em",
                 lineHeight: "calc(1.02em + 5px)",
-                textShadow: "0 0 44px rgba(212,165,116,0.3), 0 0 84px rgba(212,165,116,0.1)",
+                textShadow: t.heroTextShadow,
               }}
             >
               OS for{" "}
@@ -297,7 +375,7 @@ export default function Home() {
                 fontWeight: 300,
                 fontSize: "clamp(0.85rem, 1.5vw, 1.05rem)",
                 color: "var(--text-secondary)",
-                textShadow: "0 0 34px rgba(212,165,116,0.2)",
+                textShadow: t.heroSubShadow,
               }}
             >
               Your work, your life, your one OS
@@ -347,7 +425,7 @@ export default function Home() {
                   className="w-full px-5 py-3.5 rounded-full text-sm md:text-base tracking-wide outline-none"
                   style={{
                     fontFamily: "var(--font-display)",
-                    background: "rgba(255,255,255,0.06)",
+                    background: t.inputBg,
                     border: "1px solid var(--border)",
                     color: "var(--text)",
                   }}
@@ -414,200 +492,6 @@ export default function Home() {
           </p>
         </section>
 
-        {/* ═══ INTERACTIVE / GLOW SECTION (hidden — may return later) ═══ */}
-        <section
-          id="glow"
-          ref={glowRef}
-          className="min-h-screen flex flex-col items-center justify-center px-6 py-24 md:px-12 lg:px-20 text-center"
-          style={{ borderTop: "1px solid var(--border)", display: "none" }}
-          onMouseMove={(e) => {
-            if (isMobile || glowExpanded || !glowCardRef.current || !glowAuraRef.current) return;
-            const rect = glowCardRef.current.getBoundingClientRect();
-            const cx = rect.left + rect.width / 2;
-            const cy = rect.top + rect.height / 2;
-            const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
-            const intensity = Math.max(0, 1 - dist / 500);
-            glowAuraRef.current.style.opacity = (intensity * 0.5).toString();
-          }}
-        >
-          {/* Framing text */}
-          <div className="max-w-[600px] mx-auto mb-12 md:mb-16 reveal-section">
-            <h1
-              className="leading-[1.3] tracking-[-0.02em] mb-4"
-              style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1rem, 2.5vw, 1.6rem)", color: "var(--text-secondary)" }}
-            >
-              On your best days, you have 3 hours for deep work. Joy helps you use them on what matters.
-            </h1>
-            <p
-              className="mt-4 text-xs md:text-sm tracking-wide"
-              style={{ fontFamily: "var(--font-body)", fontStyle: "italic", color: "#FFFFFF" }}
-            >
-              How are you today? &rarr; What&apos;s on your plate? &rarr; Joy sorts your day
-            </p>
-          </div>
-
-          {/* Fortune Teller Card */}
-          {glowExpanded ? (
-            <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center" style={{ background: "var(--bg)" }}>
-              <div className="flex flex-col items-center py-1 shrink-0">
-                <JoyLogo width={70} height={37} color="#FFFFFF" />
-                <p className="text-base md:text-lg tracking-wide" style={{ fontFamily: "var(--font-display)", color: "var(--text)" }}>
-                  daily glow
-                </p>
-              </div>
-              <iframe
-                src={`/glow/index.html${glowName ? `?name=${encodeURIComponent(glowName)}` : ""}`}
-                scrolling="no"
-                title="Daily Glow interactive experience"
-                className="border-0 mx-auto block"
-                style={{ overflow: "hidden", background: "transparent", width: "min(90vw, 480px)", height: "min(calc(100dvh - 100px), 680px)", display: "block", borderRadius: 24 }}
-              />
-              <button
-                onClick={() => {
-                  setGlowExpanded(false);
-                  setTimeout(() => {
-                    document.querySelectorAll("#glow .reveal-section").forEach((el) => el.classList.add("visible"));
-                  }, 50);
-                }}
-                className="w-10 h-10 flex items-center justify-center rounded-full transition-colors cursor-pointer"
-                style={{ position: "absolute", top: 12, right: 12, zIndex: 101, background: "rgba(255,255,255,0.1)", border: "1px solid var(--border)" }}
-                title="Close fullscreen"
-              >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M15 5L5 15M5 5l10 10" stroke="#F5F0EA" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-              </button>
-            </div>
-          ) : (
-            <div className="relative reveal-section flex items-center justify-center">
-              {/* Proximity aura */}
-              <div
-                ref={glowAuraRef}
-                className="absolute pointer-events-none"
-                style={{
-                  inset: -80,
-                  borderRadius: 60,
-                  background: "radial-gradient(circle, rgba(232,180,106,0.2) 0%, rgba(212,160,168,0.08) 40%, transparent 70%)",
-                  opacity: 0,
-                  transition: "opacity 0.3s ease-out",
-                }}
-              />
-
-              {/* Levitation wrapper */}
-              <div style={{ animation: "levitate 6s ease-in-out infinite" }}>
-                <div
-                  ref={glowCardRef}
-                  className="w-[280px] h-[480px] md:w-[340px] lg:w-[380px] rounded-[24px] holo-border"
-                  onClick={isMobile ? () => setGlowExpanded(true) : undefined}
-                  onMouseMove={(e) => {
-                    if (isMobile || !glowCardRef.current) return;
-                    const rect = glowCardRef.current.getBoundingClientRect();
-                    const x = (e.clientX - rect.left) / rect.width - 0.5;
-                    const y = (e.clientY - rect.top) / rect.height - 0.5;
-                    glowCardRef.current.style.transform = `perspective(800px) rotateY(${x * 8}deg) rotateX(${-y * 8}deg) scale(1.02)`;
-                  }}
-                  onMouseLeave={() => {
-                    if (glowCardRef.current) glowCardRef.current.style.transform = "";
-                  }}
-                  style={{
-                    padding: 3,
-                    cursor: isMobile ? "pointer" : undefined,
-                    transition: "transform 0.2s ease-out",
-                    boxShadow: "0 20px 80px rgba(0,0,0,0.5), 0 0 40px rgba(232,180,106,0.12), 0 0 80px rgba(232,180,106,0.06)",
-                  }}
-                >
-                  {/* Card background — matches iframe dark theme */}
-                  <div style={{
-                    position: "absolute",
-                    inset: 0,
-                    borderRadius: 22,
-                    background: "#0E1221",
-                    zIndex: 0,
-                  }} />
-                  {/* Warm orb — z-1: above bg, below iframe text */}
-                  <div
-                    className="card-orb-overlay"
-                    style={{
-                      position: "absolute",
-                      top: "-50%",
-                      left: "50%",
-                      transform: "translate(-50%, -50%)",
-                      width: 340,
-                      height: 340,
-                      zIndex: 1,
-                      opacity: 0,
-                      pointerEvents: "none",
-                    }}
-                  >
-                    {/* Warm glow bleed */}
-                    <div style={{
-                      position: "absolute",
-                      inset: "-50%",
-                      background: "radial-gradient(circle, rgba(232,180,106,0.35) 0%, rgba(212,165,116,0.12) 45%, transparent 70%)",
-                      filter: "blur(40px)",
-                      animation: "hero-orb-glow-swell 5s ease-in-out infinite",
-                    }} />
-                    {/* Heart glow */}
-                    <div style={{
-                      position: "absolute",
-                      inset: "0%",
-                      background: "radial-gradient(circle at 50% 40%, rgba(232,180,106,1) 0%, rgba(220,160,80,0.5) 35%, transparent 70%)",
-                      filter: "blur(25px) brightness(1.3)",
-                      animation: "hero-orb-heart 5s ease-in-out infinite",
-                      mixBlendMode: "screen",
-                    }} />
-                    {/* Breathe → Rotate → Image */}
-                    <div style={{ width: "100%", height: "100%", animation: "hero-orb-breathe 5s ease-in-out infinite" }}>
-                      <div style={{ width: "100%", height: "100%", animation: "hero-orb-rotate 90s ease-in-out infinite" }}>
-                        <img
-                          src="/orb-hero.png"
-                          alt=""
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "contain",
-                            opacity: 0.9,
-                            mixBlendMode: "screen",
-                            WebkitMaskImage: "radial-gradient(circle, black 30%, transparent 68%)",
-                            maskImage: "radial-gradient(circle, black 30%, transparent 68%)",
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <iframe
-                    src="/glow/index.html"
-                    scrolling="no"
-                    title="Daily Glow interactive experience"
-                    className="w-[320px] h-[500px] md:w-[380px] lg:w-[420px] border-0 rounded-[22px]"
-                    onLoad={(e) => {
-                      try {
-                        const doc = (e.target as HTMLIFrameElement).contentDocument;
-                        if (doc) {
-                          const s = doc.createElement("style");
-                          s.textContent = "html, body { background: transparent !important; } .card, .opening-card { background: transparent !important; } .opening-orb-wrapper { display: none !important; } .card-bg { display: none !important; } .card::before { display: none !important; } .header h1 { color: #202532 !important; } .opening-card .opening-title { color: #202532 !important; } .opening-tap { color: #202532 !important; } .opening-card .opening-input { color: rgba(40,41,56,0.70) !important; } .opening-card .opening-input::placeholder { color: rgba(40,41,56,0.70) !important; }";
-                          doc.head.appendChild(s);
-                        }
-                      } catch { /* cross-origin guard */ }
-                    }}
-                    style={{ overflow: "hidden", display: "block", marginLeft: -23, marginTop: -13, pointerEvents: isMobile ? "none" : undefined, background: "transparent", position: "relative", zIndex: 2 }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* CTA below card */}
-          {!glowExpanded && (
-            <p
-              className="mt-10 text-xs md:text-sm tracking-wide reveal-section"
-              style={{ fontFamily: "var(--font-display)", color: "var(--text-tertiary)" }}
-            >
-              {isMobile ? "tap the card to begin" : "enter your name to begin"}
-            </p>
-          )}
-        </section>
-
         {/* ═══ VISION SECTION ═══ */}
         <section
           id="vision"
@@ -616,7 +500,7 @@ export default function Home() {
           style={{ borderTop: "1px solid var(--border)" }}
         >
           {/* Subtle background glow */}
-          <div className="absolute pointer-events-none" style={{ top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 700, height: 400, background: "radial-gradient(ellipse, rgba(232,180,106,0.06) 0%, transparent 60%)" }} />
+          <div className="absolute pointer-events-none" style={{ top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 700, height: 400, background: t.sectionGlow06 }} />
           <div className="max-w-[660px] mx-auto text-center relative z-10">
             <h2
               className="reveal-section leading-[1.1] tracking-[-0.025em] mb-4"
@@ -675,13 +559,13 @@ export default function Home() {
                 <div key={i} className="text-center reveal-section stat-item">
                   <p
                     className="mb-3"
-                    style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1.8rem, 4vw, 2.8rem)", letterSpacing: "-0.03em", color: "#FFFFFF" }}
+                    style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1.8rem, 4vw, 2.8rem)", letterSpacing: "-0.03em", color: t.statColor }}
                   >
                     {item.stat}
                   </p>
                   <p
                     className="text-sm leading-[1.6] tracking-wide max-w-[240px] mx-auto"
-                    style={{ color: "#FFFFFF", fontWeight: 300 }}
+                    style={{ color: t.statColor, fontWeight: 300 }}
                   >
                     {item.label}{" "}
                     <a
@@ -785,7 +669,7 @@ export default function Home() {
           style={{ borderTop: "1px solid var(--border)", overflow: "visible" }}
         >
           <CloserOrb />
-          <div className="absolute pointer-events-none" style={{ top: 0, left: "50%", transform: "translateX(-50%)", width: 900, height: 500, background: "radial-gradient(ellipse, rgba(232,180,106,0.06) 0%, transparent 55%)" }} />
+          <div className="absolute pointer-events-none" style={{ top: 0, left: "50%", transform: "translateX(-50%)", width: 900, height: 500, background: t.sectionGlow06 }} />
           <div className="max-w-[500px] mx-auto relative z-10">
             <h2
               className="reveal-section leading-[1.1] tracking-[-0.025em] mb-4"
@@ -843,7 +727,7 @@ export default function Home() {
                   className="w-full px-5 py-3.5 rounded-full text-sm md:text-base tracking-wide outline-none"
                   style={{
                     fontFamily: "var(--font-display)",
-                    background: "rgba(255,255,255,0.06)",
+                    background: t.inputBg,
                     border: "1px solid var(--border)",
                     color: "var(--text)",
                   }}
@@ -888,11 +772,11 @@ export default function Home() {
         >
           <ContactOrb />
           {/* Glow behind heading */}
-          <div className="absolute pointer-events-none" style={{ bottom: 0, left: "50%", transform: "translateX(-50%)", width: 800, height: 400, background: "radial-gradient(ellipse, rgba(232,180,106,0.08) 0%, transparent 60%)" }} />
+          <div className="absolute pointer-events-none" style={{ bottom: 0, left: "50%", transform: "translateX(-50%)", width: 800, height: 400, background: t.sectionGlow08 }} />
 
           {/* Joy logo with breathing orb */}
           <div className="mb-8 md:mb-12 reveal-section relative inline-flex">
-            <JoyLogo width={120} height={63} color="#FFFFFF" />
+            <JoyLogo width={120} height={63} color={t.logoColor} />
             <span className="absolute -top-2 -right-5 w-4 h-4 contact-section-orb section-orb" />
             {/* Full orb replacement — shown when ContactOrb arrives */}
             <div
@@ -951,8 +835,8 @@ export default function Home() {
 
       {/* ═══ FOOTER ═══ */}
       <footer
-        className={`fixed bottom-0 left-0 right-0 z-[6] px-6 py-4 md:px-12 transition-opacity duration-300 ${glowExpanded ? "opacity-0 pointer-events-none" : ""}`}
-        style={{ opacity: glowExpanded ? undefined : 0.7, borderTop: "1px solid var(--border)", background: "rgba(8,11,20,0.6)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
+        className="fixed bottom-0 left-0 right-0 z-[6] px-6 py-4 md:px-12"
+        style={{ opacity: 0.7, borderTop: "1px solid var(--border)", background: t.footerBg, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
       >
         <div className="max-w-[1400px] mx-auto">
           {/* Mobile: links centered */}
@@ -963,12 +847,12 @@ export default function Home() {
                 href={item.href}
                 {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                 className="text-xs tracking-wide transition-colors duration-300"
-                style={{ fontFamily: "var(--font-display)", color: "#FFFFFF" }}
+                style={{ fontFamily: "var(--font-display)", color: t.logoColor }}
               >
                 {item.label}
               </a>
             ))}
-            <span className="text-xs" style={{ fontFamily: "var(--font-display)", color: "#FFFFFF" }}>
+            <span className="text-xs" style={{ fontFamily: "var(--font-display)", color: t.logoColor }}>
               &copy; 2026 Joy
             </span>
           </div>
@@ -981,13 +865,13 @@ export default function Home() {
                 href={item.href}
                 {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                 className="text-xs md:text-sm tracking-wide transition-colors duration-300"
-                style={{ fontFamily: "var(--font-display)", color: "#FFFFFF" }}
+                style={{ fontFamily: "var(--font-display)", color: t.logoColor }}
               >
                 {item.label}
               </a>
             ))}
 
-            <span className="text-xs" style={{ fontFamily: "var(--font-display)", color: "#FFFFFF" }}>
+            <span className="text-xs" style={{ fontFamily: "var(--font-display)", color: t.logoColor }}>
               &copy; 2026 Joy
             </span>
           </div>
