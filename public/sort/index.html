@@ -1367,64 +1367,65 @@ function moveSliderToPointer(wrap, e) {
 // (Name submit removed — spirograph starts immediately)
 
 // ═══════════════════════════════════════════════════════════════
-// AMBIENT SOUND ENGINE — Amélie × Cinematic Orchestra
+// AMBIENT SOUND ENGINE — River Flows in You × Studio Ghibli
 // ═══════════════════════════════════════════════════════════════
 const SoundEngine = (() => {
   // ── 7 soundscapes — one per day of the week ─────────────────
-  // Amélie (Yann Tiersen): arpeggiated broken chords, sustain-
-  // pedal resonance, fast attack / long release sine tones.
-  // Cinematic Orchestra ("To Build A Home"): held bass drone
-  // with cellist vibrato, spacious intervals, meditative.
-  // All frequencies ≥ 262 Hz (C4) for phone-speaker audibility.
+  // Primary reference: Yiruma "River Flows in You" — ascending
+  // broken chords in A major, clear piano onset → natural decay,
+  // each note distinct and bell-like.
+  // Secondary: Studio Ghibli — barely-there bass warmth with
+  // organic vibrato. Felt more than heard.
+  // All frequencies ≥ 277 Hz (C#4) for phone-speaker audibility.
   const SONGS = [
-    { // Sunday — "Comptine": reflective, tender. Am → F → C → G
-      name: 'Comptine',
-      chords: [[60,64,69,72], [60,65,69,72], [60,64,67,72], [62,67,71,74]],
-      bass: 60, tempo: 520, attack: 0.045, sustain: 2.2, release: 3.0,
-      noteGain: 0.055, octaveGain: 0.008, bassGain: 0.032,
-      masterVol: 0.20, filterCut: 3200, vibratoDepth: 2.5, vibratoRate: 0.12
+    { // Sunday — "Still Water": slow, reflective. A → E → F#m → D
+      name: 'Still Water',
+      chords: [[61,64,69,73], [64,68,71,76], [61,66,69,73], [62,66,69,74]],
+      bass: 69, tempo: 540, attack: 0.025, sustain: 0.35, release: 1.4,
+      noteGain: 0.065, bassGain: 0.012,
+      masterVol: 0.30, filterCut: 3200, vibratoDepth: 2, vibratoRate: 0.12
     },
-    { // Monday — "First Light": hopeful, fresh. C → G → Am → F
+    { // Monday — "First Light": hopeful, gentle. A → D → E → A(high)
       name: 'First Light',
-      chords: [[60,64,67,72], [62,67,71,74], [60,64,69,72], [60,65,69,72]],
-      bass: 60, tempo: 460, attack: 0.04, sustain: 2.0, release: 2.8,
-      noteGain: 0.058, octaveGain: 0.009, bassGain: 0.035,
-      masterVol: 0.22, filterCut: 4000, vibratoDepth: 2.0, vibratoRate: 0.10
+      chords: [[61,64,69,73], [62,66,69,74], [64,68,71,76], [64,69,73,76]],
+      bass: 69, tempo: 500, attack: 0.025, sustain: 0.3, release: 1.3,
+      noteGain: 0.068, bassGain: 0.014,
+      masterVol: 0.32, filterCut: 3800, vibratoDepth: 1.8, vibratoRate: 0.10
     },
-    { // Tuesday — "Still River": deep, contemplative. Am → Em → F → C
-      name: 'Still River',
-      chords: [[60,64,69,72], [64,67,71,76], [60,65,69,72], [60,64,67,72]],
-      bass: 60, tempo: 560, attack: 0.05, sustain: 2.5, release: 3.2,
-      noteGain: 0.052, octaveGain: 0.007, bassGain: 0.038,
-      masterVol: 0.20, filterCut: 2800, vibratoDepth: 3.0, vibratoRate: 0.08
+    { // Tuesday — "Quiet River": deeper, contemplative. F#m → D → A → E
+      name: 'Quiet River',
+      chords: [[66,69,73,78], [62,66,69,74], [61,64,69,73], [64,68,71,76]],
+      bass: 66, tempo: 560, attack: 0.03, sustain: 0.4, release: 1.5,
+      noteGain: 0.060, bassGain: 0.015,
+      masterVol: 0.28, filterCut: 2800, vibratoDepth: 2.5, vibratoRate: 0.08
     },
-    { // Wednesday — "Midweek": suspended, spacious. Dm → Am → Em → F
+    { // Wednesday — "Midweek": suspended. D → A → F#m → E
       name: 'Midweek',
-      chords: [[62,65,69,74], [60,64,69,72], [64,67,71,76], [60,65,69,72]],
-      bass: 62, tempo: 500, attack: 0.045, sustain: 2.2, release: 3.0,
-      noteGain: 0.054, octaveGain: 0.008, bassGain: 0.034,
-      masterVol: 0.20, filterCut: 3400, vibratoDepth: 2.5, vibratoRate: 0.11
+      chords: [[62,66,69,74], [61,64,69,73], [61,66,69,73], [64,68,71,76]],
+      bass: 62, tempo: 520, attack: 0.025, sustain: 0.35, release: 1.4,
+      noteGain: 0.063, bassGain: 0.013,
+      masterVol: 0.29, filterCut: 3200, vibratoDepth: 2, vibratoRate: 0.11
     },
-    { // Thursday — "Gathering": forward momentum. Am → C → F → G
+    { // Thursday — "Gathering": forward momentum. A → F#m → D → E
       name: 'Gathering',
-      chords: [[60,64,69,72], [60,64,67,72], [60,65,69,72], [62,67,71,74]],
-      bass: 60, tempo: 440, attack: 0.04, sustain: 1.8, release: 2.5,
-      noteGain: 0.060, octaveGain: 0.010, bassGain: 0.036,
-      masterVol: 0.23, filterCut: 4200, vibratoDepth: 2.0, vibratoRate: 0.10
+      chords: [[61,64,69,73], [61,66,69,73], [62,66,69,74], [64,68,71,76]],
+      bass: 69, tempo: 470, attack: 0.025, sustain: 0.3, release: 1.2,
+      noteGain: 0.070, bassGain: 0.014,
+      masterVol: 0.32, filterCut: 3800, vibratoDepth: 1.8, vibratoRate: 0.10
     },
-    { // Friday — "Open Window": bright, released. C → Am → F → G
+    { // Friday — "Open Window": bright, released. E → A → D → F#m
       name: 'Open Window',
-      chords: [[64,67,72,76], [64,69,72,76], [65,69,72,77], [62,67,71,74]],
-      bass: 64, tempo: 470, attack: 0.04, sustain: 2.0, release: 2.8,
-      noteGain: 0.058, octaveGain: 0.009, bassGain: 0.034,
-      masterVol: 0.22, filterCut: 4500, vibratoDepth: 2.0, vibratoRate: 0.10
+      chords: [[64,68,71,76], [64,69,73,76], [62,66,69,74], [66,69,73,78]],
+      bass: 64, tempo: 490, attack: 0.025, sustain: 0.3, release: 1.3,
+      noteGain: 0.058, bassGain: 0.012,
+      masterVol: 0.28, filterCut: 3500, vibratoDepth: 1.8, vibratoRate: 0.10
     },
-    { // Saturday — "Long Morning": unhurried, spacious. Am → Dm → G → C
+    { // Saturday — "Long Morning": spacious, unhurried. A → C#m → D → E
       name: 'Long Morning',
-      chords: [[60,64,69,72], [62,65,69,74], [62,67,71,74], [60,64,67,72]],
-      bass: 60, tempo: 580, attack: 0.05, sustain: 2.5, release: 3.5,
-      noteGain: 0.050, octaveGain: 0.007, bassGain: 0.040,
-      masterVol: 0.19, filterCut: 2800, vibratoDepth: 3.5, vibratoRate: 0.07
+      chords: [[61,64,69,73], [61,64,68,73], [62,66,69,74], [64,68,71,76]],
+      bass: 69, tempo: 580, attack: 0.03, sustain: 0.4, release: 1.6,
+      noteGain: 0.058, bassGain: 0.015,
+      masterVol: 0.27, filterCut: 2800, vibratoDepth: 2.5, vibratoRate: 0.07
     }
   ];
 
@@ -1434,23 +1435,29 @@ const SoundEngine = (() => {
 
   function midiToFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
 
-  // ── Note: bloom → sustain → dissolve (piano + sustain pedal) ──
+  // ── Note: piano onset → natural decay → gentle tail ───────
+  // Like Yiruma: a clear bell-like strike that blooms briefly
+  // then decays naturally. The "sustain pedal" comes from the
+  // tail of one note overlapping the onset of the next — NOT
+  // from holding each note at full volume.
   function emitNote(midi, s) {
     if (!ctx || !running) return;
     const now = ctx.currentTime;
     const freq = midiToFreq(midi);
     const dur = s.attack + s.sustain + s.release;
     const g = Math.max(s.noteGain, 0.0001);
-    const decay = Math.max(g * 0.45, 0.0001);
 
-    // Primary sine (piano fundamental)
     const osc = ctx.createOscillator();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, now);
     const env = ctx.createGain();
     env.gain.setValueAtTime(0.0001, now);
+    // Sharp bloom to peak (piano hammer)
     env.gain.exponentialRampToValueAtTime(g, now + s.attack);
-    env.gain.exponentialRampToValueAtTime(decay, now + s.attack + s.sustain);
+    // Immediate natural decay to ~18% (hammer release)
+    env.gain.exponentialRampToValueAtTime(Math.max(g * 0.18, 0.0001),
+      now + s.attack + s.sustain);
+    // Long gentle tail (string resonance)
     env.gain.exponentialRampToValueAtTime(0.0001, now + dur);
     osc.connect(env);
     env.connect(filter);
@@ -1463,33 +1470,9 @@ const SoundEngine = (() => {
       const i = activePads.indexOf(ref);
       if (i > -1) activePads.splice(i, 1);
     }, (dur + 0.3) * 1000);
-
-    // Ghost harmonic — octave above at low volume (bell-like piano quality)
-    if (s.octaveGain > 0 && midi + 12 <= 84) {
-      const osc2 = ctx.createOscillator();
-      osc2.type = 'sine';
-      osc2.frequency.setValueAtTime(midiToFreq(midi + 12), now);
-      const env2 = ctx.createGain();
-      const og = Math.max(s.octaveGain, 0.0001);
-      env2.gain.setValueAtTime(0.0001, now);
-      env2.gain.exponentialRampToValueAtTime(og, now + s.attack * 0.8);
-      env2.gain.exponentialRampToValueAtTime(Math.max(og * 0.3, 0.0001),
-        now + s.attack + s.sustain * 0.6);
-      env2.gain.exponentialRampToValueAtTime(0.0001, now + dur * 0.8);
-      osc2.connect(env2);
-      env2.connect(filter);
-      osc2.start(now);
-      osc2.stop(now + dur);
-      const ref2 = { osc: osc2, env: env2 };
-      activePads.push(ref2);
-      setTimeout(() => {
-        const i = activePads.indexOf(ref2);
-        if (i > -1) activePads.splice(i, 1);
-      }, (dur + 0.3) * 1000);
-    }
   }
 
-  // ── Arpeggiator: ascending broken chords with sustain overlap ──
+  // ── Arpeggiator: ascending broken chords ─────────────────
   function startArpeggio(s) {
     let chordIdx = 0, noteIdx = 0;
     function tick() {
@@ -1519,17 +1502,16 @@ const SoundEngine = (() => {
     if (masterGain) { masterGain.disconnect(); masterGain = null; }
   }
 
-  // ── iOS/WebKit audio unlock — gold standard silent-buffer trick ──
-  // Chrome on iOS is WebKit underneath. AudioContext must be unlocked
-  // by playing audio within a user gesture. We listen on EVERY gesture
-  // type in capture phase and play a silent 1-sample buffer.
+  // ── iOS/WebKit audio unlock — silent-buffer trick ─────────
+  // Chrome on iOS = WebKit. AudioContext must be unlocked by
+  // playing audio within a user gesture. touchend is the most
+  // reliable activation event on iOS.
   let unlocked = false;
   function unlock() {
     if (unlocked) return;
     try {
       if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
       if (ctx.state === 'suspended') ctx.resume();
-      // Play silent 1-sample buffer — THE key to unlocking iOS audio
       const b = ctx.createBuffer(1, 1, ctx.sampleRate);
       const src = ctx.createBufferSource();
       src.buffer = b;
@@ -1546,31 +1528,31 @@ const SoundEngine = (() => {
     document.addEventListener(evt, unlock, { capture: true, passive: true });
   });
 
-  // ── Launch: sets up audio graph once context is running ─────
+  // ── Launch: audio graph setup ────────────────────────────
   function launch(s) {
     running = true;
     const now = ctx.currentTime;
 
-    // Master gain
+    // Master gain — 1.5s fade-in
     masterGain = ctx.createGain();
     masterGain.gain.setValueAtTime(0, now);
-    masterGain.gain.linearRampToValueAtTime(muted ? 0 : s.masterVol, now + 2);
+    masterGain.gain.linearRampToValueAtTime(muted ? 0 : s.masterVol, now + 1.5);
     masterGain.connect(ctx.destination);
 
     // Low-pass filter (warmth)
     filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.setValueAtTime(s.filterCut, now);
-    filter.Q.setValueAtTime(0.7, now);
+    filter.Q.setValueAtTime(0.5, now);
     filter.connect(masterGain);
 
-    // Held bass drone (Cinematic Orchestra cello)
+    // Barely-there bass warmth (Ghibli cello undertone)
     const bass = ctx.createOscillator();
     bass.type = 'sine';
     bass.frequency.setValueAtTime(midiToFreq(s.bass), now);
     const bassEnv = ctx.createGain();
     bassEnv.gain.setValueAtTime(0, now);
-    bassEnv.gain.linearRampToValueAtTime(s.bassGain, now + 4);
+    bassEnv.gain.linearRampToValueAtTime(s.bassGain, now + 5);
     bass.connect(bassEnv);
     bassEnv.connect(filter);
     bass.start(now);
@@ -1587,32 +1569,24 @@ const SoundEngine = (() => {
     vib.start(now);
     activePads.push({ osc: vib, env: vibG });
 
-    // Volume LFO on bass (slow breathing)
-    const lfo = ctx.createOscillator();
-    lfo.type = 'sine';
-    lfo.frequency.setValueAtTime(s.vibratoRate * 0.6, now);
-    const lfoG = ctx.createGain();
-    lfoG.gain.setValueAtTime(s.bassGain * 0.2, now);
-    lfo.connect(lfoG);
-    lfoG.connect(bassEnv.gain);
-    lfo.start(now);
-    activePads.push({ osc: lfo, env: lfoG });
-
     // Start arpeggio
     startArpeggio(s);
   }
 
   return {
     start() {
-      if (running) hardStop();
+      // Idempotent — if already playing, do nothing
+      if (running) return;
+      // Clean up stale resources from a previous stop()
+      if (masterGain) hardStop();
+
       if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
 
       const s = SONGS[new Date().getDay()];
-
       const go = () => { if (!running) launch(s); };
 
       if (ctx.state !== 'running') {
-        // iOS: play silent buffer + resume within user gesture
+        // Silent buffer + resume for iOS unlock
         try {
           const b = ctx.createBuffer(1, 1, ctx.sampleRate);
           const src = ctx.createBufferSource();
@@ -1627,11 +1601,13 @@ const SoundEngine = (() => {
             go();
           }
         });
-        // Nuclear fallback — try after 500ms regardless
-        setTimeout(() => {
-          if (ctx.state === 'suspended') ctx.resume();
-          go();
-        }, 500);
+        // Fallback polling — check every 200ms for 3s
+        let polls = 0;
+        const poll = setInterval(() => {
+          polls++;
+          if (running || polls > 15) { clearInterval(poll); return; }
+          if (ctx.state === 'running') { clearInterval(poll); go(); }
+        }, 200);
       } else {
         launch(s);
       }
@@ -2034,6 +2010,12 @@ function spiroStart() {
   // Start ambient soundscape (inside user gesture for iOS Safari)
   SoundEngine.start();
   document.getElementById('sound-toggle').classList.add('visible');
+  // iOS: retry on touchend — most reliable user activation event.
+  // start() is idempotent so this is safe if audio is already playing.
+  document.addEventListener('touchend', function _audioRetry() {
+    document.removeEventListener('touchend', _audioRetry);
+    SoundEngine.start();
+  }, { once: true });
 }
 
 function spiroReset() {
