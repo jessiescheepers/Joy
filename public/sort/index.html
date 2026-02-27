@@ -75,7 +75,6 @@ body {
   transition: opacity 0.8s ease;
 }
 .checkin-bar.hidden { opacity: 0; pointer-events: none; }
-.checkin-bar > * { pointer-events: auto; }
 
 .checkin-moment {
   display: flex;
@@ -83,6 +82,7 @@ body {
   align-items: center;
   opacity: 0;
   pointer-events: none;
+  touch-action: none;
   position: absolute;
   bottom: 0; left: 0; right: 0;
   padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0px));
@@ -1124,9 +1124,6 @@ function initSliders() {
     wrap.addEventListener('pointerdown', onSliderDown);
     wrap.addEventListener('keydown', onSliderKey);
   });
-  // Global safety net: release stuck slider if pointer goes up anywhere
-  document.addEventListener('pointerup', () => { if (activeSlider) onSliderUp({}); });
-  document.addEventListener('pointercancel', () => { if (activeSlider) onSliderUp({}); });
 }
 
 function onSliderKey(e) {
@@ -1182,7 +1179,14 @@ function onSliderKey(e) {
 function onSliderDown(e) {
   if (advancing) return;
 
+  // Only respond to the active moment's slider
+  const moment = e.currentTarget.closest('.checkin-moment');
+  if (!moment || !moment.classList.contains('active')) return;
+
   e.preventDefault();
+
+  // Clear any pending auto-advance so slider isn't yanked away mid-drag
+  if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
 
   // First touch: hide intro prompt, start spirograph
   if (!Spiro.running) {
@@ -1195,24 +1199,24 @@ function onSliderDown(e) {
   activePointerId = e.pointerId;
   pointerHistory = [];
 
-  wrap.setPointerCapture(e.pointerId);
-  wrap.addEventListener('pointermove', onSliderMove);
-  wrap.addEventListener('pointerup', onSliderUp);
-  wrap.addEventListener('pointercancel', onSliderUp);
-  wrap.addEventListener('lostpointercapture', onSliderUp);
+  // Document-level listeners — avoids iOS Safari setPointerCapture bugs
+  document.addEventListener('pointermove', onSliderMove);
+  document.addEventListener('pointerup', onSliderUp);
+  document.addEventListener('pointercancel', onSliderUp);
 
-  // Disable spring transition during drag
+  // Disable spring transition during drag + force style flush
   const thumb = wrap.querySelector('.slider-thumb');
   const fill = wrap.querySelector('.slider-fill');
   thumb.style.transition = 'none';
   fill.style.transition = 'none';
+  thumb.offsetHeight;
 
   // Immediate move to tap position
   moveSliderToPointer(wrap, e);
 }
 
 function onSliderMove(e) {
-  if (!activeSlider) return;
+  if (!activeSlider || e.pointerId !== activePointerId) return;
   e.preventDefault();
   pointerHistory.push({ x: e.clientX, t: Date.now() });
   if (pointerHistory.length > 5) pointerHistory.shift();
@@ -1221,16 +1225,14 @@ function onSliderMove(e) {
 
 function onSliderUp(e) {
   if (!activeSlider) return;
+  if (e.pointerId !== undefined && e.pointerId !== activePointerId) return;
   const wrap = activeSlider;
   activeSlider = null;
-
-  try { if (activePointerId != null) wrap.releasePointerCapture(activePointerId); } catch(_){}
   activePointerId = null;
 
-  wrap.removeEventListener('pointermove', onSliderMove);
-  wrap.removeEventListener('pointerup', onSliderUp);
-  wrap.removeEventListener('pointercancel', onSliderUp);
-  wrap.removeEventListener('lostpointercapture', onSliderUp);
+  document.removeEventListener('pointermove', onSliderMove);
+  document.removeEventListener('pointerup', onSliderUp);
+  document.removeEventListener('pointercancel', onSliderUp);
 
   // Re-enable spring transition (horizontal)
   const thumb = wrap.querySelector('.slider-thumb');
@@ -1295,6 +1297,7 @@ function moveSliderToPointer(wrap, e) {
   const key = wrap.dataset.key;
 
   const rect = track.getBoundingClientRect();
+  if (rect.width === 0) return;
   const relX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
   const pct = relX / rect.width; // 0 = left (value 1), 1 = right (value max)
 
@@ -1521,8 +1524,9 @@ function spiroRecalcTargets() {
 }
 
 // ── Geometric harmonograph engine ──
-// Counter-rotating circles + load harmonic: precise, mathematical rosettes.
-// Fixed frequencies (f1=1.0, f2=1.03, f3=3.023) — sliders control shape parameters only.
+// Counter-rotating circles + load harmonic: organic flowing rosettes.
+// Irrational frequency ratios (√2, √7 based) ensure the pattern never closes
+// into a recognisable polygon or star shape at any drawing duration.
 // Sleep → clarity/scatter, Energy → scale/speed, Mood → colour+elongation, Stress → tremor/breathing, Load → complexity+weight.
 
 function spiroComputePoint(t) {
@@ -1530,14 +1534,14 @@ function spiroComputePoint(t) {
   const st = Spiro.stress;
   const l = Spiro.load;
 
-  // Fixed frequencies — core geometry never changes mid-drawing
-  const f1 = 1.0;                    // circle 1: counterclockwise
-  const f2 = 1.0 + 0.03;             // circle 2: clockwise, detuned
+  // Irrational frequency offsets — pattern never closes, no integer-petal stars
+  const f1 = 1.0;                           // circle 1: counterclockwise
+  const f2 = 1.0 + Math.SQRT2 * 0.02;      // ≈1.02828, irrational detuning
 
   // MOOD → elongation (tight angular ↔ open round)
-  // Low mood = narrow elongated sweeps, bright mood = rounder ovals
-  const A1 = 0.58 + m * 0.12;        // 0.58→0.70
-  const A2 = 0.42 - m * 0.12;        // 0.42→0.30
+  // Reduced spread keeps shapes organic — lobes are rounded, not star-pointed
+  const A1 = 0.56 + m * 0.09;        // 0.56→0.65
+  const A2 = 0.44 - m * 0.09;        // 0.44→0.35
 
   // MOOD → phase (keeps pattern variety)
   const phase = Math.PI * (0.15 + m * 0.7);
@@ -1551,9 +1555,9 @@ function spiroComputePoint(t) {
   let y = (A1 * Math.sin(f1 * t + phase) - A2 * Math.sin(f2 * t)) * breathe;
 
   // LOAD → secondary harmonic (pattern complexity)
-  // Light day = clean simple curves, heavy day = intricate undulations
+  // √7 ≈ 2.646 — irrational, avoids 3-fold or any integer-fold symmetry
   const A3 = l * 0.04;               // 0→0.04
-  const f3 = 3.0 + 0.023;            // 3:1 frequency ratio, slightly detuned
+  const f3 = Math.sqrt(7);           // ≈2.6458, no integer resonance
   x += A3 * Math.cos(f3 * t);
   y -= A3 * Math.sin(f3 * t);
 
@@ -1737,7 +1741,16 @@ function showShareHint(msg) {
 
 async function downloadCardPng() {
   const blob = await getCardPngBlob();
-  if (blob) triggerDownload(blob, 'png');
+  if (!blob) return;
+  // On mobile: native share sheet gives "Save Image" → Camera Roll
+  if (IS_MOBILE) {
+    const fname = 'joy-sort-' + dateStr.replace(/\s/g, '-').toLowerCase() + '.png';
+    const file = new File([blob], fname, { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file] }); return; } catch (_) {}
+    }
+  }
+  triggerDownload(blob, 'png');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1928,15 +1941,14 @@ async function shareLinkedIn() {
     : 'Image saved, text copied — paste into your post and attach the image');
 }
 
-// Copy link
 // Copy glow image to clipboard (falls back to text if clipboard image not supported)
+// iOS Safari requires passing a Promise to ClipboardItem to preserve user gesture context.
 async function copyGlowText() {
   const label = document.getElementById('copy-glow-label');
   try {
-    const blob = await getCardPngBlob();
-    if (!blob) throw new Error('no blob');
     if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
-      const item = new ClipboardItem({ 'image/png': blob });
+      // Pass the blob promise directly — preserves user gesture on Safari
+      const item = new ClipboardItem({ 'image/png': getCardPngBlob().then(b => b || new Blob()) });
       await navigator.clipboard.write([item]);
       label.textContent = 'copied \u2713';
     } else if (navigator.clipboard && navigator.clipboard.writeText) {
