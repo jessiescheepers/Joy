@@ -1533,6 +1533,8 @@ var SoundEngine = (function() {
   var sparkleTimer, chordTimer, ghostTimer, running = false, muted = false;
   var activePads = [], currentChord = 0;
   var pendingStart = false, pendingSong = null;
+  var liveSong = null;
+  var bassEnvRef = null, bassHarmEnvRef = null, vibGRef = null, breathEnvRef = null;
 
   // Mobile devices need louder output (phone speakers vs desktop monitors)
   var IS_MOB = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
@@ -1789,6 +1791,7 @@ var SoundEngine = (function() {
 
     activePads.push({ osc: noise, env: breathEnv });
     activePads.push({ osc: breathLFO, env: breathLFOGain });
+    breathEnvRef = breathEnv;
   }
 
   function hardStop() {
@@ -1807,6 +1810,8 @@ var SoundEngine = (function() {
     if (filterLFOGain) { try { filterLFOGain.disconnect(); } catch(e) {} filterLFOGain = null; }
     if (filter) { filter.disconnect(); filter = null; }
     if (masterGain) { masterGain.disconnect(); masterGain = null; }
+    bassEnvRef = null; bassHarmEnvRef = null; vibGRef = null; breathEnvRef = null;
+    liveSong = null;
   }
 
   // ── iOS audio unlock + pending launch ────────────────────
@@ -1858,9 +1863,64 @@ var SoundEngine = (function() {
     document.addEventListener(evt, unlock, true);
   });
 
+  // ── Slider-to-sound mapping ────────────────────────────────
+  // Compute song parameters from current slider values.
+  // Each dimension modulates specific sonic qualities:
+  //   Sleep  → clarity (filter cutoff, pad focus, breath)
+  //   Energy → vitality (sparkle density, bass grounding)
+  //   Mood   → warmth (shimmer, pad lushness, ghost notes)
+  //   Stress → tension (filter LFO speed/depth, vibrato)
+  //   Load   → weight (bass + breath contribution, presence)
+  // Overall capacity (weighted composite) → master volume.
+  function computeSoundParams(params) {
+    var tSleep  = (params.sleep  - 1) / 4;
+    var tEnergy = (params.energy - 1) / 4;
+    var tMood   = (params.mood   - 1) / 4;
+    var tStress = (params.stress - 1) / 4;
+    var tLoad   = (params.load   - 1) / 4;
+
+    function lerp(a, b, t) { return a + (b - a) * t; }
+
+    // Weighted capacity (same formula as computeGlow, normalized 0-1)
+    var capacity = 0.30 * tSleep + 0.35 * tEnergy + 0.20 * tMood + 0.15 * (1 - tStress);
+
+    return {
+      // Sleep → Clarity: foggy/muffled at low, crystalline at high
+      filterCut:    lerp(1800, 4200, tSleep),
+      padDetune:    lerp(14, 5, tSleep),
+
+      // Energy → Vitality: sparse/quiet at low, frequent/bright at high
+      sparkleMin:   lerp(2200, 900, tEnergy),
+      sparkleMax:   lerp(4200, 2000, tEnergy),
+      sparkleGain:  lerp(0.025, 0.075, tEnergy),
+
+      // Mood → Warmth: thin/melancholy at low, lush/shimmery at high
+      shimmerGain:  lerp(0.006, 0.026, tMood),
+      padGain:      lerp(0.014, 0.030, tMood),
+      ghostGain:    lerp(0.018, 0.006, tMood),
+
+      // Stress → Tension: calm/steady at low, restless/wobbly at high
+      lfoRate:      lerp(0.03, 0.10, tStress),
+      lfoDepth:     lerp(350, 1200, tStress),
+      vibratoDepth: lerp(1.0, 4.5, tStress),
+      vibratoRate:  lerp(0.06, 0.14, tStress),
+
+      // Load → Weight: contributes to bass and breath presence
+      bassGain:     lerp(0.006, 0.016, tEnergy) + lerp(0, 0.006, tLoad),
+      breathGain:   lerp(0.030, 0.010, tSleep) + lerp(0, 0.012, tLoad),
+
+      // Overall capacity → master volume
+      masterVol:    lerp(0.24, 0.38, capacity),
+
+      // Fixed per-voice
+      padVoices:    3
+    };
+  }
+
   function launch(s) {
     running = true;
     currentChord = 0;
+    liveSong = s;
     var now = ctx.currentTime;
 
     masterGain = ctx.createGain();
@@ -1928,6 +1988,11 @@ var SoundEngine = (function() {
     vib.start(now);
     activePads.push({ osc: vib, env: vibG });
 
+    // Store refs for real-time slider modulation
+    bassEnvRef = bassEnv;
+    bassHarmEnvRef = bassHarmEnv;
+    vibGRef = vibG;
+
     // ── Start all layers ────────────────────────────────────
     startSparkles(s);
     startGhosts(s);
@@ -1935,33 +2000,151 @@ var SoundEngine = (function() {
     startBreath(s);
   }
 
+  // ── Mobile gain boost ──────────────────────────────────────
+  function applyMobileBoost(song) {
+    if (!IS_MOB) return;
+    song.masterVol = Math.min(song.masterVol * 3.5, 1.0);
+    song.sparkleGain *= 2.5;
+    song.shimmerGain *= 2.5;
+    song.padGain *= 2;
+    song.ghostGain *= 2;
+    song.breathGain *= 2;
+    song.bassGain *= 1.5;
+  }
+
   return {
     start: function() {
       if (running || pendingStart) return;
       if (masterGain) hardStop();
 
-      var song = SONGS[new Date().getDay()];
-      // Mobile: boost all gains for phone speakers
-      if (IS_MOB) {
-        song = {};
-        var orig = SONGS[new Date().getDay()];
-        for (var k in orig) song[k] = orig[k];
-        song.masterVol = Math.min(orig.masterVol * 3.5, 1.0);
-        song.sparkleGain = orig.sparkleGain * 2.5;
-        song.shimmerGain = orig.shimmerGain * 2.5;
-        song.padGain = orig.padGain * 2;
-        song.ghostGain = orig.ghostGain * 2;
-        song.breathGain = orig.breathGain * 2;
-        song.bassGain = orig.bassGain * 1.5;
-      }
+      // Build song: harmonic identity from daily preset + slider-derived texture
+      var baseSong = SONGS[new Date().getDay()];
+      var computed = computeSoundParams(P);
+      var song = {};
+      // Harmonic identity from daily preset (chords, bass note, timing)
+      song.chords   = baseSong.chords;
+      song.bass     = baseSong.bass;
+      song.chordDur = baseSong.chordDur;
+      song.name     = baseSong.name;
+      // Texture from slider values
+      for (var k in computed) song[k] = computed[k];
+      // Mobile boost
+      applyMobileBoost(song);
 
       // Set pending — unlock() on touchend/mousedown will handle it.
-      // Don't create AudioContext here (pointerdown is not a valid
-      // user activation on iOS touch, and even if ctx.state reports
-      // 'running' it may be tainted and produce no output).
       pendingStart = true;
       pendingSong = song;
-      dbg('P');  // pending
+      dbg('P');
+    },
+
+    // ── Real-time slider modulation ──────────────────────────
+    // Called from spiroRecalcTargets() whenever a slider value changes.
+    // Smoothly transitions audio parameters over 1.5s.
+    // Graph nodes (filter, LFO, vibrato, bass, breath) are ramped
+    // directly; scheduled events (sparkle, pad, ghost) pick up new
+    // values from liveSong on their next emit cycle.
+    update: function(params) {
+      if (!running || !liveSong || !ctx || !filter) return;
+
+      var now = ctx.currentTime;
+      var computed = computeSoundParams(params);
+      var rampTime = 1.5;
+
+      // Apply mobile boost to computed values
+      if (IS_MOB) {
+        computed.masterVol = Math.min(computed.masterVol * 3.5, 1.0);
+        computed.sparkleGain *= 2.5;
+        computed.shimmerGain *= 2.5;
+        computed.padGain *= 2;
+        computed.ghostGain *= 2;
+        computed.breathGain *= 2;
+        computed.bassGain *= 1.5;
+      }
+
+      // ── Real-time audio graph modulation ──────────────────
+      // Filter cutoff (Sleep → clarity)
+      try {
+        filter.frequency.cancelScheduledValues(now);
+        filter.frequency.setValueAtTime(filter.frequency.value, now);
+        filter.frequency.linearRampToValueAtTime(computed.filterCut, now + rampTime);
+      } catch(e) {}
+
+      // Filter LFO rate + depth (Stress → restlessness)
+      if (filterLFO) {
+        try {
+          filterLFO.frequency.cancelScheduledValues(now);
+          filterLFO.frequency.setValueAtTime(filterLFO.frequency.value, now);
+          filterLFO.frequency.linearRampToValueAtTime(computed.lfoRate, now + rampTime);
+        } catch(e) {}
+      }
+      if (filterLFOGain) {
+        try {
+          filterLFOGain.gain.cancelScheduledValues(now);
+          filterLFOGain.gain.setValueAtTime(filterLFOGain.gain.value, now);
+          filterLFOGain.gain.linearRampToValueAtTime(computed.lfoDepth, now + rampTime);
+        } catch(e) {}
+      }
+
+      // Master volume (overall capacity)
+      if (masterGain && !muted) {
+        try {
+          masterGain.gain.cancelScheduledValues(now);
+          masterGain.gain.setValueAtTime(masterGain.gain.value, now);
+          masterGain.gain.linearRampToValueAtTime(computed.masterVol, now + rampTime);
+        } catch(e) {}
+      }
+
+      // Bass vibrato depth (Stress → wobble)
+      if (vibGRef) {
+        try {
+          vibGRef.gain.cancelScheduledValues(now);
+          vibGRef.gain.setValueAtTime(vibGRef.gain.value, now);
+          vibGRef.gain.linearRampToValueAtTime(computed.vibratoDepth, now + rampTime);
+        } catch(e) {}
+      }
+
+      // Bass envelope (Energy + Load → grounding)
+      if (bassEnvRef) {
+        try {
+          bassEnvRef.gain.cancelScheduledValues(now);
+          bassEnvRef.gain.setValueAtTime(bassEnvRef.gain.value, now);
+          bassEnvRef.gain.linearRampToValueAtTime(computed.bassGain, now + rampTime);
+        } catch(e) {}
+      }
+      if (bassHarmEnvRef) {
+        try {
+          bassHarmEnvRef.gain.cancelScheduledValues(now);
+          bassHarmEnvRef.gain.setValueAtTime(bassHarmEnvRef.gain.value, now);
+          bassHarmEnvRef.gain.linearRampToValueAtTime(computed.bassGain * 0.35, now + rampTime);
+        } catch(e) {}
+      }
+
+      // Breath envelope (Sleep + Load → breath presence)
+      if (breathEnvRef) {
+        try {
+          breathEnvRef.gain.cancelScheduledValues(now);
+          breathEnvRef.gain.setValueAtTime(breathEnvRef.gain.value, now);
+          breathEnvRef.gain.linearRampToValueAtTime(computed.breathGain, now + rampTime);
+        } catch(e) {}
+      }
+
+      // ── Update liveSong for scheduled events ──────────────
+      // Next sparkle/ghost/chord will use these new values
+      liveSong.filterCut    = computed.filterCut;
+      liveSong.sparkleMin   = computed.sparkleMin;
+      liveSong.sparkleMax   = computed.sparkleMax;
+      liveSong.sparkleGain  = computed.sparkleGain;
+      liveSong.shimmerGain  = computed.shimmerGain;
+      liveSong.padGain      = computed.padGain;
+      liveSong.padDetune    = computed.padDetune;
+      liveSong.ghostGain    = computed.ghostGain;
+      liveSong.bassGain     = computed.bassGain;
+      liveSong.breathGain   = computed.breathGain;
+      liveSong.vibratoDepth = computed.vibratoDepth;
+      liveSong.vibratoRate  = computed.vibratoRate;
+      liveSong.lfoRate      = computed.lfoRate;
+      liveSong.lfoDepth     = computed.lfoDepth;
+      liveSong.masterVol    = computed.masterVol;
     },
 
     stop: function() {
@@ -1992,6 +2175,9 @@ var SoundEngine = (function() {
         masterGain = null; filter = null;
         filterLFO = null; filterLFOGain = null;
         activePads = [];
+        bassEnvRef = null; bassHarmEnvRef = null;
+        vibGRef = null; breathEnvRef = null;
+        liveSong = null;
         setTimeout(function() {
           _pads.forEach(function(p) {
             try { if (p.osc) p.osc.stop(); } catch(e) {}
@@ -2009,8 +2195,7 @@ var SoundEngine = (function() {
       muted = !muted;
       if (masterGain && ctx) {
         var now = ctx.currentTime;
-        var s = SONGS[new Date().getDay()];
-        var vol = IS_MOB ? Math.min(s.masterVol * 3.5, 1.0) : s.masterVol;
+        var vol = liveSong ? liveSong.masterVol : 0.30;
         masterGain.gain.cancelScheduledValues(now);
         masterGain.gain.setValueAtTime(masterGain.gain.value, now);
         masterGain.gain.linearRampToValueAtTime(muted ? 0 : vol, now + 0.5);
@@ -2217,6 +2402,8 @@ function spiroRecalcTargets() {
   Spiro.tLoad = (P.load - 1) / 4;
   // Update time-of-day glow if besttime changed
   updateTimeGlow();
+  // Modulate soundscape to match slider state
+  try { SoundEngine.update(P); } catch(e) {}
 }
 
 // ── Geometric harmonograph engine ──
