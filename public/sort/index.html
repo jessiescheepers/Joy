@@ -1665,7 +1665,7 @@ var SoundEngine = (function() {
       var wait = s.sparkleMin + Math.random() * (s.sparkleMax - s.sparkleMin);
       sparkleTimer = setTimeout(spark, wait);
     }
-    sparkleTimer = setTimeout(spark, 800);
+    sparkleTimer = setTimeout(spark, 100); // first sparkle fires quickly
   }
 
   // ── Ghost scheduler: slower, rarer, subliminal ────────────
@@ -1855,8 +1855,8 @@ var SoundEngine = (function() {
 
     masterGain = ctx.createGain();
     masterGain.gain.setValueAtTime(0, now);
-    // Slower fade-in (4s) for more gentle entry
-    masterGain.gain.linearRampToValueAtTime(muted ? 0 : s.masterVol, now + 4);
+    // 1.5s fade-in — fast enough to be audible quickly on phone speakers
+    masterGain.gain.linearRampToValueAtTime(muted ? 0 : s.masterVol, now + 1.5);
     masterGain.connect(ctx.destination);
 
     filter = ctx.createBiquadFilter();
@@ -1931,7 +1931,7 @@ var SoundEngine = (function() {
         song = {};
         var orig = SONGS[new Date().getDay()];
         for (var k in orig) song[k] = orig[k];
-        song.masterVol = Math.min(orig.masterVol * 2.5, 1.0);
+        song.masterVol = Math.min(orig.masterVol * 3.5, 1.0);
       }
 
       // Set pending — unlock() on touchend/mousedown will handle it.
@@ -1950,10 +1950,15 @@ var SoundEngine = (function() {
       if (ghostTimer) { clearTimeout(ghostTimer); ghostTimer = null; }
       if (masterGain && ctx) {
         var now = ctx.currentTime;
-        masterGain.gain.cancelScheduledValues(now);
-        masterGain.gain.setValueAtTime(masterGain.gain.value, now);
-        masterGain.gain.linearRampToValueAtTime(0, now + 4);
-        activePads.forEach(function(p) {
+        // Capture LOCAL refs — so the delayed cleanup doesn't kill
+        // a new session's objects if start() is called before 4.5s.
+        var _mg = masterGain, _flt = filter;
+        var _lfo = filterLFO, _lfog = filterLFOGain;
+        var _pads = activePads.slice(); // copy
+        _mg.gain.cancelScheduledValues(now);
+        _mg.gain.setValueAtTime(_mg.gain.value, now);
+        _mg.gain.linearRampToValueAtTime(0, now + 4);
+        _pads.forEach(function(p) {
           if (p.env && p.env.gain) {
             try {
               p.env.gain.cancelScheduledValues(now);
@@ -1962,16 +1967,19 @@ var SoundEngine = (function() {
             } catch(e) {}
           }
         });
+        // Null closure vars immediately so start() doesn't call hardStop
+        masterGain = null; filter = null;
+        filterLFO = null; filterLFOGain = null;
+        activePads = [];
         setTimeout(function() {
-          activePads.forEach(function(p) {
+          _pads.forEach(function(p) {
             try { if (p.osc) p.osc.stop(); } catch(e) {}
             try { if (p.env) p.env.disconnect(); } catch(e) {}
           });
-          activePads = [];
-          if (filterLFO) { try { filterLFO.stop(); } catch(e) {} filterLFO = null; }
-          if (filterLFOGain) { try { filterLFOGain.disconnect(); } catch(e) {} filterLFOGain = null; }
-          if (filter) { filter.disconnect(); filter = null; }
-          if (masterGain) { masterGain.disconnect(); masterGain = null; }
+          if (_lfo) { try { _lfo.stop(); } catch(e) {} }
+          if (_lfog) { try { _lfog.disconnect(); } catch(e) {} }
+          if (_flt) { try { _flt.disconnect(); } catch(e) {} }
+          if (_mg) { try { _mg.disconnect(); } catch(e) {} }
         }, 4500);
       }
     },
@@ -1981,7 +1989,7 @@ var SoundEngine = (function() {
       if (masterGain && ctx) {
         var now = ctx.currentTime;
         var s = SONGS[new Date().getDay()];
-        var vol = IS_MOB ? Math.min(s.masterVol * 2.5, 1.0) : s.masterVol;
+        var vol = IS_MOB ? Math.min(s.masterVol * 3.5, 1.0) : s.masterVol;
         masterGain.gain.cancelScheduledValues(now);
         masterGain.gain.setValueAtTime(masterGain.gain.value, now);
         masterGain.gain.linearRampToValueAtTime(muted ? 0 : vol, now + 0.5);
