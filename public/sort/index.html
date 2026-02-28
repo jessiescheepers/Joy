@@ -1535,11 +1535,15 @@ const SoundEngine = (function() {
   function unlock() {
     kickAudio();
     try {
-      if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
-      if (ctx.state === 'suspended') {
-        var p = ctx.resume();
-        if (p && p.then) p.then(tryPendingLaunch);
+      if (!ctx) {
+        ctx = new (window.AudioContext || window.webkitAudioContext)();
+        ctx.onstatechange = function() {
+          if (ctx.state === 'running') tryPendingLaunch();
+        };
       }
+      // Always try resume — harmless if already running, essential on iOS
+      var p = ctx.resume();
+      if (p && p.then) p.then(tryPendingLaunch);
       var b = ctx.createBuffer(1, 1, ctx.sampleRate);
       var s = ctx.createBufferSource();
       s.buffer = b; s.connect(ctx.destination); s.start();
@@ -1595,7 +1599,13 @@ const SoundEngine = (function() {
     start: function() {
       if (running || pendingStart) return;
       if (masterGain) hardStop();
-      if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (!ctx) {
+        ctx = new (window.AudioContext || window.webkitAudioContext)();
+        // Catch the exact moment iOS unlocks the context
+        ctx.onstatechange = function() {
+          if (ctx.state === 'running') tryPendingLaunch();
+        };
+      }
       kickAudio();
 
       var song = SONGS[new Date().getDay()];
@@ -1608,7 +1618,7 @@ const SoundEngine = (function() {
       }
 
       try {
-        var p = ctx.resume();
+        ctx.resume();
         var b = ctx.createBuffer(1, 1, ctx.sampleRate);
         var src = ctx.createBufferSource();
         src.buffer = b; src.connect(ctx.destination); src.start();
@@ -1618,22 +1628,10 @@ const SoundEngine = (function() {
       if (ctx.state === 'running') {
         launch(song);
       } else {
-        // iOS: context won't be running until NEXT user gesture.
-        // Set pending flag — unlock() will call launch() when ctx resumes.
+        // iOS: context stays suspended until a touchend/click completes.
+        // Set pending flag — unlock() + onstatechange will launch when ready.
         pendingStart = true;
         pendingSong = song;
-        // Also poll as fallback (some iOS versions are slow to report state)
-        var polls = 0;
-        var poller = setInterval(function() {
-          polls++;
-          if (ctx.state === 'running' && pendingStart && !running) {
-            clearInterval(poller);
-            pendingStart = false;
-            launch(pendingSong);
-          } else if (polls > 15) { // 3 seconds
-            clearInterval(poller);
-          }
-        }, 200);
       }
     },
 
@@ -2037,12 +2035,9 @@ function spiroStart() {
   // Show mute button immediately (before audio — ensures visibility)
   document.getElementById('sound-toggle').classList.add('visible');
   // Start ambient soundscape (wrapped — never blocks button)
+  // On iOS, sound won't play until touchend unlocks the AudioContext.
+  // The pendingStart pattern in SoundEngine handles this automatically.
   try { SoundEngine.start(); } catch(e) {}
-  // iOS: retry on touchend — most reliable user activation event
-  document.addEventListener('touchend', function _audioRetry() {
-    document.removeEventListener('touchend', _audioRetry);
-    try { SoundEngine.start(); } catch(e) {}
-  }, { once: true });
 }
 
 function spiroReset() {
