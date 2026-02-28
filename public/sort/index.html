@@ -1210,11 +1210,30 @@ function onSliderKey(e) {
   updateDots();
   if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
   autoAdvanceTimer = setTimeout(() => {
-    advancing = true;
-    if (currentMoment < MOMENTS.length - 1) {
-      showMoment(currentMoment + 1);
+    // If finger is still on slider, wait for pointerup before advancing.
+    // This ensures touchend fires BEFORE the transition, so iOS audio
+    // can unlock via the touchend user gesture.
+    if (activeSlider) {
+      var _deferAdvance = function() {
+        document.removeEventListener('pointerup', _deferAdvance);
+        // Small delay so touchend (audio unlock) fires first
+        setTimeout(function() {
+          advancing = true;
+          if (currentMoment < MOMENTS.length - 1) {
+            showMoment(currentMoment + 1);
+          } else {
+            showDoneState();
+          }
+        }, 60);
+      };
+      document.addEventListener('pointerup', _deferAdvance, { once: true });
     } else {
-      showDoneState();
+      advancing = true;
+      if (currentMoment < MOMENTS.length - 1) {
+        showMoment(currentMoment + 1);
+      } else {
+        showDoneState();
+      }
     }
   }, 1400);
 }
@@ -1788,14 +1807,10 @@ var SoundEngine = (function() {
   }
 
   // ── iOS audio unlock + pending launch ────────────────────
-  // Two-phase strategy:
-  //   Phase 1 (touchstart): create AudioContext + resume + play buffer
-  //     to warm up the iOS audio session while the finger is still down.
-  //   Phase 2 (50ms later via setTimeout): launch if ctx is running.
-  //     The user activation window on iOS extends ~5s after the gesture,
-  //     so setTimeout within a gesture still has activation privileges.
-  //   Fallback: touchend/pointerup also tries to launch (in case
-  //     phase 2 didn't fire or ctx wasn't ready yet).
+  // On iOS, only touchend/click are valid user activation events.
+  // Auto-advance now defers until pointerup, so touchend always
+  // fires BEFORE the slider transition — giving us a valid gesture
+  // to create and unlock the AudioContext.
   var audioUnlocked = false;
 
   function kickAudio() {
@@ -1807,67 +1822,36 @@ var SoundEngine = (function() {
     if (el) el.setAttribute('data-dbg', code);
   }
 
-  function doLaunch() {
-    if (!pendingStart || running) return false;
-    if (!ctx) return false;
-    try {
-      pendingStart = false;
-      audioUnlocked = true;
-      launch(pendingSong);
-      dbg('L');
-      return true;
-    } catch(ex) {
-      dbg('E');
-      return false;
-    }
-  }
-
   function unlock(e) {
     try { kickAudio(); } catch(x) {}
+
+    // Only valid user activation events
+    if (e.type === 'touchstart' || e.type === 'pointerdown') return;
+
     if (!pendingStart || running) return;
 
-    if (e.type === 'touchstart') {
-      // Phase 1: create + resume ctx while finger is down.
-      // touchstart is NOT a user activation, but on many iOS versions
-      // the AudioContext still warms up and transitions to 'running'
-      // before the finger lifts. We launch from setTimeout.
-      dbg('T');
-      try {
-        ctx = null;
-        ctx = new (window.AudioContext || window.webkitAudioContext)();
-        ctx.resume();
-        // Non-silent buffer to force audio session
-        var b = ctx.createBuffer(1, 44100, ctx.sampleRate);
-        var ch = b.getChannelData(0);
-        for (var i = 0; i < ch.length; i++) ch[i] = Math.sin(i * 0.1) * 0.001;
-        var src = ctx.createBufferSource();
-        src.buffer = b; src.connect(ctx.destination); src.start();
-      } catch(x) {}
-      // Phase 2: try launching after ctx has had time to warm up
-      setTimeout(function() { doLaunch(); }, 50);
-      setTimeout(function() { doLaunch(); }, 200);
-      setTimeout(function() { doLaunch(); }, 500);
-      return;
-    }
-
-    if (e.type === 'pointerdown') return; // skip — not valid for touch
-
-    // Fallback: touchend/pointerup/mousedown/click
     dbg('U');
     try {
       ctx = null;
       ctx = new (window.AudioContext || window.webkitAudioContext)();
       ctx.resume();
-      var b2 = ctx.createBuffer(1, 44100, ctx.sampleRate);
-      var ch2 = b2.getChannelData(0);
-      for (var j = 0; j < ch2.length; j++) ch2[j] = Math.sin(j * 0.1) * 0.001;
-      var src2 = ctx.createBufferSource();
-      src2.buffer = b2; src2.connect(ctx.destination); src2.start();
-    } catch(x) {}
-    doLaunch();
+      // Non-silent buffer to force audio session active
+      var b = ctx.createBuffer(1, 44100, ctx.sampleRate);
+      var ch = b.getChannelData(0);
+      for (var i = 0; i < ch.length; i++) ch[i] = Math.sin(i * 0.1) * 0.001;
+      var src = ctx.createBufferSource();
+      src.buffer = b; src.connect(ctx.destination); src.start();
+      // Launch immediately
+      pendingStart = false;
+      audioUnlocked = true;
+      dbg('L');
+      launch(pendingSong);
+    } catch(ex) {
+      dbg('E');
+    }
   }
 
-  ['touchstart','touchend','pointerup','mousedown','click'].forEach(function(evt) {
+  ['touchend','pointerup','mousedown','click'].forEach(function(evt) {
     document.addEventListener(evt, unlock, true);
   });
 
