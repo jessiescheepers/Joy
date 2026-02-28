@@ -1788,9 +1788,14 @@ var SoundEngine = (function() {
   }
 
   // ── iOS audio unlock + pending launch ────────────────────
-  // Simplest possible approach: on every touchend/pointerup/click,
-  // if launch is pending, create a fresh AudioContext in this
-  // gesture and launch immediately. No Promises, no guards.
+  // Two-phase strategy:
+  //   Phase 1 (touchstart): create AudioContext + resume + play buffer
+  //     to warm up the iOS audio session while the finger is still down.
+  //   Phase 2 (50ms later via setTimeout): launch if ctx is running.
+  //     The user activation window on iOS extends ~5s after the gesture,
+  //     so setTimeout within a gesture still has activation privileges.
+  //   Fallback: touchend/pointerup also tries to launch (in case
+  //     phase 2 didn't fire or ctx wasn't ready yet).
   var audioUnlocked = false;
 
   function kickAudio() {
@@ -1802,49 +1807,67 @@ var SoundEngine = (function() {
     if (el) el.setAttribute('data-dbg', code);
   }
 
-  function unlock(e) {
-    try { kickAudio(); } catch(x) {}
-
-    // Skip events that are NOT valid user activations on iOS
-    if (e.type === 'touchstart') return;
-    if (e.type === 'pointerdown') return; // never valid for touch on iOS
-    // Valid events reaching here: touchend, pointerup, mousedown, click
-
-    if (!pendingStart || running) return;
-
-    dbg('U');  // unlock attempt
-
+  function doLaunch() {
+    if (!pendingStart || running) return false;
+    if (!ctx) return false;
     try {
-      // Abandon old ctx (don't close — close() is async and unreliable)
-      ctx = null;
-
-      // Create brand new AudioContext in this valid gesture
-      ctx = new (window.AudioContext || window.webkitAudioContext)();
-      dbg('C');  // ctx created
-
-      // Resume — might be sync or async, doesn't matter
-      ctx.resume();
-
-      // Play a short non-silent buffer to force audio session active
-      var b = ctx.createBuffer(1, 44100, ctx.sampleRate);
-      var ch = b.getChannelData(0);
-      for (var i = 0; i < ch.length; i++) {
-        ch[i] = Math.sin(i * 0.1) * 0.001; // barely-audible sine
-      }
-      var src = ctx.createBufferSource();
-      src.buffer = b; src.connect(ctx.destination); src.start();
-
-      // Launch NOW — don't wait for Promise/state/anything
       pendingStart = false;
       audioUnlocked = true;
-      dbg('L');  // launched
       launch(pendingSong);
+      dbg('L');
+      return true;
     } catch(ex) {
-      dbg('E');  // error
+      dbg('E');
+      return false;
     }
   }
 
-  ['touchend','pointerup','mousedown','click'].forEach(function(evt) {
+  function unlock(e) {
+    try { kickAudio(); } catch(x) {}
+    if (!pendingStart || running) return;
+
+    if (e.type === 'touchstart') {
+      // Phase 1: create + resume ctx while finger is down.
+      // touchstart is NOT a user activation, but on many iOS versions
+      // the AudioContext still warms up and transitions to 'running'
+      // before the finger lifts. We launch from setTimeout.
+      dbg('T');
+      try {
+        ctx = null;
+        ctx = new (window.AudioContext || window.webkitAudioContext)();
+        ctx.resume();
+        // Non-silent buffer to force audio session
+        var b = ctx.createBuffer(1, 44100, ctx.sampleRate);
+        var ch = b.getChannelData(0);
+        for (var i = 0; i < ch.length; i++) ch[i] = Math.sin(i * 0.1) * 0.001;
+        var src = ctx.createBufferSource();
+        src.buffer = b; src.connect(ctx.destination); src.start();
+      } catch(x) {}
+      // Phase 2: try launching after ctx has had time to warm up
+      setTimeout(function() { doLaunch(); }, 50);
+      setTimeout(function() { doLaunch(); }, 200);
+      setTimeout(function() { doLaunch(); }, 500);
+      return;
+    }
+
+    if (e.type === 'pointerdown') return; // skip — not valid for touch
+
+    // Fallback: touchend/pointerup/mousedown/click
+    dbg('U');
+    try {
+      ctx = null;
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      ctx.resume();
+      var b2 = ctx.createBuffer(1, 44100, ctx.sampleRate);
+      var ch2 = b2.getChannelData(0);
+      for (var j = 0; j < ch2.length; j++) ch2[j] = Math.sin(j * 0.1) * 0.001;
+      var src2 = ctx.createBufferSource();
+      src2.buffer = b2; src2.connect(ctx.destination); src2.start();
+    } catch(x) {}
+    doLaunch();
+  }
+
+  ['touchstart','touchend','pointerup','mousedown','click'].forEach(function(evt) {
     document.addEventListener(evt, unlock, true);
   });
 
