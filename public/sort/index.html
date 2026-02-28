@@ -59,6 +59,11 @@ body {
 .sound-toggle.muted .sound-icon-on { display: none; }
 .sound-toggle.muted .sound-icon-off { display: block; }
 @media (hover: hover) { .sound-toggle:hover { color: var(--text); } }
+.sound-toggle::after {
+  content: attr(data-dbg);
+  position: absolute; top: -16px; right: 0;
+  font: 500 10px/1 monospace; color: #999;
+}
 
 /* ═══ CARD LAYOUT ═══ */
 .card-scene {
@@ -1783,90 +1788,63 @@ var SoundEngine = (function() {
   }
 
   // ── iOS audio unlock + pending launch ────────────────────
-  //
-  // WebKit User Activation rules (the root cause of the iOS bug):
-  //   pointerdown  → user activation ONLY when pointerType === "mouse"
-  //   pointerup    → user activation ONLY when pointerType !== "mouse"
-  //   touchend     → always grants user activation
-  //   touchstart   → NOT a valid user activation
-  //   mousedown    → always grants user activation
-  //   click        → always grants user activation
-  //
-  // On iOS, SoundEngine.start() is called during pointerdown (touch),
-  // which is NOT a valid user activation. The AudioContext created there
-  // may report state === 'running' (Chrome/WKWebView inconsistency)
-  // but can't actually produce audio — it's "tainted".
-  //
-  // Fix: on touch devices, ALWAYS defer to touchend/pointerup. When
-  // pendingStart is set, unconditionally destroy the old ctx and
-  // create a fresh one inside the valid gesture, regardless of
-  // what ctx.state reports.
-  //
+  // Simplest possible approach: on every touchend/pointerup/click,
+  // if launch is pending, create a fresh AudioContext in this
+  // gesture and launch immediately. No Promises, no guards.
   var audioUnlocked = false;
-  var unlocking = false;  // guard against double-fire (touchend + pointerup)
 
   function kickAudio() {
     try { document.getElementById('audio-kick').play(); } catch(e) {}
   }
 
+  function dbg(code) {
+    var el = document.getElementById('sound-toggle');
+    if (el) el.setAttribute('data-dbg', code);
+  }
+
   function unlock(e) {
-    try { kickAudio(); } catch(ignore) {}
+    try { kickAudio(); } catch(x) {}
 
-    // touchstart is NOT a valid user activation on iOS — skip
+    // Skip events that are NOT valid user activations on iOS
     if (e.type === 'touchstart') return;
-    // pointerdown with touch is NOT a valid user activation — skip
-    if (e.type === 'pointerdown' && e.pointerType && e.pointerType !== 'mouse') return;
-    // pointerup with mouse is NOT a valid user activation — skip
-    if (e.type === 'pointerup' && e.pointerType && e.pointerType === 'mouse') return;
+    if (e.type === 'pointerdown') return; // never valid for touch on iOS
+    // Valid events reaching here: touchend, pointerup, mousedown, click
 
-    // Guard: both touchend and pointerup fire when lifting a finger.
-    // Only process the first one to avoid destroying a freshly-created ctx.
-    if (unlocking) return;
+    if (!pendingStart || running) return;
+
+    dbg('U');  // unlock attempt
 
     try {
-      // If launch is pending, ALWAYS destroy the old ctx and build fresh.
-      // Don't trust ctx.state — iOS/WKWebView can report 'running' on a
-      // tainted context that was created outside a valid user gesture.
-      if (pendingStart && ctx) {
-        unlocking = true;
-        try { ctx.close(); } catch(ignore) {}
-        ctx = null;
+      // Abandon old ctx (don't close — close() is async and unreliable)
+      ctx = null;
+
+      // Create brand new AudioContext in this valid gesture
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      dbg('C');  // ctx created
+
+      // Resume — might be sync or async, doesn't matter
+      ctx.resume();
+
+      // Play a short non-silent buffer to force audio session active
+      var b = ctx.createBuffer(1, 44100, ctx.sampleRate);
+      var ch = b.getChannelData(0);
+      for (var i = 0; i < ch.length; i++) {
+        ch[i] = Math.sin(i * 0.1) * 0.001; // barely-audible sine
       }
-      if (!ctx) {
-        ctx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      ctx.resume().then(function() {
-        audioUnlocked = true;
-        unlocking = false;
-        if (pendingStart && !running && ctx) {
-          pendingStart = false;
-          try { launch(pendingSong); } catch(ignore) {}
-        }
-      }, function() {
-        // resume() rejected — clear guard so next gesture can retry
-        unlocking = false;
-      });
-      // Also play a silent buffer to warm up the output path
-      var b = ctx.createBuffer(1, 1, ctx.sampleRate);
       var src = ctx.createBufferSource();
       src.buffer = b; src.connect(ctx.destination); src.start();
-    } catch(ex) {
-      unlocking = false;
-    }
 
-    // Synchronous fallback: if resume resolved synchronously (desktop),
-    // launch immediately so there's no delay.
-    if (pendingStart && !running && ctx && ctx.state === 'running') {
+      // Launch NOW — don't wait for Promise/state/anything
       pendingStart = false;
       audioUnlocked = true;
-      unlocking = false;
-      try { launch(pendingSong); } catch(ignore) {}
+      dbg('L');  // launched
+      launch(pendingSong);
+    } catch(ex) {
+      dbg('E');  // error
     }
   }
 
-  // Listen on all events that can grant user activation.
-  // pointerup (touch) and touchend are the key ones for iOS.
-  ['touchstart','touchend','pointerdown','pointerup','mousedown','click'].forEach(function(evt) {
+  ['touchend','pointerup','mousedown','click'].forEach(function(evt) {
     document.addEventListener(evt, unlock, true);
   });
 
@@ -1956,32 +1934,13 @@ var SoundEngine = (function() {
         song.masterVol = Math.min(orig.masterVol * 2.5, 1.0);
       }
 
-      // On desktop (mouse), ctx created here during mousedown has valid
-      // user activation, so we can launch immediately.
-      // On iOS/touch, this is called during pointerdown which is NOT a
-      // valid user activation for touch. Even if ctx.state reports
-      // 'running', the context is tainted and won't produce audio.
-      // So on touch devices: ALWAYS defer to pendingStart path.
-      // The unlock() handler on touchend/pointerup will create a fresh
-      // ctx with proper user activation and call launch().
-      if (!ctx) {
-        try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
-      }
-      try { kickAudio(); } catch(ignore) {}
-      try { if (ctx) ctx.resume(); } catch(e) {}
-
-      // Only launch immediately if audio was already unlocked by a
-      // previous user gesture AND ctx is confirmed running.
-      // This covers desktop (mousedown = valid activation) and
-      // subsequent start() calls after the first iOS unlock.
-      if (audioUnlocked && ctx && ctx.state === 'running') {
-        launch(song);
-      } else {
-        // Defer to unlock() — touchend/pointerup will create fresh
-        // ctx and call launch() with valid user activation.
-        pendingStart = true;
-        pendingSong = song;
-      }
+      // Set pending — unlock() on touchend/mousedown will handle it.
+      // Don't create AudioContext here (pointerdown is not a valid
+      // user activation on iOS touch, and even if ctx.state reports
+      // 'running' it may be tainted and produce no output).
+      pendingStart = true;
+      pendingSong = song;
+      dbg('P');  // pending
     },
 
     stop: function() {
