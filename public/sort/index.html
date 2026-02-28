@@ -435,12 +435,13 @@ body {
 .reveal-capacity {
   font-family: 'Source Serif 4', serif;
   font-weight: 600;
-  font-size: 28px;
-  line-height: 1.15;
+  font-size: 22px;
+  line-height: 1.25;
   letter-spacing: -0.01em;
   color: rgba(42,37,32, 0.78);
   text-shadow: 0 0 24px hsla(38,30%,93%,0.7);
-  margin-bottom: 6px;
+  max-width: 300px;
+  margin-bottom: 8px;
   animation-delay: 0.3s;
 }
 .reveal-timing {
@@ -530,7 +531,7 @@ body {
   .slider-number { font-size: 22px; }
   .question-label { margin-bottom: 8px; }
   .reveal-overlay { padding: 32px 24px 72px; }
-  .reveal-capacity { font-size: 22px; }
+  .reveal-capacity { font-size: 19px; }
   .reveal-timing { font-size: 13px; }
   .reveal-nudge { font-size: 13px; }
 }
@@ -787,20 +788,62 @@ let dayLocked = false;
 // PROFILE LOOKUP TABLE (v5 values)
 // ═══════════════════════════════════════════════════════════════
 const PROFILES = {
-  A0: { name:'Embers',            descriptor:'Cup of tea, getting through it.',                           dw:0,   block:0,  picks:0, diff:'none',   tier:'A0' },
-  A1: { name:'Candlelight',       descriptor:'Today\u2019s lit by candles.',                              dw:30,  block:45, picks:1, diff:'low',    tier:'A1' },
-  B1: { name:'Slow Burn',         descriptor:'Tempting to burn it all at once.',                          dw:60,  block:60, picks:2, diff:'low',    tier:'B'  },
-  B2: { name:'Drizzle',           descriptor:'Grey outside, cosy inside. Crack on.',                     dw:60,  block:60, picks:2, diff:'low',    tier:'B'  },
-  B3: { name:'Friction',          descriptor:'System\u2019s strained. Hold steady.',                     dw:45,  block:45, picks:2, diff:'low',    tier:'B'  },
-  B4: { name:'Tenterhooks',       descriptor:'Big day. Tank\u2019s low.',                                dw:55,  block:60, picks:2, diff:'medium', tier:'B'  },
-  C1: { name:'Blue Sky Day',      descriptor:'Not a cloud in sight.',                                    dw:150, block:90, picks:3, diff:'medium', tier:'C'  },
-  C2: { name:'Hungry',            descriptor:'Full plate. Big appetite.',                                dw:150, block:75, picks:3, diff:'medium', tier:'C'  },
-  C3: { name:'Frenetic',          descriptor:'All revved up. Where to?',                                 dw:105, block:75, picks:3, diff:'medium', tier:'C'  },
-  C4: { name:'Humming',           descriptor:'Everything, all at once.',                                 dw:120, block:75, picks:3, diff:'hard',   tier:'C'  },
-  D1: { name:'Magic',             descriptor:'A rare one. Enjoy it!',                                    dw:180, block:90, picks:3, diff:'hard',   tier:'D'  },
-  D2: { name:'Vooma',             descriptor:'Freewheeling downhill. No brakes.',                        dw:180, block:90, picks:4, diff:'hard',   tier:'D'  },
-  D3: { name:'Sparky',            descriptor:'Bright. Might combust.',                                   dw:120, block:90, picks:3, diff:'hard',   tier:'D'  },
-  D4: { name:'Too Hot To Handle', descriptor:'Recommended: welding gloves.',                             dw:150, block:90, picks:4, diff:'hard',   tier:'D'  },
+  A0: { name:'Crisis Mode',           funName:'It\u2019s a feel the sand between your toes kind of day',
+        description:'Do your essentials, reduce load, fill gaps with things you love.',
+        sortSummary:'Not the day to add more. Make space.',
+        dayType:'Day Cleared', dw:0, block:0, picks:0, diff:'none', tier:'A0' },
+  A1: { name:'Recovery Day',          funName:'It\u2019s a hygge and a cup of tea kind of day',
+        description:'Handle what can\u2019t wait, fill spaces with soul food.',
+        sortSummary:'Recovery day \u2014 urgent stuff only. End early if possible.',
+        dayType:'Recovery Day', dw:45, block:45, picks:1, diff:'low', tier:'A1' },
+  B1: { name:'Gentle Day',            funName:'It\u2019s a take it breezy, lemon squeezy kind of day',
+        description:'Easy wins, keep it light, leave space for smiles.',
+        sortSummary:'3\u20134 urgent things with gaps.',
+        dayType:'Gentle Day', dw:60, block:60, picks:2, diff:'low', tier:'B' },
+  B2: { name:'Light Load Day',        funName:'It\u2019s a wholesome and powering through kind of day',
+        description:'Complete tasks for dopamine, add something nourishing.',
+        sortSummary:'More tasks but keep them light/admin.',
+        dayType:'Light Load Day', dw:60, block:60, picks:2, diff:'low', tier:'B' },
+  B3: { name:'Stress Recovery Day',   funName:'It\u2019s a rom com energy, gentle focus kind of day',
+        description:'Pick one thing, let the rest wait, fill gaps with cozy.',
+        sortSummary:'Minimal tasks. No difficult conversations.',
+        dayType:'Stress Recovery Day', dw:45, block:45, picks:2, diff:'low', tier:'B' },
+  B4: { name:'Push Through Day',      funName:'It\u2019s a get things done, then have a treat kind of day',
+        description:'Tackle hardest thing first, treat is non-negotiable.',
+        sortSummary:'Tackle hard thing first. Watch for overload.',
+        dayType:'Push Through Day', dw:60, block:60, picks:2, diff:'medium', tier:'B' },
+  C1: { name:'Balanced Easy Day',     funName:'It\u2019s a yin and yang, Polo and Pan kind of day',
+        description:'Best slot for something meaningful, let the rest flow.',
+        sortSummary:'Mix meaningful work and easy tasks. Don\u2019t overpack.',
+        dayType:'Balanced Easy Day', dw:90, block:90, picks:3, diff:'medium', tier:'C' },
+  C2: { name:'Productive Day',        funName:'It\u2019s a winner-winner chicken dinner kind of day',
+        description:'Stack finishable things, ride the momentum.',
+        sortSummary:'Feels good, wants volume. Schedule completions.',
+        dayType:'Productive Day', dw:120, block:90, picks:3, diff:'medium', tier:'C' },
+  C3: { name:'Calm Focus Day',        funName:'It\u2019s a tight but keeping it loose kind of day',
+        description:'Do one or two things well, not five badly.',
+        sortSummary:'Good capacity but stressed. Limit volume.',
+        dayType:'Calm Focus Day', dw:90, block:90, picks:3, diff:'medium', tier:'C' },
+  C4: { name:'Power Through Stress',  funName:'It\u2019s a fast lane, with your hazards on kind of day',
+        description:'Group similar tasks, heavy stuff first.',
+        sortSummary:'Complete tasks to reduce stress. Front-load draining work.',
+        dayType:'Power Through Stress', dw:120, block:75, picks:3, diff:'hard', tier:'C' },
+  D1: { name:'Optimal Day',           funName:'It\u2019s a main character, living your arc kind of day',
+        description:'Most important work gets your best time.',
+        sortSummary:'Peak performance. 2\u20133 major tasks.',
+        dayType:'Optimal Day', dw:180, block:90, picks:3, diff:'hard', tier:'D' },
+  D2: { name:'Maximum Output Day',    funName:'It\u2019s a vooma vooma kind of day!',
+        description:'Pack day with big stuff, ride the wave.',
+        sortSummary:'Feels great, wants volume. 3\u20134 major tasks.',
+        dayType:'Maximum Output Day', dw:180, block:90, picks:4, diff:'hard', tier:'D' },
+  D3: { name:'High Energy Stress',    funName:'It\u2019s a go-kart with the fuel light on kind of day',
+        description:'Few things brilliantly, pit stop when needed.',
+        sortSummary:'Quality work, not quantity. Can handle deep work but stressed.',
+        dayType:'High Energy Stress', dw:120, block:90, picks:3, diff:'hard', tier:'D' },
+  D4: { name:'Intense Performance',   funName:'It\u2019s a \u2018can this go any faster\u2019 kind of day',
+        description:'Go hard, clear the deck, batch work. Brake tonight.',
+        sortSummary:'High capacity + wants volume. Batch similar work.',
+        dayType:'Intense Performance', dw:150, block:90, picks:4, diff:'hard', tier:'D' },
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -858,11 +901,20 @@ const RECOMMENDATIONS = {
 // ═══════════════════════════════════════════════════════════════
 function getProfile(params) {
   const { energy, mood, stress, load } = params;
-  const ec = energy; // single energy value now
-  let ae = Math.min(5, Math.max(1, ec + (mood - 3) * 0.25 + Math.max(0, (stress - 3)) * -0.5));
+
+  // Step 1: Mood modifier — positive mood boosts, flat mood reduces
+  const moodMod = (mood - 3) * 0.2;           // range: -0.4 to +0.4
+
+  // Step 2: Stress modifier — stress 4+ drags on energy
+  const stressMod = Math.max(0, (stress - 3)) * -0.5; // stress 4 = -0.5, 5 = -1.0
+
+  // Step 3: Adjusted energy (clamped 1-5)
+  let ae = Math.min(5, Math.max(1, energy + moodMod + stressMod));
+
+  // Step 4: Stress tier cap — overwhelmed never gets "go faster" profiles
   if (stress === 5) ae = Math.min(ae, 3.99);
 
-  // Determine tier
+  // Step 5: Determine tier
   let tier;
   if (ae < 1.5) tier = 'A0';
   else if (ae < 2.0) tier = 'A1';
@@ -877,14 +929,14 @@ function getProfile(params) {
     return currentProfile;
   }
 
-  // Determine quadrant for B/C/D
-  const stressHigh = stress >= 3;
-  const loadHigh = load >= 3;
+  // Step 6: Stress/Load quadrant (<=2 = Low, >=4 = High, 3 = Low)
+  const stressHigh = stress >= 4;
+  const loadHigh = load >= 4;
   let quad;
-  if (!stressHigh && !loadHigh) quad = 1;       // LL
-  else if (!stressHigh && loadHigh) quad = 2;    // LH
-  else if (stressHigh && !loadHigh) quad = 3;    // HL
-  else quad = 4;                                  // HH
+  if (!stressHigh && !loadHigh) quad = 1;       // Low stress, Low load
+  else if (!stressHigh && loadHigh) quad = 2;    // Low stress, High load
+  else if (stressHigh && !loadHigh) quad = 3;    // High stress, Low load
+  else quad = 4;                                  // High stress, High load
 
   profileCode = tier + quad;
   currentProfile = PROFILES[profileCode];
@@ -2215,19 +2267,15 @@ function showDoneState() {
   answeredCount = MOMENTS.length;
   updateDots();
 
-  // Compute profile silently
+  // Compute profile
   getProfile(P);
   getCategories(profileCode, P);
 
-  // Compute glow capacity
-  const glow = computeGlow(P);
-
-  // Populate reveal overlay (matches Daily Calculator B28-B30)
+  // Populate reveal overlay with profile copy
   document.getElementById('reveal-date').textContent = dateStr;
-  document.getElementById('reveal-capacity').textContent = glow.capacityLine;
-  // Split two-sentence lines onto separate lines (better copywriting)
-  document.getElementById('reveal-timing').innerHTML = glow.timingLine.replace(/\. (?=[A-Z])/g, '.<br>');
-  document.getElementById('reveal-nudge').innerHTML = glow.nudgeLine.replace(/\. (?=[A-Z])/g, '.<br>');
+  document.getElementById('reveal-capacity').textContent = currentProfile.funName;
+  document.getElementById('reveal-timing').innerHTML = currentProfile.description.replace(/\. (?=[A-Z])/g, '.<br>');
+  document.getElementById('reveal-nudge').innerHTML = currentProfile.sortSummary.replace(/\. (?=[A-Z])/g, '.<br>');
 
   // Hide checkin bar, top label, and logo for reveal
   document.getElementById('checkin-bar').classList.add('hidden');
@@ -2735,7 +2783,7 @@ async function getCardPngBlob() {
     // Paint reveal text if visible
     const revealEl = document.getElementById('reveal-overlay');
     if (revealEl.classList.contains('visible')) {
-      const glow = computeGlow(P);
+      const prof = currentProfile || {};
       const cx = w / 2;
       const cardRect = card.getBoundingClientRect();
 
@@ -2763,9 +2811,9 @@ async function getCardPngBlob() {
       };
 
       drawText(document.getElementById('reveal-date'), dateStr, `500 ${11*s}px 'Plus Jakarta Sans', sans-serif`, 'rgba(42,37,32,0.45)');
-      drawText(document.getElementById('reveal-capacity'), glow.capacityLine, `600 ${28*s}px 'Source Serif 4', serif`, 'rgba(42,37,32,0.78)');
-      drawText(document.getElementById('reveal-timing'), glow.timingLine, `400 ${15*s}px 'Source Serif 4', serif`, 'rgba(42,37,32,0.55)');
-      drawText(document.getElementById('reveal-nudge'), glow.nudgeLine, `italic 400 ${15*s}px 'Source Serif 4', serif`, 'rgba(105,78,32,0.50)');
+      drawText(document.getElementById('reveal-capacity'), prof.funName || '', `600 ${22*s}px 'Source Serif 4', serif`, 'rgba(42,37,32,0.78)');
+      drawText(document.getElementById('reveal-timing'), prof.description || '', `400 ${15*s}px 'Source Serif 4', serif`, 'rgba(42,37,32,0.55)');
+      drawText(document.getElementById('reveal-nudge'), prof.sortSummary || '', `italic 400 ${15*s}px 'Source Serif 4', serif`, 'rgba(105,78,32,0.50)');
 
       // feeljoy.ai branding at bottom of export
       ctx.font = `500 ${10*s}px 'Plus Jakarta Sans', sans-serif`;
@@ -2787,8 +2835,8 @@ function getGlowShareFile() {
 }
 
 function getGlowText() {
-  const g = computeGlow(P);
-  return `${g.capacityLine}\n${g.timingLine}\n${g.nudgeLine}`;
+  const prof = currentProfile || {};
+  return `${prof.funName || ''}\n${prof.description || ''}\n${prof.sortSummary || ''}`;
 }
 
 // Share to Instagram Stories via native share sheet (mobile only)
