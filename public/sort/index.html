@@ -1925,8 +1925,9 @@ var SoundEngine = (function() {
 
     masterGain = ctx.createGain();
     if (IS_MOB) {
-      // Mobile: start at full volume immediately — phone speakers need it
-      masterGain.gain.setValueAtTime(muted ? 0 : s.masterVol, now);
+      // Mobile: 100ms ease-in so first note doesn't blast
+      masterGain.gain.setValueAtTime(0, now);
+      masterGain.gain.linearRampToValueAtTime(muted ? 0 : s.masterVol, now + 0.1);
     } else {
       // Desktop: gentle 1.5s fade-in
       masterGain.gain.setValueAtTime(0, now);
@@ -2375,6 +2376,8 @@ const Spiro = {
   fillPhase: false,  // true during post-slider accelerated fill
   fillFrames: 0,     // frames remaining in fill phase
   fillTotal: 240,    // total fill frames (4 seconds at 60fps)
+  // Per-session random phase — breaks "always starts leaning same direction"
+  phaseOffset: Math.random() * Math.PI * 2,
   // Current params (lerp toward targets)
   energy: 0.5,
   mood: 0.5,
@@ -2406,43 +2409,61 @@ function spiroRecalcTargets() {
   try { SoundEngine.update(P); } catch(e) {}
 }
 
-// ── Geometric harmonograph engine ──
-// Counter-rotating circles + load harmonic: organic flowing rosettes.
-// Irrational frequency ratios (√2, √7 based) ensure the pattern never closes
-// into a recognisable polygon or star shape at any drawing duration.
-// Sleep → clarity/scatter, Energy → scale/speed, Mood → colour+elongation, Stress → tremor/breathing, Load → complexity+weight.
+// ── Multi-lobe harmonograph engine ──
+// Two counter-rotating arms with slider-dependent frequency ratio.
+// The CW arm frequency (f2) determines lobe/petal count:
+//   f2 ≈ 1.5 → elongated oval    f2 ≈ 2 → 3-petal
+//   f2 ≈ 3   → 4-petal           f2 ≈ 4 → 5-petal
+// Irrational detuning (√2) prevents closure — patterns fill in over time.
+// Per-session random phase breaks directional bias.
+//
+// Slider mapping:
+//   Energy+Mood → frequency ratio (shape family / lobe count)
+//   Sleep       → arm balance (fuzzy circular vs sharp defined lobes)
+//   Stress      → amplitude breathing (calm uniform vs pulsating)
+//   Load        → tertiary harmonic (simple vs intricate detail)
+//   (Colour, scatter, tremor, lineweight handled in spiroFrame)
 
 function spiroComputePoint(t) {
+  const e = Spiro.energy;
   const m = Spiro.mood;
   const st = Spiro.stress;
+  const sl = Spiro.sleep;
   const l = Spiro.load;
 
-  // Irrational frequency offsets — pattern never closes, no integer-petal stars
-  const f1 = 1.0;                           // circle 1: counterclockwise
-  const f2 = 1.0 + Math.SQRT2 * 0.02;      // ≈1.02828, irrational detuning
+  // Per-session random rotation
+  const p0 = Spiro.phaseOffset;
 
-  // MOOD → elongation (tight angular ↔ open round)
-  // Reduced spread keeps shapes organic — lobes are rounded, not star-pointed
-  const A1 = 0.56 + m * 0.09;        // 0.56→0.65
-  const A2 = 0.44 - m * 0.09;        // 0.44→0.35
+  // ── Frequency ratio: energy+mood → lobe count ────────────
+  // f1 = 1.0 (CCW arm). f2 sweeps from ~1.5 to ~4.1:
+  //   Low energy+mood  → simple elongated oval (~1.5)
+  //   Mid              → 4-petal (~2.8)
+  //   High energy+mood → complex 5-petal (~4.1)
+  const f1 = 1.0;
+  const f2 = 1.5 + e * 2.0 + m * 0.6 + Math.SQRT2 * 0.013;
 
-  // MOOD → phase (keeps pattern variety)
-  const phase = Math.PI * (0.15 + m * 0.7);
+  // ── Arm amplitudes: sleep → lobe definition ──────────────
+  // Balanced arms = sharp, defined petals (high sleep)
+  // Imbalanced (A1 dominant) = rounder, less structured (low sleep)
+  const A1 = 0.52 + (1 - sl) * 0.10;   // 0.62→0.52
+  const A2 = 0.36 + sl * 0.10;          // 0.36→0.46
 
-  // STRESS → amplitude breathing (geometric density bands)
-  // High stress = visible pulsation, calm = smooth uniform curves
+  // ── Phase: per-session random + mood shift ───────────────
+  const phase = p0 + Math.PI * (0.15 + m * 0.7);
+
+  // ── Stress → amplitude breathing ─────────────────────────
   const breathe = reducedMotion ? 1.0 : 1.0 + st * 0.15 * Math.sin(0.12 * t);
 
-  // Main pattern: Circle 1 CCW + Circle 2 CW
-  let x = (A1 * Math.cos(f1 * t + phase) + A2 * Math.cos(f2 * t)) * breathe;
-  let y = (A1 * Math.sin(f1 * t + phase) - A2 * Math.sin(f2 * t)) * breathe;
+  // ── Main pattern: CCW arm + CW arm ──────────────────────
+  let x = (A1 * Math.cos(f1 * t + phase) + A2 * Math.cos(f2 * t + p0)) * breathe;
+  let y = (A1 * Math.sin(f1 * t + phase) - A2 * Math.sin(f2 * t + p0)) * breathe;
 
-  // LOAD → secondary harmonic (pattern complexity)
-  // √7 ≈ 2.646 — irrational, avoids 3-fold or any integer-fold symmetry
-  const A3 = l * 0.04;               // 0→0.04
-  const f3 = Math.sqrt(7);           // ≈2.6458, no integer resonance
-  x += A3 * Math.cos(f3 * t);
-  y -= A3 * Math.sin(f3 * t);
+  // ── Load → tertiary harmonic (intricate detail) ─────────
+  // √7 ≈ 2.646 — irrational, avoids integer resonance with f1 or f2
+  const A3 = l * 0.06;
+  const f3 = Math.sqrt(7);
+  x += A3 * Math.cos(f3 * t + p0 * 2.0);
+  y -= A3 * Math.sin(f3 * t + p0 * 2.0);
 
   const norm = A1 + A2 + A3;
   return { x: x / norm, y: y / norm };
@@ -2574,6 +2595,7 @@ function spiroReset() {
   Spiro.hasBurst = false;
   Spiro.fillPhase = false;
   Spiro.fillFrames = 0;
+  Spiro.phaseOffset = Math.random() * Math.PI * 2;
   spiroRecalcTargets();
   // Immediately set current params to targets (no lerp on reset)
   Spiro.energy = Spiro.tEnergy;
