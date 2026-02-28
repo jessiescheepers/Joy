@@ -1216,7 +1216,10 @@ function onSliderKey(e) {
     if (activeSlider) {
       var _deferAdvance = function() {
         document.removeEventListener('pointerup', _deferAdvance);
-        // Small delay so touchend (audio unlock) fires first
+        // 500ms delay: touchend fires audio unlock in capture phase,
+        // then iOS AudioContext needs ~200-300ms startup latency before
+        // producing audible output. 500ms ensures user hears the first
+        // tone before the slider transitions.
         setTimeout(function() {
           advancing = true;
           if (currentMoment < MOMENTS.length - 1) {
@@ -1224,7 +1227,7 @@ function onSliderKey(e) {
           } else {
             showDoneState();
           }
-        }, 60);
+        }, 500);
       };
       document.addEventListener('pointerup', _deferAdvance, { once: true });
     } else {
