@@ -1665,7 +1665,7 @@ var SoundEngine = (function() {
       var wait = s.sparkleMin + Math.random() * (s.sparkleMax - s.sparkleMin);
       sparkleTimer = setTimeout(spark, wait);
     }
-    sparkleTimer = setTimeout(spark, 100); // first sparkle fires quickly
+    spark(); // first sparkle fires immediately
   }
 
   // ── Ghost scheduler: slower, rarer, subliminal ────────────
@@ -1854,9 +1854,14 @@ var SoundEngine = (function() {
     var now = ctx.currentTime;
 
     masterGain = ctx.createGain();
-    masterGain.gain.setValueAtTime(0, now);
-    // 1.5s fade-in — fast enough to be audible quickly on phone speakers
-    masterGain.gain.linearRampToValueAtTime(muted ? 0 : s.masterVol, now + 1.5);
+    if (IS_MOB) {
+      // Mobile: start at full volume immediately — phone speakers need it
+      masterGain.gain.setValueAtTime(muted ? 0 : s.masterVol, now);
+    } else {
+      // Desktop: gentle 1.5s fade-in
+      masterGain.gain.setValueAtTime(0, now);
+      masterGain.gain.linearRampToValueAtTime(muted ? 0 : s.masterVol, now + 1.5);
+    }
     masterGain.connect(ctx.destination);
 
     filter = ctx.createBiquadFilter();
@@ -1926,12 +1931,18 @@ var SoundEngine = (function() {
       if (masterGain) hardStop();
 
       var song = SONGS[new Date().getDay()];
-      // Mobile: boost volume 2.5× for phone speakers
+      // Mobile: boost all gains for phone speakers
       if (IS_MOB) {
         song = {};
         var orig = SONGS[new Date().getDay()];
         for (var k in orig) song[k] = orig[k];
         song.masterVol = Math.min(orig.masterVol * 3.5, 1.0);
+        song.sparkleGain = orig.sparkleGain * 2.5;
+        song.shimmerGain = orig.shimmerGain * 2.5;
+        song.padGain = orig.padGain * 2;
+        song.ghostGain = orig.ghostGain * 2;
+        song.breathGain = orig.breathGain * 2;
+        song.bassGain = orig.bassGain * 1.5;
       }
 
       // Set pending — unlock() on touchend/mousedown will handle it.
