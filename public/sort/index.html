@@ -1729,7 +1729,7 @@ var SoundEngine = (function() {
       var wait = s.sparkleMin + Math.random() * (s.sparkleMax - s.sparkleMin);
       sparkleTimer = setTimeout(spark, wait);
     }
-    sparkleTimer = setTimeout(spark, 800); // delay first note for gentle entry
+    sparkleTimer = setTimeout(spark, 600); // first note after layer starts
   }
 
   // ── Ghost scheduler: slower, rarer, subliminal ────────────
@@ -1883,17 +1883,18 @@ var SoundEngine = (function() {
       ctx = null;
       ctx = new (window.AudioContext || window.webkitAudioContext)();
       ctx.resume();
-      // Non-silent buffer to force audio session active
+      // Near-silent buffer to force audio session active (no audible tone)
       var b = ctx.createBuffer(1, 44100, ctx.sampleRate);
       var ch = b.getChannelData(0);
-      for (var i = 0; i < ch.length; i++) ch[i] = Math.sin(i * 0.1) * 0.001;
+      for (var i = 0; i < ch.length; i++) ch[i] = (Math.random() * 2 - 1) * 0.00001;
       var src = ctx.createBufferSource();
       src.buffer = b; src.connect(ctx.destination); src.start();
-      // Launch immediately
       pendingStart = false;
       audioUnlocked = true;
       dbg('L');
-      launch(pendingSong);
+      // Delay launch 400ms to let AudioContext settle (avoids resume transient)
+      var song = pendingSong;
+      setTimeout(function() { launch(song); }, 400);
     } catch(ex) {
       dbg('E');
     }
@@ -1964,15 +1965,19 @@ var SoundEngine = (function() {
     var now = ctx.currentTime;
 
     masterGain = ctx.createGain();
-    // Gentle fade-in on both platforms — prevents jarring first note
-    masterGain.gain.setValueAtTime(0, now);
-    var fadeIn = IS_MOB ? 1.5 : 4.0;
-    masterGain.gain.linearRampToValueAtTime(muted ? 0 : s.masterVol, now + fadeIn);
+    // Warm fade-in: exponential ramp stays quiet longer, then blooms
+    var targetVol = muted ? 0.0001 : s.masterVol;
+    masterGain.gain.setValueAtTime(0.0001, now);
+    var fadeIn = IS_MOB ? 4.0 : 8.0;
+    masterGain.gain.exponentialRampToValueAtTime(Math.max(targetVol, 0.0001), now + fadeIn);
     masterGain.connect(ctx.destination);
 
     filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(s.filterCut, now);
+    // Start muffled, gradually open up — warm blanket lifting
+    var filterStart = Math.min(s.filterCut * 0.35, 800);
+    filter.frequency.setValueAtTime(filterStart, now);
+    filter.frequency.exponentialRampToValueAtTime(s.filterCut, now + fadeIn * 0.75);
     filter.Q.setValueAtTime(0.7, now); // Slight resonance for warmth
     filter.connect(masterGain);
 
@@ -2029,11 +2034,14 @@ var SoundEngine = (function() {
     bassHarmEnvRef = bassHarmEnv;
     vibGRef = vibG;
 
-    // ── Start all layers ────────────────────────────────────
-    startSparkles(s);
-    startGhosts(s);
-    startChords(s);
+    // ── Start all layers (staggered for gentle warmup) ──────
+    // Bass drone is already running (8s fade-in above).
+    // Breath starts first, then melodic layers arrive after the
+    // ambient texture has established — no jarring initial notes.
     startBreath(s);
+    setTimeout(function() { if (running) startChords(s); }, 6000);
+    setTimeout(function() { if (running) startSparkles(s); }, 8000);
+    setTimeout(function() { if (running) startGhosts(s); }, 10000);
   }
 
   // ── Mobile gain boost ──────────────────────────────────────
@@ -2439,20 +2447,19 @@ function spiroRecalcTargets() {
   try { SoundEngine.update(P); } catch(e) {}
 }
 
-// ── Multi-lobe harmonograph engine ──
-// Two counter-rotating arms with slider-dependent frequency ratio.
-// The CW arm frequency (f2) determines lobe/petal count:
-//   f2 ≈ 1.5 → elongated oval    f2 ≈ 2 → 3-petal
-//   f2 ≈ 3   → 4-petal           f2 ≈ 4 → 5-petal
-// Irrational detuning (√2) prevents closure — patterns fill in over time.
-// Per-session random phase breaks directional bias.
+// ── Lissajous harmonograph with rotary platform ──
+// Two pendulums (frequencies f1, f2) in a near-integer ratio create
+// the structured Lissajous figure. A slow rotary component adds the
+// 3D-like folding/asymmetry. Irrational detuning prevents closure,
+// so the pattern fills in over time like a real pen harmonograph.
 //
 // Slider mapping:
-//   Energy+Mood → frequency ratio (shape family / lobe count)
-//   Sleep       → arm balance (fuzzy circular vs sharp defined lobes)
-//   Stress      → amplitude breathing (calm uniform vs pulsating)
-//   Load        → tertiary harmonic (simple vs intricate detail)
-//   (Colour, scatter, tremor, lineweight handled in spiroFrame)
+//   Energy → X-axis frequency f1 (2→2.8): shape width
+//   Mood   → Y-axis frequency f2 (3→5): lobe count / complexity
+//   Sleep  → X–Y phase offset: open expansive vs tight closed figure
+//   Stress → smooth sinusoidal tremor on the pen
+//   Load   → rotary platform strength (flat vs 3D-folded)
+//   (Colour, alpha, lineweight handled in spiroFrame)
 
 function spiroComputePoint(t) {
   const e = Spiro.energy;
@@ -2460,43 +2467,46 @@ function spiroComputePoint(t) {
   const st = Spiro.stress;
   const sl = Spiro.sleep;
   const l = Spiro.load;
-
-  // Per-session random rotation
   const p0 = Spiro.phaseOffset;
 
-  // ── Frequency ratio: energy+mood → lobe count ────────────
-  // f1 = 1.0 (CCW arm). f2 sweeps from ~1.5 to ~4.1:
-  //   Low energy+mood  → simple elongated oval (~1.5)
-  //   Mid              → 4-petal (~2.8)
-  //   High energy+mood → complex 5-petal (~4.1)
-  const f1 = 1.0;
-  const f2 = 1.5 + e * 2.0 + m * 0.6 + Math.SQRT2 * 0.013;
+  // Irrational detuning prevents exact closure
+  const dt = 0.0047 * Math.SQRT2;
 
-  // ── Arm amplitudes: sleep → lobe definition ──────────────
-  // Balanced arms = sharp, defined petals (high sleep)
-  // Imbalanced (A1 dominant) = rounder, less structured (low sleep)
-  const A1 = 0.52 + (1 - sl) * 0.10;   // 0.62→0.52
-  const A2 = 0.36 + sl * 0.10;          // 0.36→0.46
+  // ── Two pendulums in near-integer ratio ────────────────────
+  // f1 range (2→2.8) and f2 range (3→5) never overlap,
+  // guaranteeing structured figures at every combination:
+  //   E low + M low  → 2:3 trefoil
+  //   E low + M high → 2:5 star
+  //   E high + M low → 2.8:3 tight elliptical
+  //   E high + M high → 2.8:5 complex asymmetric
+  const f1 = 2.0 + e * 0.8 + dt;
+  const f2 = 3.0 + m * 2.0 + dt * 1.3;
 
-  // ── Phase: per-session random + mood shift ───────────────
-  const phase = p0 + Math.PI * (0.15 + m * 0.7);
+  // ── Phase offset: sleep → figure character ─────────────────
+  // Phase between X and Y determines sharp cusps vs rounded lobes.
+  // High sleep (rested) → open, expansive. Low → tight, concentrated.
+  const phase = p0 + Math.PI * (0.15 + sl * 0.6);
 
-  // ── Stress → very subtle amplitude breathing ─────────────
-  // Kept minimal for mathematical precision — just enough organic life
-  const breathe = reducedMotion ? 1.0 : 1.0 + st * 0.04 * Math.sin(0.08 * t);
+  // ── Rotary platform: load → 3D folding quality ────────────
+  // A slow circular component warps the Lissajous, creating the
+  // asymmetric, surface-like appearance of a real harmonograph.
+  // √3 is irrational relative to f1 and f2 → never resonates.
+  const fr = Math.sqrt(3) * (0.4 + l * 0.3);
+  const Ar = 0.12 + l * 0.13;   // 0.12 → 0.25
 
-  // ── Main pattern: CCW arm + CW arm ──────────────────────
-  let x = (A1 * Math.cos(f1 * t + phase) + A2 * Math.cos(f2 * t + p0)) * breathe;
-  let y = (A1 * Math.sin(f1 * t + phase) - A2 * Math.sin(f2 * t + p0)) * breathe;
+  // ── Stress → smooth tremor ─────────────────────────────────
+  // Coprime-frequency sinusoidal perturbation (never random).
+  const tr = reducedMotion ? 0 : st * 0.06;
+  const trem = tr * Math.sin(0.31 * t);
 
-  // ── Load → tertiary harmonic (intricate detail) ─────────
-  // √7 ≈ 2.646 — irrational, avoids integer resonance with f1 or f2
-  const A3 = l * 0.06;
-  const f3 = Math.sqrt(7);
-  x += A3 * Math.cos(f3 * t + p0 * 2.0);
-  y -= A3 * Math.sin(f3 * t + p0 * 2.0);
+  // ── Compute ────────────────────────────────────────────────
+  let x = Math.sin(f1 * t + p0 + trem)
+        + Ar * Math.sin(fr * t + p0);
+  let y = Math.sin(f2 * t + phase + trem * 0.7)
+        + Ar * Math.cos(fr * t + p0);
 
-  const norm = A1 + A2 + A3;
+  // Normalize to [-1, 1]
+  const norm = 1.0 + Ar;
   return { x: x / norm, y: y / norm };
 }
 
@@ -2518,25 +2528,25 @@ function spiroFrame() {
   const cx = W / 2, cy = H * 0.52;
 
   // ENERGY → scale (small contained ↔ large expansive)
-  const scale = Math.min(W, H) * (0.22 + Spiro.energy * 0.14);  // 0.22→0.36
+  const scale = Math.min(W, H) * (0.28 + Spiro.energy * 0.10);  // 0.28→0.38
 
   // ENERGY → drawing speed (reduced if user prefers less motion)
-  const baseStep = 0.05 + Spiro.energy * 0.09;   // 0.05→0.14
+  const baseStep = 0.03 + Spiro.energy * 0.05;   // 0.03→0.08
   const isDrawing = activeSlider !== null;
   const motionMul = reducedMotion ? 0.3 : 1.0;
-  const step = (isDrawing ? baseStep * 2.5 : baseStep * 0.6) * motionMul;
-  const subSteps = Math.max(20, Math.round(step * 120));
+  const step = (isDrawing ? baseStep * 2.5 : baseStep * 0.5) * motionMul;
+  const subSteps = Math.max(35, Math.round(step * 200));
 
   // MOOD → stroke colour (cool charcoal ↔ warm gold)
   const r = Math.round(50 + Spiro.mood * 95);    // 50→145
   const g = Math.round(45 + Spiro.mood * 65);    // 45→110
   const b = Math.round(42 - Spiro.mood * 2);     // 42→40
 
-  // SLEEP → alpha (faint trace → solid ink)
-  const alpha = 0.45 + Spiro.sleep * 0.35;       // 0.45→0.80
+  // SLEEP → alpha (fine pen density builds up through overlap)
+  const alpha = 0.15 + Spiro.sleep * 0.15;       // 0.15→0.30
 
-  // SLEEP + LOAD → line weight (thin pen → bolder stroke)
-  const lineW = 0.5 + Spiro.sleep * 0.15 + Spiro.load * 0.20; // 0.50→0.85
+  // SLEEP + LOAD → line weight (hairline → technical pen)
+  const lineW = 0.4 + Spiro.sleep * 0.10 + Spiro.load * 0.15; // 0.40→0.65
 
   orbCtx.save();
   orbCtx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(3)})`;
