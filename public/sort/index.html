@@ -390,7 +390,7 @@ body {
 .reveal-overlay.visible { opacity: 1; }
 
 /* Animate leaf text elements, not wrapper divs */
-.reveal-date, .reveal-capacity, .reveal-timing, .reveal-nudge {
+.reveal-date, .reveal-capacity, .reveal-timing {
   opacity: 0;
   animation-fill-mode: both;
   animation-duration: 0.8s;
@@ -398,8 +398,7 @@ body {
 }
 .reveal-overlay.visible .reveal-date,
 .reveal-overlay.visible .reveal-capacity,
-.reveal-overlay.visible .reveal-timing,
-.reveal-overlay.visible .reveal-nudge {
+.reveal-overlay.visible .reveal-timing {
   animation-name: revealFadeUp;
 }
 
@@ -447,21 +446,12 @@ body {
 .reveal-timing {
   font-family: 'Source Serif 4', serif;
   font-weight: 400;
-  font-size: 15px;
-  line-height: 1.5;
-  color: rgba(42,37,32, 0.55);
-  max-width: 280px;
-  animation-delay: 0.55s;
-}
-.reveal-nudge {
-  font-family: 'Source Serif 4', serif;
-  font-weight: 400;
   font-style: italic;
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.5;
-  color: rgba(105,78,32, 0.50);
-  max-width: 260px;
-  animation-delay: 0.8s;
+  color: rgba(42,37,32, 0.50);
+  max-width: 280px;
+  animation-delay: 0.6s;
 }
 
 /* ═══ SHARE SHEET ═══ */
@@ -532,8 +522,7 @@ body {
   .question-label { margin-bottom: 8px; }
   .reveal-overlay { padding: 32px 24px 72px; }
   .reveal-capacity { font-size: 19px; }
-  .reveal-timing { font-size: 13px; }
-  .reveal-nudge { font-size: 13px; }
+  .reveal-timing { font-size: 12px; }
 }
 @media (min-width: 500px) {
   :root { --card-w: 400px; --card-h: min(680px, calc(100dvh - 40px)); }
@@ -711,16 +700,15 @@ body {
       <button class="done-btn" onclick="startOver()">start over</button>
     </div>
 
-    <!-- Reveal: text hugs the shape -->
+    <!-- Reveal: H1 above graph, description below -->
     <div class="reveal-overlay" id="reveal-overlay">
       <div class="reveal-text-top">
         <div class="reveal-date" id="reveal-date"></div>
         <div class="reveal-capacity" id="reveal-capacity"></div>
-        <div class="reveal-timing" id="reveal-timing"></div>
       </div>
       <div class="reveal-spacer"></div>
       <div class="reveal-text-bottom">
-        <div class="reveal-nudge" id="reveal-nudge"></div>
+        <div class="reveal-timing" id="reveal-timing"></div>
       </div>
     </div>
 
@@ -1741,7 +1729,7 @@ var SoundEngine = (function() {
       var wait = s.sparkleMin + Math.random() * (s.sparkleMax - s.sparkleMin);
       sparkleTimer = setTimeout(spark, wait);
     }
-    spark(); // first sparkle fires immediately
+    sparkleTimer = setTimeout(spark, 800); // delay first note for gentle entry
   }
 
   // ── Ghost scheduler: slower, rarer, subliminal ────────────
@@ -1976,15 +1964,10 @@ var SoundEngine = (function() {
     var now = ctx.currentTime;
 
     masterGain = ctx.createGain();
-    if (IS_MOB) {
-      // Mobile: 100ms ease-in so first note doesn't blast
-      masterGain.gain.setValueAtTime(0, now);
-      masterGain.gain.linearRampToValueAtTime(muted ? 0 : s.masterVol, now + 0.1);
-    } else {
-      // Desktop: gentle 1.5s fade-in
-      masterGain.gain.setValueAtTime(0, now);
-      masterGain.gain.linearRampToValueAtTime(muted ? 0 : s.masterVol, now + 1.5);
-    }
+    // Gentle fade-in on both platforms — prevents jarring first note
+    masterGain.gain.setValueAtTime(0, now);
+    var fadeIn = IS_MOB ? 1.5 : 4.0;
+    masterGain.gain.linearRampToValueAtTime(muted ? 0 : s.masterVol, now + fadeIn);
     masterGain.connect(ctx.destination);
 
     filter = ctx.createBiquadFilter();
@@ -2275,7 +2258,6 @@ function showDoneState() {
   document.getElementById('reveal-date').textContent = dateStr;
   document.getElementById('reveal-capacity').textContent = currentProfile.funName;
   document.getElementById('reveal-timing').innerHTML = currentProfile.description.replace(/\. (?=[A-Z])/g, '.<br>');
-  document.getElementById('reveal-nudge').innerHTML = currentProfile.sortSummary.replace(/\. (?=[A-Z])/g, '.<br>');
 
   // Hide checkin bar, top label, and logo for reveal
   document.getElementById('checkin-bar').classList.add('hidden');
@@ -2318,7 +2300,7 @@ function startOver() {
   // Hide and reset reveal
   const revealEl = document.getElementById('reveal-overlay');
   revealEl.classList.remove('visible');
-  revealEl.querySelectorAll('.reveal-date, .reveal-capacity, .reveal-timing, .reveal-nudge').forEach(el => {
+  revealEl.querySelectorAll('.reveal-date, .reveal-capacity, .reveal-timing').forEach(el => {
     el.style.animation = 'none';
     el.offsetHeight;
     el.style.animation = '';
@@ -2499,8 +2481,9 @@ function spiroComputePoint(t) {
   // ── Phase: per-session random + mood shift ───────────────
   const phase = p0 + Math.PI * (0.15 + m * 0.7);
 
-  // ── Stress → amplitude breathing ─────────────────────────
-  const breathe = reducedMotion ? 1.0 : 1.0 + st * 0.15 * Math.sin(0.12 * t);
+  // ── Stress → very subtle amplitude breathing ─────────────
+  // Kept minimal for mathematical precision — just enough organic life
+  const breathe = reducedMotion ? 1.0 : 1.0 + st * 0.04 * Math.sin(0.08 * t);
 
   // ── Main pattern: CCW arm + CW arm ──────────────────────
   let x = (A1 * Math.cos(f1 * t + phase) + A2 * Math.cos(f2 * t + p0)) * breathe;
@@ -2549,21 +2532,11 @@ function spiroFrame() {
   const g = Math.round(45 + Spiro.mood * 65);    // 45→110
   const b = Math.round(42 - Spiro.mood * 2);     // 42→40
 
-  // SLEEP → alpha + line width base
-  const alpha = 0.15 + Spiro.sleep * 0.25;       // 0.15→0.40
-  const sleepLineW = 0.45 + Spiro.sleep * 0.25;  // 0.45→0.70
+  // SLEEP → alpha (faint trace → solid ink)
+  const alpha = 0.45 + Spiro.sleep * 0.35;       // 0.45→0.80
 
-  // LOAD → stroke weight bonus (light day = fine lines, heavy day = bold strokes)
-  const loadLineW = Spiro.load * 0.50;            // 0→0.50
-  const lineW = sleepLineW + loadLineW;
-
-  // STRESS → smooth tremor amplitude (disabled under reduced motion)
-  // Suppressed on final slider (load) so the interaction ends with clean lines
-  const onLoadSlider = currentMoment >= MOMENTS.length - 1;
-  const stressAmp = (reducedMotion || onLoadSlider) ? 0 : Spiro.stress * 1.0;
-
-  // SLEEP → smooth scatter amplitude (disabled under reduced motion)
-  const scatterAmp = (reducedMotion || onLoadSlider) ? 0 : (1.0 - Spiro.sleep) * 0.8;
+  // SLEEP + LOAD → line weight (thin pen → bolder stroke)
+  const lineW = 0.5 + Spiro.sleep * 0.15 + Spiro.load * 0.20; // 0.50→0.85
 
   orbCtx.save();
   orbCtx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(3)})`;
@@ -2575,19 +2548,8 @@ function spiroFrame() {
     Spiro.t += step / subSteps;
 
     const pt = spiroComputePoint(Spiro.t);
-    let x = cx + pt.x * scale;
-    let y = cy + pt.y * scale;
-
-    // Stress tremor — smooth high-frequency wobble (coprime to drawing freqs)
-    const tremorX = Math.sin(Spiro.t * 47) * stressAmp;
-    const tremorY = Math.cos(Spiro.t * 53) * stressAmp;
-
-    // Sleep scatter — slow smooth drift, not per-point noise
-    const scatterX = Math.sin(Spiro.t * 3.7) * scatterAmp;
-    const scatterY = Math.cos(Spiro.t * 4.3) * scatterAmp;
-
-    x += tremorX + scatterX;
-    y += tremorY + scatterY;
+    const x = cx + pt.x * scale;
+    const y = cy + pt.y * scale;
 
     if (Spiro.prevPoint) {
       // Fade in first 50 segments — no visible start point
@@ -2812,8 +2774,7 @@ async function getCardPngBlob() {
 
       drawText(document.getElementById('reveal-date'), dateStr, `500 ${11*s}px 'Plus Jakarta Sans', sans-serif`, 'rgba(42,37,32,0.45)');
       drawText(document.getElementById('reveal-capacity'), prof.funName || '', `600 ${22*s}px 'Source Serif 4', serif`, 'rgba(42,37,32,0.78)');
-      drawText(document.getElementById('reveal-timing'), prof.description || '', `400 ${15*s}px 'Source Serif 4', serif`, 'rgba(42,37,32,0.55)');
-      drawText(document.getElementById('reveal-nudge'), prof.sortSummary || '', `italic 400 ${15*s}px 'Source Serif 4', serif`, 'rgba(105,78,32,0.50)');
+      drawText(document.getElementById('reveal-timing'), prof.description || '', `italic 400 ${14*s}px 'Source Serif 4', serif`, 'rgba(42,37,32,0.50)');
 
       // feeljoy.ai branding at bottom of export
       ctx.font = `500 ${10*s}px 'Plus Jakarta Sans', sans-serif`;
@@ -2836,7 +2797,7 @@ function getGlowShareFile() {
 
 function getGlowText() {
   const prof = currentProfile || {};
-  return `${prof.funName || ''}\n${prof.description || ''}\n${prof.sortSummary || ''}`;
+  return `${prof.funName || ''}\n${prof.description || ''}`;
 }
 
 // Share to Instagram Stories via native share sheet (mobile only)
