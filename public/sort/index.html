@@ -1426,7 +1426,7 @@ const SoundEngine = (function() {
 
   // ── Sparkle: bell-like tone, drifts in then fades ─────────
   function emitSparkle(midi, s) {
-    if (!ctx || !running || ctx.state !== 'running') return;
+    if (!ctx || !running) return;
     var now = ctx.currentTime;
     var dur = SP_ATK + SP_SUS + SP_REL;
     // Each sparkle has its own dynamics (0.65–1.0×) — organic variation
@@ -1451,7 +1451,7 @@ const SoundEngine = (function() {
 
   // ── Pad: slow-bloom sustained tone, harmonic bed ──────────
   function emitPad(midi, s) {
-    if (!ctx || !running || ctx.state !== 'running') return;
+    if (!ctx || !running) return;
     var now = ctx.currentTime;
     var dur = PD_ATK + PD_HOLD + PD_REL;
     var g = Math.max(s.padGain, 0.0001);
@@ -1523,33 +1523,36 @@ const SoundEngine = (function() {
   }
 
   // ── iOS audio unlock + pending launch ────────────────────
+  // Key insight: on iOS, AudioContext MUST be created during a
+  // valid user gesture (touchend or click). Creating it during
+  // touchstart permanently taints it — resume() never works.
   function kickAudio() {
     try { document.getElementById('audio-kick').play(); } catch(e) {}
   }
-  function tryPendingLaunch() {
-    if (pendingStart && !running && ctx && ctx.state === 'running') {
-      pendingStart = false;
-      launch(pendingSong);
-    }
-  }
-  function unlock() {
+  function unlock(e) {
     kickAudio();
+    // touchstart is NOT a valid user activation on iOS — skip
+    if (e.type === 'touchstart') return;
+
     try {
-      if (!ctx) {
-        ctx = new (window.AudioContext || window.webkitAudioContext)();
-        ctx.onstatechange = function() {
-          if (ctx.state === 'running') tryPendingLaunch();
-        };
+      // If launch is pending and existing ctx is stuck, kill it.
+      // A fresh ctx created in THIS gesture (touchend/click) will work.
+      if (pendingStart && ctx && ctx.state === 'suspended') {
+        ctx.close();
+        ctx = null;
       }
-      // Always try resume — harmless if already running, essential on iOS
-      var p = ctx.resume();
-      if (p && p.then) p.then(tryPendingLaunch);
+      if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+      ctx.resume();
       var b = ctx.createBuffer(1, 1, ctx.sampleRate);
       var s = ctx.createBufferSource();
       s.buffer = b; s.connect(ctx.destination); s.start();
-    } catch(e) {}
-    // Check immediately too (ctx may already be running)
-    tryPendingLaunch();
+    } catch(ex) {}
+
+    // Launch directly from this gesture — don't wait for state checks
+    if (pendingStart && !running && ctx) {
+      pendingStart = false;
+      launch(pendingSong);
+    }
   }
   ['touchstart','touchend','mousedown','click'].forEach(function(evt) {
     document.addEventListener(evt, unlock, true);
@@ -1599,14 +1602,6 @@ const SoundEngine = (function() {
     start: function() {
       if (running || pendingStart) return;
       if (masterGain) hardStop();
-      if (!ctx) {
-        ctx = new (window.AudioContext || window.webkitAudioContext)();
-        // Catch the exact moment iOS unlocks the context
-        ctx.onstatechange = function() {
-          if (ctx.state === 'running') tryPendingLaunch();
-        };
-      }
-      kickAudio();
 
       var song = SONGS[new Date().getDay()];
       // Mobile: boost volume 2.5× for phone speakers
@@ -1617,19 +1612,16 @@ const SoundEngine = (function() {
         song.masterVol = Math.min(orig.masterVol * 2.5, 1.0);
       }
 
-      try {
-        ctx.resume();
-        var b = ctx.createBuffer(1, 1, ctx.sampleRate);
-        var src = ctx.createBufferSource();
-        src.buffer = b; src.connect(ctx.destination); src.start();
-      } catch(e) {}
+      // Try to create + launch now (works on desktop where mousedown is valid)
+      if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+      kickAudio();
+      try { ctx.resume(); } catch(e) {}
 
-      // If context is already running (desktop, or second call), launch now
       if (ctx.state === 'running') {
         launch(song);
       } else {
-        // iOS: context stays suspended until a touchend/click completes.
-        // Set pending flag — unlock() + onstatechange will launch when ready.
+        // iOS: ctx created here (pointerdown) is tainted — can't unlock.
+        // Set pending — unlock() on touchend will create fresh ctx + launch.
         pendingStart = true;
         pendingSong = song;
       }
