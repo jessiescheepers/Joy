@@ -1407,6 +1407,11 @@ const SoundEngine = (function() {
   var ctx, masterGain, filter;
   var sparkleTimer, chordTimer, running = false, muted = false;
   var activePads = [], currentChord = 0;
+  var pendingStart = false, pendingSong = null;
+
+  // Mobile devices need louder output (phone speakers vs desktop monitors)
+  var IS_MOB = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform));
 
   function midiToFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
 
@@ -1504,6 +1509,8 @@ const SoundEngine = (function() {
 
   function hardStop() {
     running = false;
+    pendingStart = false;
+    pendingSong = null;
     if (sparkleTimer) { clearTimeout(sparkleTimer); sparkleTimer = null; }
     if (chordTimer) { clearTimeout(chordTimer); chordTimer = null; }
     activePads.forEach(function(p) {
@@ -1515,19 +1522,30 @@ const SoundEngine = (function() {
     if (masterGain) { masterGain.disconnect(); masterGain = null; }
   }
 
-  // ── iOS audio unlock ──────────────────────────────────────
+  // ── iOS audio unlock + pending launch ────────────────────
   function kickAudio() {
     try { document.getElementById('audio-kick').play(); } catch(e) {}
+  }
+  function tryPendingLaunch() {
+    if (pendingStart && !running && ctx && ctx.state === 'running') {
+      pendingStart = false;
+      launch(pendingSong);
+    }
   }
   function unlock() {
     kickAudio();
     try {
       if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
-      if (ctx.state === 'suspended') ctx.resume();
+      if (ctx.state === 'suspended') {
+        var p = ctx.resume();
+        if (p && p.then) p.then(tryPendingLaunch);
+      }
       var b = ctx.createBuffer(1, 1, ctx.sampleRate);
       var s = ctx.createBufferSource();
       s.buffer = b; s.connect(ctx.destination); s.start();
     } catch(e) {}
+    // Check immediately too (ctx may already be running)
+    tryPendingLaunch();
   }
   ['touchstart','touchend','mousedown','click'].forEach(function(evt) {
     document.addEventListener(evt, unlock, true);
@@ -1575,17 +1593,48 @@ const SoundEngine = (function() {
 
   return {
     start: function() {
-      if (running) return;
+      if (running || pendingStart) return;
       if (masterGain) hardStop();
       if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
       kickAudio();
+
+      var song = SONGS[new Date().getDay()];
+      // Mobile: boost volume 2.5× for phone speakers
+      if (IS_MOB) {
+        song = {};
+        var orig = SONGS[new Date().getDay()];
+        for (var k in orig) song[k] = orig[k];
+        song.masterVol = Math.min(orig.masterVol * 2.5, 1.0);
+      }
+
       try {
-        ctx.resume();
+        var p = ctx.resume();
         var b = ctx.createBuffer(1, 1, ctx.sampleRate);
         var src = ctx.createBufferSource();
         src.buffer = b; src.connect(ctx.destination); src.start();
       } catch(e) {}
-      launch(SONGS[new Date().getDay()]);
+
+      // If context is already running (desktop, or second call), launch now
+      if (ctx.state === 'running') {
+        launch(song);
+      } else {
+        // iOS: context won't be running until NEXT user gesture.
+        // Set pending flag — unlock() will call launch() when ctx resumes.
+        pendingStart = true;
+        pendingSong = song;
+        // Also poll as fallback (some iOS versions are slow to report state)
+        var polls = 0;
+        var poller = setInterval(function() {
+          polls++;
+          if (ctx.state === 'running' && pendingStart && !running) {
+            clearInterval(poller);
+            pendingStart = false;
+            launch(pendingSong);
+          } else if (polls > 15) { // 3 seconds
+            clearInterval(poller);
+          }
+        }, 200);
+      }
     },
 
     stop: function() {
@@ -1623,9 +1672,10 @@ const SoundEngine = (function() {
       if (masterGain && ctx) {
         var now = ctx.currentTime;
         var s = SONGS[new Date().getDay()];
+        var vol = IS_MOB ? Math.min(s.masterVol * 2.5, 1.0) : s.masterVol;
         masterGain.gain.cancelScheduledValues(now);
         masterGain.gain.setValueAtTime(masterGain.gain.value, now);
-        masterGain.gain.linearRampToValueAtTime(muted ? 0 : s.masterVol, now + 0.5);
+        masterGain.gain.linearRampToValueAtTime(muted ? 0 : vol, now + 0.5);
       }
       return muted;
     },
