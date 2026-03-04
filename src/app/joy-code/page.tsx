@@ -21,7 +21,7 @@ const principles = [
   },
   {
     heading: "Humans share more freely when trust is clear",
-    body: "Trust grows when people understand how their information is used and protected. Joy treats privacy as infrastructure, not a policy. What is shared is clear. With whom it is shared is clear. Why it is shared is clear. If trust is unclear, the system needs fixing.",
+    body: "Trust grows when people understand how their information is used and protected. Joy treats privacy as infrastructure, not a policy. What is shared is clear. With whom it is shared is clear. Why it is shared is clear. If trust is unclear, the system needs fixing. If Joy receives a legal demand for user data, we notify the user where we are legally permitted to do so, and we will not share more than is legally required.",
   },
   {
     heading: "Humans function better with clarity than complexity",
@@ -29,7 +29,7 @@ const principles = [
   },
   {
     heading: "Humans deserve access to support",
-    body: "Support should not be limited to those who can afford it. Core Live with Joy features remain free so people can access basic support without financial barriers. We charge for added security, coordination, and complexity when it is fair to do so, and we are clear about what is paid and why.",
+    body: "Support should not be limited to those who can afford it. Joy is designed to be accessible. When it comes to pricing, we are clear about what is paid and why.",
   },
   {
     heading: "Humans are shaped by the systems around them",
@@ -124,7 +124,7 @@ export default function JoyCode() {
               Joy is being built in a time of real change in how humans live and work. Humans are adaptable, social, creative, and capable of great things. But the systems around us don&apos;t always support this. Too often, they treat people like resources to be managed rather than humans to be supported.
             </p>
             <p>
-              The Joy Code exists to make clear what Joy is for, what it protects, and what it will not do. It applies to customers, community members, and anyone passing through. Anyone can hold us accountable to it.
+              The Joy Code exists to make clear what Joy is for, what it protects, and what it will not do. It applies to customers, community members, and anyone passing through. We publish this code publicly and invite anyone to raise concerns directly with us.
             </p>
           </div>
 
