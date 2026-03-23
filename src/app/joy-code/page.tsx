@@ -115,6 +115,13 @@ export default function JoyCode() {
             the joy code
           </h1>
 
+          <p
+            className="mb-8 -mt-4"
+            style={{ fontFamily: "var(--font-body)", fontWeight: 300, fontSize: "clamp(0.75rem, 1.2vw, 0.85rem)", letterSpacing: "0.04em", color: "var(--text-tertiary)" }}
+          >
+            v1.0 March 2026
+          </p>
+
           {/* Intro */}
           <div
             className="leading-[1.75] tracking-wide mb-16"
@@ -174,10 +181,6 @@ export default function JoyCode() {
               {item.label}
             </a>
           ))}
-
-          <span className="text-xs" style={{ fontFamily: "var(--font-display)", color: "var(--text-tertiary)" }}>
-            v1.0 March 2026
-          </span>
 
           <span className="text-xs" style={{ fontFamily: "var(--font-display)", color: "var(--text-tertiary)" }}>
             &copy; 2026 Joy
