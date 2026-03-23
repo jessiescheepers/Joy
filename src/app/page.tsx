@@ -853,6 +853,9 @@ export default function Home() {
               </a>
             ))}
             <span className="text-xs" style={{ fontFamily: "var(--font-display)", color: t.logoColor }}>
+              v1.0 March 2026
+            </span>
+            <span className="text-xs" style={{ fontFamily: "var(--font-display)", color: t.logoColor }}>
               &copy; 2026 Joy
             </span>
           </div>
@@ -870,6 +873,10 @@ export default function Home() {
                 {item.label}
               </a>
             ))}
+
+            <span className="text-xs" style={{ fontFamily: "var(--font-display)", color: t.logoColor }}>
+              v1.0 March 2026
+            </span>
 
             <span className="text-xs" style={{ fontFamily: "var(--font-display)", color: t.logoColor }}>
               &copy; 2026 Joy

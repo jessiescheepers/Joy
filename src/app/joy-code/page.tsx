@@ -176,6 +176,10 @@ export default function JoyCode() {
           ))}
 
           <span className="text-xs" style={{ fontFamily: "var(--font-display)", color: "var(--text-tertiary)" }}>
+            v1.0 March 2026
+          </span>
+
+          <span className="text-xs" style={{ fontFamily: "var(--font-display)", color: "var(--text-tertiary)" }}>
             &copy; 2026 Joy
           </span>
         </div>
