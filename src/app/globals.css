@@ -33,81 +33,52 @@
   font-display: swap;
 }
 
-/* Design Tokens — Moonrise */
+/* ═══ Wood Qi Palette ═══ */
 :root {
-  --bg: #080B14;
-  --surface: #0E1221;
-  --card: #151A2E;
-  --border: rgba(168,196,224,0.08);
-  --text: #FFFFFF;
-  --text-secondary: #FFFFFF;
-  --text-tertiary: rgba(255,255,255,0.25);
-  /* Moonrise palette — warm amber, horizon rose, sky blue, moon */
-  --glow-amber: #E8B46A;
-  --glow-honey: #D49A48;
-  --glow-rose: #D4A0A8;
-  --glow-blue: #89B4DC;
-  --glow-periwinkle: #7A99C8;
-  --glow-moon: #FAF5E0;
-  --glow-lavender: #B0A8CC;
-  --glow-sky: #A8C4E0;
+  --qi-base: #F5F2E8;
+  --qi-surface: #EDE9DF;
+  --qi-card: rgba(255,255,253,0.22);
+  --qi-border: rgba(140,165,130,0.12);
+  --qi-text: #2A2E24;
+  --qi-text-secondary: #4A5040;
+  --qi-text-tertiary: rgba(42,46,36,0.35);
+
+  /* Wood element washes */
+  --qi-wash-sage: rgba(140,165,130,0.18);
+  --qi-wash-gold: rgba(180,165,110,0.12);
+  --qi-wash-green: rgba(95,120,85,0.08);
+  --qi-mote-core: rgb(68,88,72);
+  --qi-mote-glow: rgb(125,142,115);
+  --qi-rim: rgba(209,224,184,0.6);
+
   --font-display: 'Plus Jakarta Sans', -apple-system, sans-serif;
   --font-body: 'Source Serif 4', Georgia, serif;
   --font-cooper: "Cooper Hewitt", Arial, Helvetica, sans-serif;
 }
 
-/* ═══ Theme tokens — dark (default) ═══ */
-[data-theme="dark"] {
-  --glass-bg: rgba(8,11,20,0.6);
-  --glass-bg-solid: rgba(8,11,20,0.95);
-  --input-bg: rgba(255,255,255,0.06);
-}
-
-/* ═══ Theme tokens — light ═══ */
-[data-theme="light"] {
-  --bg: #F5F3EE;
-  --surface: #EDEAE4;
-  --card: #FAFAF8;
-  --border: rgba(0,0,0,0.08);
-  --text: #1A1A2E;
-  --text-secondary: #3A3A4E;
-  --text-tertiary: rgba(0,0,0,0.35);
-  --glow-amber: #C8922E;
-  --glow-honey: #B07820;
-  --glow-rose: #B07880;
-  --glow-blue: #5A8AB8;
-  --glow-periwinkle: #5A78A8;
-  --glow-moon: #D8D0B0;
-  --glow-lavender: #8878A8;
-  --glow-sky: #7898B8;
-  --glass-bg: rgba(250,250,248,0.7);
-  --glass-bg-solid: rgba(250,250,248,0.95);
-  --input-bg: rgba(0,0,0,0.04);
-}
-
 @theme inline {
-  --color-background: #080B14;
-  --color-foreground: #F0EDE8;
+  --color-background: #F5F2E8;
+  --color-foreground: #2A2E24;
   --font-sans: var(--font-body);
 }
 
 html {
   scroll-behavior: smooth;
-  background: var(--bg) !important;
+  background: var(--qi-base) !important;
   overscroll-behavior-y: none;
 }
 
 body {
-  background: var(--bg);
-  color: var(--text);
+  background: var(--qi-base);
+  color: var(--qi-text);
   font-family: var(--font-body);
   margin: 0;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Gradient text utility — moonrise horizon */
+/* ═══ Gradient text utilities — wood palette ═══ */
 .text-gradient {
-  background: linear-gradient(135deg, #E89050, #D4A0C0, #9878C8);
+  background: linear-gradient(135deg, #5A7850, #7D8E73, #8CA582);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -116,15 +87,15 @@ body {
 .text-gradient-pulse {
   position: relative;
   display: inline-block;
-  color: #FFFFFF;
-  -webkit-text-fill-color: #FFFFFF;
+  color: var(--qi-text);
+  -webkit-text-fill-color: var(--qi-text);
 }
 
 .text-gradient-pulse::after {
   content: attr(data-text);
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, #E89050, #D4A0C0, #9878C8);
+  background: linear-gradient(135deg, #5A7850, #7D8E73, #8CA582);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -133,20 +104,20 @@ body {
 }
 
 .text-gradient-warm {
-  background: linear-gradient(135deg, #D8C878, #E89050, #D07050);
+  background: linear-gradient(135deg, #8C7A40, #7D8E73, #6B7D58);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .text-gradient-cool {
-  background: linear-gradient(135deg, #6890D0, #60B8A8, #9878C8);
+  background: linear-gradient(135deg, #4A7868, #5A8878, #7D8E73);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Hero entrance animation */
+/* ═══ Hero entrance animation ═══ */
 @keyframes hero-reveal {
   from { opacity: 0; transform: translateY(40px); }
   to { opacity: 1; transform: translateY(0); }
@@ -177,90 +148,54 @@ body {
   animation: fade-in 1s ease forwards 1.2s;
 }
 
-/* Floating glow orbs */
-@keyframes orbit1 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  25% { transform: translate(60px, -40px) scale(1.1); }
-  50% { transform: translate(20px, 30px) scale(0.95); }
-  75% { transform: translate(-40px, -10px) scale(1.05); }
+/* ═══ Qi field — wash breathing ═══ */
+@keyframes qi-breathe {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
 }
 
-@keyframes orbit2 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(-50px, 30px) scale(1.08); }
-  66% { transform: translate(30px, -40px) scale(0.96); }
+/* ═══ Torus ring — breathing + glow ═══ */
+@keyframes torus-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
 }
 
-@keyframes orbit3 {
-  0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.8; }
-  50% { transform: translateX(-50%) scale(1.3); opacity: 0.4; }
+@keyframes torus-glow {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
 }
 
-/* Hero orb — breathing life + light pulse */
-@keyframes hero-orb-breathe {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.025); opacity: 0.7; }
-}
-
-/* Hero accent — white base, gradient shines through at heart peak */
+/* Hero accent — sage glow pulse */
 .hero-accent {
   position: relative;
   display: inline-block;
-  color: #FFFFFF;
-  -webkit-text-fill-color: #FFFFFF;
-  animation: orb-illuminate 5s ease-in-out infinite;
+  color: var(--qi-text);
+  -webkit-text-fill-color: var(--qi-text);
+  animation: qi-illuminate 5s ease-in-out infinite;
 }
 
-@keyframes orb-illuminate {
+@keyframes qi-illuminate {
   0%, 100% {
     text-shadow:
-      0 0 20px rgba(232,180,106,0.15),
-      0 0 60px rgba(232,180,106,0.06);
-    color: rgba(255,255,255,0.85);
-    -webkit-text-fill-color: rgba(255,255,255,0.85);
+      0 0 20px rgba(125,142,115,0.15),
+      0 0 60px rgba(125,142,115,0.06);
+    color: var(--qi-text);
+    -webkit-text-fill-color: var(--qi-text);
   }
   50% {
     text-shadow:
-      0 0 30px rgba(232,180,106,0.45),
-      0 0 80px rgba(232,190,90,0.25),
-      0 0 120px rgba(232,180,106,0.12);
-    color: rgba(255,250,235,1);
-    -webkit-text-fill-color: rgba(255,250,235,1);
+      0 0 30px rgba(125,142,115,0.35),
+      0 0 80px rgba(140,165,130,0.2),
+      0 0 120px rgba(125,142,115,0.1);
+    color: #1A2018;
+    -webkit-text-fill-color: #1A2018;
   }
 }
-
-
 
 @keyframes hero-text-shine {
   0%, 25% { opacity: 0.3; }
   40%, 60% { opacity: 1; }
   75%, 100% { opacity: 0.3; }
-}
-
-/* Inner light — the orb's heart */
-@keyframes hero-orb-heart {
-  0%, 100% { opacity: 0.7; transform: scale(0.95); }
-  50% { opacity: 1; transform: scale(1); }
-}
-
-/* Glow swell — ambient light breathes with the heart */
-@keyframes hero-orb-glow-swell {
-  0%, 100% { opacity: 0.7; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.08); }
-}
-
-@keyframes hero-orb-drift {
-  0%, 100% { transform: translate(0, 0); }
-  33% { transform: translate(4px, -3px); }
-  66% { transform: translate(-3px, 4px); }
-}
-
-@keyframes hero-orb-rotate {
-  0% { transform: rotate(0deg); }
-  25% { transform: rotate(90deg); }
-  50% { transform: rotate(180deg); }
-  75% { transform: rotate(270deg); }
-  100% { transform: rotate(360deg); }
 }
 
 /* Breathing dot on nav logo */
@@ -275,42 +210,15 @@ body {
   50% { opacity: 1; transform: scaleY(1.3); }
 }
 
-/* Glow button hover */
-.btn-glow {
-  position: relative;
-  overflow: hidden;
-  transition: all 0.35s ease;
-}
-
-.btn-glow::before {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: 100px;
-  background: linear-gradient(135deg, var(--glow-amber), var(--glow-rose), var(--glow-sky));
-  z-index: -1;
-  filter: blur(16px);
-  opacity: 0;
-  transition: opacity 0.35s;
-}
-
-.btn-glow:hover {
-  transform: translateY(-2px) scale(1.02);
-}
-
-.btn-glow:hover::before {
-  opacity: 0.6;
-}
-
 /* Ghost button */
 .btn-ghost {
   transition: all 0.3s;
 }
 
 .btn-ghost:hover {
-  color: var(--text);
-  border-color: rgba(255,255,255,0.15);
-  background: rgba(255,255,255,0.03);
+  color: var(--qi-text);
+  border-color: rgba(140,165,130,0.25);
+  background: rgba(140,165,130,0.06);
 }
 
 /* Animated Logo */
@@ -349,17 +257,7 @@ body {
   66% { transform: translateY(3px) rotate(1deg) scale(0.98); }
 }
 
-/* Orb spin for nav/footer */
-@keyframes orbSpin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.orb-spin {
-  animation: orbSpin 5s linear infinite;
-}
-
-/* Shimmer border — now subtle white for dark theme */
+/* Shimmer border — sage wood palette */
 .shimmer-border {
   position: relative;
   border-radius: 15px;
@@ -373,11 +271,11 @@ body {
   padding: 1.5px;
   background: linear-gradient(
     250deg,
-    rgba(232,180,106,0.35) 0%,
-    rgba(212,154,72,0.3) 20%,
-    rgba(137,180,220,0.25) 45%,
-    rgba(212,160,168,0.3) 70%,
-    rgba(232,180,106,0.35) 100%
+    rgba(125,142,115,0.35) 0%,
+    rgba(140,165,130,0.3) 20%,
+    rgba(95,120,85,0.25) 45%,
+    rgba(180,165,110,0.3) 70%,
+    rgba(125,142,115,0.35) 100%
   );
   background-size: 200% 200%;
   animation: gradient-drift 4s linear infinite;
@@ -398,29 +296,17 @@ body {
   100% { background-position: 0% 50%; }
 }
 
-/* Button shimmer for dark theme */
-.btn-shimmer {
-  position: relative;
-  overflow: hidden;
-}
-
-/* Noise Overlay — subtle on dark */
-.noise-overlay {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.08;
-  z-index: 0;
-}
-
-.noise-overlay::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.5' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 300px 300px;
-  mix-blend-mode: overlay;
+/* Scroll progress indicator — wood gradient */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 200;
+  background: linear-gradient(90deg, var(--qi-mote-core), var(--qi-mote-glow), var(--qi-wash-sage));
+  transform-origin: left;
+  will-change: transform;
 }
 
 /* Section reveal on scroll */
@@ -435,51 +321,6 @@ body {
   transform: translateY(0);
 }
 
-/* ═══ Experimental interactions ═══ */
-
-/* Cursor aurora — ambient light following mouse */
-.cursor-aurora {
-  position: fixed;
-  width: 600px;
-  height: 600px;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 1;
-  background: radial-gradient(circle, rgba(232,180,106,0.07) 0%, rgba(212,160,168,0.03) 30%, transparent 70%);
-  filter: blur(80px);
-  will-change: transform;
-}
-
-/* Scroll progress indicator */
-.scroll-progress {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  z-index: 200;
-  background: linear-gradient(90deg, var(--glow-amber), var(--glow-rose), var(--glow-sky), var(--glow-lavender));
-  transform-origin: left;
-  will-change: transform;
-}
-
-/* Section breathing orb — hero + contact */
-@keyframes section-breathe {
-  0%, 100% { opacity: 0.9; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.4); }
-}
-
-.section-orb {
-  border-radius: 50%;
-  background: var(--glow-moon);
-  box-shadow:
-    0 0 20px var(--glow-moon),
-    0 0 50px rgba(250,245,224,0.25),
-    0 0 80px rgba(232,180,106,0.15);
-  animation: section-breathe 4s ease-in-out infinite;
-  pointer-events: none;
-}
-
 /* Nav link — gradient underline on hover/active */
 .nav-link {
   position: relative;
@@ -492,7 +333,7 @@ body {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, var(--glow-amber), var(--glow-rose));
+  background: linear-gradient(90deg, var(--qi-mote-glow), var(--qi-wash-sage));
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.3s ease;
@@ -508,80 +349,18 @@ body {
   transition: transform 0.15s ease-out;
 }
 
-/* ═══ Fortune Teller Card ═══ */
-
+/* ═══ Holographic border pill (early access button) ═══ */
 @property --holo-angle {
   syntax: "<angle>";
   initial-value: 0deg;
   inherits: false;
 }
 
-/* Levitating float */
-@keyframes levitate {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-14px); }
-}
-
-/* Radiant pulsing glow */
-@keyframes radiant-pulse {
-  0%, 100% {
-    box-shadow:
-      0 20px 80px rgba(0,0,0,0.5),
-      0 0 40px rgba(232,180,106,0.15),
-      0 0 80px rgba(232,180,106,0.08);
-  }
-  50% {
-    box-shadow:
-      0 30px 100px rgba(0,0,0,0.5),
-      0 0 60px rgba(232,180,106,0.35),
-      0 0 120px rgba(232,170,80,0.18),
-      0 0 200px rgba(232,180,106,0.08);
-  }
-}
-
-/* Holographic rotating border */
-.holo-border {
-  position: relative;
-  border-radius: 24px;
-  overflow: hidden;
-}
-
-.holo-border::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 2px;
-  background: conic-gradient(
-    from var(--holo-angle),
-    var(--glow-amber),
-    var(--glow-rose),
-    var(--glow-sky),
-    var(--glow-lavender),
-    var(--glow-amber)
-  );
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  mask-composite: exclude;
-  pointer-events: none;
-  z-index: 1;
-  animation: holo-rotate 4s linear infinite;
-}
-
-@keyframes holo-rotate {
-  to { --holo-angle: 360deg; }
-}
-
 .holo-border-pill {
   position: relative;
   border-radius: 9999px;
   overflow: hidden;
-  border: 1px solid rgba(200,169,110,0.28);
+  border: 1px solid rgba(125,142,115,0.28);
 }
 
 .holo-border-pill::before {
@@ -591,10 +370,10 @@ body {
   border-radius: inherit;
   padding: 1px;
   background: conic-gradient(from var(--holo-angle, 0deg),
-    rgba(200,169,110,0.18) 0deg, rgba(200,169,110,0.18) 40deg,
-    rgba(220,185,120,0.55) 80deg, rgba(255,225,150,1.0) 110deg,
-    rgba(220,185,120,0.55) 140deg, rgba(200,169,110,0.18) 180deg,
-    rgba(200,169,110,0.18) 360deg);
+    rgba(125,142,115,0.18) 0deg, rgba(125,142,115,0.18) 40deg,
+    rgba(140,165,130,0.55) 80deg, rgba(180,200,160,1.0) 110deg,
+    rgba(140,165,130,0.55) 140deg, rgba(125,142,115,0.18) 180deg,
+    rgba(125,142,115,0.18) 360deg);
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
@@ -608,233 +387,77 @@ body {
   animation: holo-rotate 3.5s linear infinite;
 }
 
-/* Leaders orb — WAAPI entrance + CSS glow expansion */
-
-/* Hide main orb when leaders orb takes over (overrides GSAP inline styles) */
-.orb-primary.orb-primary-hidden {
-  opacity: 0 !important;
-  visibility: hidden !important;
+@keyframes holo-rotate {
+  to { --holo-angle: 360deg; }
 }
 
-/* Phase 2: Glow expansion — triggered after WAAPI entrance finishes */
-.leaders-glow-expand {
-  opacity: 0;
-  transform: translate(-50%, -50%) scale(0.05);
-}
-.leaders-orb-at-rest .leaders-glow-expand {
-  animation: leaders-glow-scale 2.5s ease-in-out forwards;
-}
-@keyframes leaders-glow-scale {
-  0%   { opacity: 0;   transform: translate(-50%, -50%) scale(0.05); }
-  40%  { opacity: 0.6; transform: translate(-50%, -50%) scale(0.5); }
-  100% { opacity: 0.8; transform: translate(-50%, -50%) scale(1); }
-}
-
-/* Orbiting particles */
-@keyframes orbit-particle {
-  0% {
-    transform: rotate(0deg) translateX(var(--orbit-r, 200px)) rotate(0deg);
-    opacity: 0.8;
-  }
-  50% { opacity: 0.3; }
-  100% {
-    transform: rotate(360deg) translateX(var(--orbit-r, 200px)) rotate(-360deg);
-    opacity: 0.8;
-  }
-}
-
-/* ═══ Orb Narrative System ═══ */
-
-.orb-primary,
-.orb-satellite,
-.mini-orb,
-.orb-fragment {
-  will-change: transform, opacity;
-}
-
-/* Hide secondary orbs via CSS until GSAP takes over — prevents flash on load */
-.orb-satellite,
-.mini-orb,
-.orb-fragment {
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* Prefers reduced motion — skip ScrollTrigger transforms, keep static breathing */
-/* Glow card — radiant pulse activated only after orb absorption */
-.holo-border.glow-absorbed {
-  animation: radiant-pulse 4s ease-in-out infinite !important;
-}
-
-/* ═══ Light-mode class overrides ═══ */
-
-[data-theme="light"] .hero-accent {
-  color: #1A1A2E;
-  -webkit-text-fill-color: #1A1A2E;
-  animation: orb-illuminate-light 5s ease-in-out infinite;
-}
-
-@keyframes orb-illuminate-light {
-  0%, 100% {
-    text-shadow:
-      0 0 20px rgba(180,120,40,0.2),
-      0 0 60px rgba(180,120,40,0.08);
-    color: #1A1A2E;
-    -webkit-text-fill-color: #1A1A2E;
-  }
-  50% {
-    text-shadow:
-      0 0 30px rgba(180,120,40,0.4),
-      0 0 80px rgba(180,120,40,0.2),
-      0 0 120px rgba(180,120,40,0.1);
-    color: #2A1A0E;
-    -webkit-text-fill-color: #2A1A0E;
-  }
-}
-
-[data-theme="light"] .text-gradient-pulse {
-  color: #1A1A2E;
-  -webkit-text-fill-color: #1A1A2E;
-}
-
-[data-theme="light"] .text-gradient-pulse::after {
-  background: linear-gradient(135deg, #C06820, #A06080, #6848A0);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-[data-theme="light"] .btn-ghost:hover {
-  color: var(--text);
-  border-color: rgba(0,0,0,0.15);
-  background: rgba(0,0,0,0.04);
-}
-
-[data-theme="light"] .cursor-aurora {
-  background: radial-gradient(circle, rgba(180,120,40,0.05) 0%, rgba(160,100,120,0.02) 30%, transparent 70%);
-}
-
-[data-theme="light"] .noise-overlay {
-  opacity: 0.04;
-}
-
-[data-theme="light"] .noise-overlay::after {
-  mix-blend-mode: multiply;
-}
-
-[data-theme="light"] .section-orb {
-  box-shadow:
-    0 0 20px var(--glow-moon),
-    0 0 50px rgba(200,160,80,0.3),
-    0 0 80px rgba(180,120,40,0.2);
-}
-
-[data-theme="light"] .shimmer-border::before {
-  background: linear-gradient(
-    250deg,
-    rgba(200,146,46,0.5) 0%,
-    rgba(176,120,32,0.45) 20%,
-    rgba(90,138,184,0.4) 45%,
-    rgba(176,120,128,0.45) 70%,
-    rgba(200,146,46,0.5) 100%
+/* ═══ Liquid Glass utility (Phase 2 — ready for use) ═══ */
+.liquid-glass {
+  /* Stabilized plate — the scrim */
+  background: radial-gradient(
+    120% 80% at 25% 20%,
+    rgba(255, 255, 253, 0.22) 0%,
+    rgba(255, 255, 253, 0.12) 50%,
+    rgba(255, 255, 250, 0.06) 100%
   );
-  background-size: 200% 200%;
-  animation: gradient-drift 4s linear infinite;
+
+  /* Low blur — field must show through */
+  backdrop-filter: blur(4px) saturate(1.4);
+  -webkit-backdrop-filter: blur(4px) saturate(1.4);
+
+  border-radius: 12px;
+
+  /* Directional border edge */
+  border: 1px solid transparent;
+  border-top-color: rgba(255, 252, 240, 0.55);
+  border-left-color: rgba(255, 252, 240, 0.32);
+  border-bottom-color: rgba(200, 195, 188, 0.08);
+  border-right-color: rgba(200, 195, 188, 0.04);
+
+  box-shadow:
+    /* Warm top pixel */
+    inset 0 1px 0 rgba(255, 252, 240, 0.55),
+    /* Shadow cue — inner bottom shadow */
+    inset 0 -1px 3px rgba(0, 0, 0, 0.06),
+    /* Elevation */
+    0 1px 2px rgba(0, 0, 0, 0.03),
+    0 4px 12px -3px rgba(0, 0, 0, 0.06);
 }
 
-[data-theme="light"] .text-gradient {
-  background: linear-gradient(135deg, #C06820, #A06080, #6848A0);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* Inner stroke ring via mask-composite */
+.liquid-glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 252, 240, 0.48) 0%,
+    rgba(255, 252, 240, 0.24) 22%,
+    rgba(255, 250, 235, 0.08) 50%,
+    transparent 75%,
+    transparent 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
 }
 
-[data-theme="light"] .text-gradient-warm {
-  background: linear-gradient(135deg, #A89030, #C06820, #A04830);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-[data-theme="light"] .text-gradient-cool {
-  background: linear-gradient(135deg, #3868B0, #388880, #6848A0);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-@keyframes radiant-pulse-light {
-  0%, 100% {
-    box-shadow:
-      0 10px 40px rgba(0,0,0,0.08),
-      0 0 40px rgba(200,146,46,0.2),
-      0 0 80px rgba(200,146,46,0.1);
-  }
-  50% {
-    box-shadow:
-      0 15px 60px rgba(0,0,0,0.1),
-      0 0 60px rgba(200,146,46,0.4),
-      0 0 120px rgba(200,140,30,0.2),
-      0 0 200px rgba(200,146,46,0.08);
-  }
-}
-
-[data-theme="light"] .holo-border.glow-absorbed {
-  animation: radiant-pulse-light 4s ease-in-out infinite !important;
-}
-
-/* Card orb overlay — controlled entirely via GSAP (no CSS class toggle) */
-
-/* OrbSystem elevated — orb renders IN FRONT of page content during drop */
-.orb-system-elevated {
-  z-index: 8 !important;
-}
-
-/* Hide LeadersOrb when FoundersOrb takes over */
-.leaders-orb-hidden-for-founders {
-  opacity: 0 !important;
-  transition: opacity 0.3s ease;
-}
-
-/* Hide FoundersOrb pair when CloserOrb takes over */
-.founders-orb-hidden-for-closer {
-  opacity: 0 !important;
-  transition: opacity 0.3s ease;
-}
-
-/* Hide CloserOrb merged when ContactOrb takes over */
-.closer-orb-hidden-for-contact {
-  opacity: 0 !important;
-  transition: opacity 0.3s ease;
-}
-
-/* Closer orb at rest — gentle glow pulse behind text */
-.closer-orb-at-rest {
-  animation: closer-glow-pulse 4s ease-in-out infinite;
-}
-@keyframes closer-glow-pulse {
-  0%, 100% { filter: brightness(1); }
-  50% { filter: brightness(1.3); }
-}
-
+/* ═══ Reduced motion ═══ */
 @media (prefers-reduced-motion: reduce) {
-  .orb-primary,
-  .orb-satellite,
-  .mini-orb {
-    animation: none !important;
+  .reveal-section {
     transition: none !important;
+    opacity: 1;
+    transform: none;
   }
 
-  .orb-primary img,
-  .orb-satellite img,
-  .mini-orb img {
-    animation: none !important;
-  }
-
-  .orb-primary > div,
-  .orb-satellite > div {
+  .hero-accent,
+  .holo-border-pill::before {
     animation: none !important;
   }
 }
-
-

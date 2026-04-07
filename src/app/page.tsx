@@ -8,48 +8,43 @@ declare global {
 
 import React, { useState, useEffect, useRef } from "react";
 import JoyLogo from "./components/JoyLogo";
-import OrbSystem from "./components/OrbSystem";
-import LeadersOrb from "./components/LeadersOrb";
-import FoundersOrb from "./components/FoundersOrb";
-import CloserOrb from "./components/CloserOrb";
-import ContactOrb from "./components/ContactOrb";
+import QiField from "./components/QiField";
+import TorusRing from "./components/TorusRing";
+
+export type Register = "breathing" | "listening" | "thinking" | "talking" | "settling";
 
 export default function Home() {
   const [activeSection, setActiveSection] = useState<string>("home");
   const [isMobile, setIsMobile] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [register, setRegister] = useState<Register>("breathing");
 
   useEffect(() => {
     setIsMobile(window.matchMedia("(max-width: 768px)").matches);
-    const saved = localStorage.getItem("joy-theme");
-    if (saved === "light" || saved === "dark") setTheme(saved);
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem("joy-theme", theme);
-  }, [theme]);
-
-  const toggleTheme = () => setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-  const isLight = theme === "light";
 
   // Waitlist form state
   const [formEmail, setFormEmail] = useState("");
   const [formStatus, setFormStatus] = useState<"idle" | "submitting" | "joined" | "error">("idle");
   const [formError, setFormError] = useState<string | null>(null);
 
-  // Section refs for intersection observer
+  // Section refs for intersection observer + register detection
   const heroRef = useRef<HTMLElement>(null);
-  const howRef = useRef<HTMLElement>(null);
-  const aboutRef = useRef<HTMLElement>(null);
+  const bridgeRef = useRef<HTMLElement>(null);
+  const visionRef = useRef<HTMLElement>(null);
+  const sortRef = useRef<HTMLElement>(null);
+  const leadersRef = useRef<HTMLElement>(null);
+  const foundersRef = useRef<HTMLElement>(null);
+  const closerRef = useRef<HTMLElement>(null);
   const contactRef = useRef<HTMLElement>(null);
 
-  // Experimental interaction refs
-  const auroraRef = useRef<HTMLDivElement>(null);
+  // Scroll progress bar ref
   const scrollBarRef = useRef<HTMLDivElement>(null);
+
+  // CTA button ref for magnetic effect
   const ctaRef = useRef<HTMLButtonElement>(null);
 
-  // Intersection observer for active nav
+  // Intersection observer for active nav + register
   useEffect(() => {
     const visibleSections = new Set<string>();
     const observer = new IntersectionObserver(
@@ -58,15 +53,25 @@ export default function Home() {
           if (entry.isIntersecting) visibleSections.add(entry.target.id);
           else visibleSections.delete(entry.target.id);
         });
+
+        // Active nav section
         if (visibleSections.has("contact")) setActiveSection("contact");
         else if (visibleSections.has("vision")) setActiveSection("about");
         else if (visibleSections.has("sort")) setActiveSection("how");
-        else if (visibleSections.has("glow")) setActiveSection("glow");
         else if (visibleSections.has("hero")) setActiveSection("home");
+
+        // Register detection
+        if (visibleSections.has("contact")) setRegister("settling");
+        else if (visibleSections.has("closer") || visibleSections.has("founders")) setRegister("talking");
+        else if (visibleSections.has("sort") || visibleSections.has("leaders")) setRegister("thinking");
+        else if (visibleSections.has("vision") || visibleSections.has("bridge")) setRegister("listening");
+        else if (visibleSections.has("hero")) setRegister("breathing");
       },
       { threshold: 0.2 }
     );
-    [heroRef, howRef, aboutRef, contactRef].forEach((ref) => {
+
+    const refs = [heroRef, bridgeRef, visionRef, sortRef, leadersRef, foundersRef, closerRef, contactRef];
+    refs.forEach((ref) => {
       if (ref.current) observer.observe(ref.current);
     });
     return () => observer.disconnect();
@@ -81,18 +86,6 @@ export default function Home() {
     document.querySelectorAll(".reveal-section").forEach((el) => obs.observe(el));
     return () => obs.disconnect();
   }, []);
-
-  // Cursor aurora + hero orb parallax (desktop only)
-  useEffect(() => {
-    if (isMobile) return;
-    const handleMouse = (e: MouseEvent) => {
-      if (auroraRef.current) {
-        auroraRef.current.style.transform = `translate(${e.clientX - 300}px, ${e.clientY - 300}px)`;
-      }
-    };
-    window.addEventListener("mousemove", handleMouse);
-    return () => window.removeEventListener("mousemove", handleMouse);
-  }, [isMobile]);
 
   // Scroll progress bar
   useEffect(() => {
@@ -119,122 +112,44 @@ export default function Home() {
     { label: "joy code", href: "/joy-code", external: false },
   ];
 
+  // Wood qi palette — single theme, no dark/light branching
   const t = {
-    navBg: isLight ? "rgba(250,250,248,0.7)" : "rgba(8,11,20,0.6)",
-    mobileBg: isLight ? "rgba(250,250,248,0.95)" : "rgba(8,11,20,0.95)",
-    footerBg: isLight ? "rgba(250,250,248,0.7)" : "rgba(8,11,20,0.6)",
-    logoColor: isLight ? "#1A1A2E" : "#FFFFFF",
-    inputBg: isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.06)",
-    heroTextShadow: isLight
-      ? "0 0 44px rgba(180,130,60,0.2), 0 0 84px rgba(180,130,60,0.08)"
-      : "0 0 44px rgba(212,165,116,0.3), 0 0 84px rgba(212,165,116,0.1)",
-    warmGlow: isLight
-      ? "radial-gradient(ellipse, rgba(180,130,60,0.06) 0%, rgba(160,100,120,0.02) 40%, transparent 70%)"
-      : "radial-gradient(ellipse, rgba(232,180,106,0.06) 0%, rgba(212,160,168,0.02) 40%, transparent 70%)",
-    coolGlow: isLight
-      ? "radial-gradient(ellipse, rgba(90,138,184,0.06) 0%, rgba(120,152,184,0.02) 40%, transparent 70%)"
-      : "radial-gradient(ellipse, rgba(137,180,220,0.06) 0%, rgba(168,196,224,0.02) 40%, transparent 70%)",
-    sectionGlow06: isLight
-      ? "radial-gradient(ellipse, rgba(180,130,60,0.06) 0%, transparent 60%)"
-      : "radial-gradient(ellipse, rgba(232,180,106,0.06) 0%, transparent 60%)",
-    sectionGlow08: isLight
-      ? "radial-gradient(ellipse, rgba(180,130,60,0.08) 0%, transparent 60%)"
-      : "radial-gradient(ellipse, rgba(232,180,106,0.08) 0%, transparent 60%)",
-    cardBg: isLight ? "#F5F2ED" : "#0E1221",
-    cardShadow: isLight
-      ? "0 10px 40px rgba(0,0,0,0.08), 0 0 40px rgba(200,146,46,0.15), 0 0 80px rgba(200,146,46,0.08)"
-      : "0 20px 80px rgba(0,0,0,0.5), 0 0 40px rgba(232,180,106,0.12), 0 0 80px rgba(232,180,106,0.06)",
-    cardOrbWarmGlow: isLight
-      ? "radial-gradient(circle, rgba(180,130,60,0.3) 0%, rgba(180,130,60,0.1) 45%, transparent 70%)"
-      : "radial-gradient(circle, rgba(232,180,106,0.35) 0%, rgba(212,165,116,0.12) 45%, transparent 70%)",
-    cardOrbHeartGlow: isLight
-      ? "radial-gradient(circle at 50% 40%, rgba(180,120,50,1) 0%, rgba(160,100,40,0.5) 35%, transparent 70%)"
-      : "radial-gradient(circle at 50% 40%, rgba(232,180,106,1) 0%, rgba(220,160,80,0.5) 35%, transparent 70%)",
-    cardOrbHeartFilter: isLight ? "blur(25px) brightness(1.1)" : "blur(25px) brightness(1.3)",
-    cardOrbBlend: (isLight ? "multiply" : "screen") as React.CSSProperties["mixBlendMode"],
-    cardOrbImgOpacity: isLight ? 0.6 : 0.9,
-    statColor: isLight ? "#1A1A2E" : "#FFFFFF",
-    hamburgerBg: isLight ? "bg-[#1A1A2E]" : "bg-white",
-    navDotBg: isLight ? "var(--glow-honey)" : "var(--glow-moon)",
-    navDotShadow: isLight
-      ? "0 0 12px var(--glow-honey), 0 0 30px rgba(176,120,32,0.3)"
-      : "0 0 12px var(--glow-moon), 0 0 30px rgba(250,248,232,0.3)",
-    backdropSaturate: isLight ? "blur(40px) saturate(1.2)" : "blur(40px) saturate(1.8)",
-    closeButtonBg: isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)",
-    closeStroke: isLight ? "#1A1A2E" : "#F5F0EA",
-    auraGlow: isLight
-      ? "radial-gradient(circle, rgba(180,130,60,0.15) 0%, rgba(160,100,120,0.06) 40%, transparent 70%)"
-      : "radial-gradient(circle, rgba(232,180,106,0.2) 0%, rgba(212,160,168,0.08) 40%, transparent 70%)",
-    heroSubShadow: isLight
-      ? "0 0 34px rgba(180,130,60,0.15)"
-      : "0 0 34px rgba(212,165,116,0.2)",
-    earlyAccessBg: isLight ? "#E8E4DD" : "#171E33",
-    earlyAccessColor: isLight ? "#1A1A2E" : "#FFFFFF",
+    navBg: "rgba(245,242,232,0.7)",
+    mobileBg: "rgba(245,242,232,0.95)",
+    footerBg: "rgba(245,242,232,0.7)",
+    logoColor: "#2A2E24",
+    inputBg: "rgba(68,88,72,0.06)",
+    heroTextShadow: "0 0 44px rgba(140,165,130,0.2), 0 0 84px rgba(95,120,85,0.08)",
+    sectionGlow06: "radial-gradient(ellipse, rgba(140,165,130,0.06) 0%, transparent 60%)",
+    sectionGlow08: "radial-gradient(ellipse, rgba(140,165,130,0.08) 0%, transparent 60%)",
+    statColor: "#2A2E24",
+    hamburgerBg: "bg-[#2A2E24]",
+    navDotBg: "var(--qi-mote-glow)",
+    navDotShadow: "0 0 12px var(--qi-mote-glow), 0 0 30px rgba(125,142,115,0.3)",
+    backdropSaturate: "blur(40px) saturate(1.2)",
+    heroSubShadow: "0 0 34px rgba(140,165,130,0.15)",
+    earlyAccessBg: "#E8E5DB",
+    earlyAccessColor: "#2A2E24",
   };
 
   return (
-    <div data-theme={theme} className="relative min-h-screen overflow-x-hidden" style={{ backgroundColor: isLight ? "#F5F3EE" : undefined, color: isLight ? "#1A1A2E" : undefined }}>
-      {/* Cursor aurora — ambient glow following mouse (desktop only) */}
-      {!isMobile && <div ref={auroraRef} className="cursor-aurora" />}
+    <div className="relative min-h-screen overflow-x-hidden" style={{ color: "var(--qi-text)" }}>
+      {/* Qi field — the living background */}
+      <QiField register={register} />
 
       {/* Scroll progress indicator */}
       <div ref={scrollBarRef} className="scroll-progress" style={{ transform: "scaleX(0)" }} />
 
-      {/* Noise overlay */}
-      <div className="noise-overlay fixed inset-0 z-[2]" />
-
-      {/* Ambient side glows — warm left, cool right */}
-      <div className="fixed inset-0 pointer-events-none z-[1]" style={{ overflow: "hidden" }}>
-        <div style={{
-          position: "absolute",
-          top: "20%",
-          left: "-15%",
-          width: "50vw",
-          height: "60vh",
-          borderRadius: "50%",
-          background: t.warmGlow,
-          filter: "blur(80px)",
-        }} />
-        <div style={{
-          position: "absolute",
-          top: "30%",
-          right: "-15%",
-          width: "50vw",
-          height: "60vh",
-          borderRadius: "50%",
-          background: t.coolGlow,
-          filter: "blur(80px)",
-        }} />
-      </div>
-
-      {/* Orb narrative system — scroll-driven transforms */}
-      <OrbSystem glowExpanded={false} theme={theme} />
-
       {/* Page content */}
       <div className="relative z-[5]">
 
-        {/* ═══ TOP NAV — glass morphism ═══ */}
+        {/* ═══ TOP NAV — floating on the field, no chrome ═══ */}
         <nav
           className="fixed top-0 left-0 right-0 z-50 px-6 md:px-12 h-16 flex items-center justify-between"
-          style={{
-            opacity: 0.7,
-            background: t.navBg,
-            backdropFilter: t.backdropSaturate,
-            WebkitBackdropFilter: t.backdropSaturate,
-            borderBottom: "1px solid var(--border)",
-          }}
         >
           {/* Logo left */}
           <a href="#hero" className="relative">
             <JoyLogo width={50} height={26} color={t.logoColor} />
-            <span
-              className="absolute -top-0.5 -right-2.5 w-[7px] h-[7px] rounded-full"
-              style={{
-                background: t.navDotBg,
-                boxShadow: t.navDotShadow,
-                animation: "breathe 3s ease-in-out infinite",
-              }}
-            />
           </a>
 
           {/* Desktop links */}
@@ -246,7 +161,7 @@ export default function Home() {
                   key={item.id}
                   href={item.href}
                   className={`nav-link text-xs md:text-sm tracking-wide transition-colors duration-300 ${
-                    isActive ? "active text-[var(--text)]" : "text-[var(--text-secondary)] hover:text-[var(--text)]"
+                    isActive ? "active text-[var(--qi-text)]" : "text-[var(--qi-text-secondary)] hover:text-[var(--qi-text)]"
                   }`}
                   style={{ fontFamily: "var(--font-display)", fontWeight: 400 }}
                 >
@@ -254,25 +169,9 @@ export default function Home() {
                 </a>
               );
             })}
-            <button
-              onClick={toggleTheme}
-              className="w-8 h-8 flex items-center justify-center rounded-full transition-all duration-300"
-              style={{ background: isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.08)", border: "1px solid var(--border)" }}
-              aria-label="Toggle theme"
-            >
-              {isLight ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.logoColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                </svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.logoColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-                </svg>
-              )}
-            </button>
             <a
               href="#hero"
-              className="holo-border-pill px-5 py-2 rounded-full text-xs font-medium tracking-wide transition-all duration-300 hover:shadow-[0_0_30px_rgba(224,160,173,0.35)]"
+              className="holo-border-pill px-5 py-2 rounded-full text-xs font-medium tracking-wide transition-all duration-300"
               style={{
                 fontFamily: "var(--font-display)",
                 background: t.earlyAccessBg,
@@ -300,7 +199,7 @@ export default function Home() {
         {/* ═══ MOBILE MENU OVERLAY ═══ */}
         <div
           className={`fixed inset-0 z-40 md:hidden transition-all duration-300 ${mobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
-          style={{ background: t.mobileBg, backdropFilter: "blur(40px)", WebkitBackdropFilter: "blur(40px)" }}
+          style={{ background: "rgba(245,242,232,0.85)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
         >
           <div className="flex flex-col items-center justify-center h-full gap-8">
             {navItems.map((item) => (
@@ -309,27 +208,11 @@ export default function Home() {
                 href={item.href}
                 onClick={() => setMobileMenuOpen(false)}
                 className="text-lg tracking-wide transition-colors duration-300"
-                style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: activeSection === item.id ? "var(--text)" : "var(--text-secondary)" }}
+                style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: activeSection === item.id ? "var(--qi-text)" : "var(--qi-text-secondary)" }}
               >
                 {item.label}
               </a>
             ))}
-            <button
-              onClick={toggleTheme}
-              className="w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300"
-              style={{ background: isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.08)", border: "1px solid var(--border)" }}
-              aria-label="Toggle theme"
-            >
-              {isLight ? (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.logoColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                </svg>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={t.logoColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-                </svg>
-              )}
-            </button>
             <a
               href="#hero"
               onClick={() => setMobileMenuOpen(false)}
@@ -348,12 +231,12 @@ export default function Home() {
           className="min-h-screen flex flex-col items-center justify-center px-6 py-16 text-center relative overflow-hidden"
         >
           <div className="w-full max-w-[900px] mx-auto flex flex-col items-center relative z-10">
-            {/* Joy Logo */}
-            <div className="mb-[42px] md:mb-[54px] animate-hero-1 relative inline-flex">
-              <JoyLogo width={80} height={42} color={t.logoColor} />
+            {/* Torus ring — the heartbeat */}
+            <div className="mb-[32px] md:mb-[42px] animate-hero-1 relative inline-flex">
+              <TorusRing register={register} size={140} />
             </div>
 
-            {/* H1 — with prismatic gradient + ambient glow */}
+            {/* H1 */}
             <h1
               className="tracking-[-0.03em] mb-[10px] animate-hero-1"
               style={{
@@ -374,7 +257,7 @@ export default function Home() {
                 fontFamily: "var(--font-display)",
                 fontWeight: 300,
                 fontSize: "clamp(0.85rem, 1.5vw, 1.05rem)",
-                color: "var(--text-secondary)",
+                color: "var(--qi-text-secondary)",
                 textShadow: t.heroSubShadow,
               }}
             >
@@ -426,8 +309,8 @@ export default function Home() {
                   style={{
                     fontFamily: "var(--font-display)",
                     background: t.inputBg,
-                    border: "1px solid var(--border)",
-                    color: "var(--text)",
+                    border: "1px solid var(--qi-border)",
+                    color: "var(--qi-text)",
                   }}
                 />
               </div>
@@ -440,8 +323,8 @@ export default function Home() {
                 }`}
                 style={{
                   fontFamily: "var(--font-display)",
-                  background: "var(--text)",
-                  color: "var(--bg)",
+                  background: "var(--qi-text)",
+                  color: "var(--qi-base)",
                   border: "none",
                 }}
                 onMouseMove={(e) => {
@@ -473,20 +356,21 @@ export default function Home() {
 
           {/* Scroll cue */}
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-10" style={{ opacity: 0, animation: "fade-in 1s ease forwards 1.8s" }}>
-            <span className="text-[0.7rem] tracking-[0.15em] uppercase" style={{ color: "var(--text-tertiary)" }}>scroll</span>
-            <div className="w-px h-8" style={{ background: "linear-gradient(to bottom, var(--text-tertiary), transparent)", animation: "scroll-pulse 2s ease-in-out infinite" }} />
+            <span className="text-[0.7rem] tracking-[0.15em] uppercase" style={{ color: "var(--qi-text-tertiary)" }}>scroll</span>
+            <div className="w-px h-8" style={{ background: "linear-gradient(to bottom, var(--qi-text-tertiary), transparent)", animation: "scroll-pulse 2s ease-in-out infinite" }} />
           </div>
         </section>
 
         {/* ═══ BRIDGE ═══ */}
         <section
           id="bridge"
+          ref={bridgeRef}
           className="py-20 md:py-28 px-6 md:px-12 lg:px-20 text-center"
-          style={{ borderTop: "1px solid var(--border)" }}
+          style={{ borderTop: "1px solid var(--qi-border)" }}
         >
           <p
             className="reveal-section max-w-[600px] mx-auto"
-            style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(0.95rem, 2vw, 1.4rem)", color: "var(--text-secondary)", letterSpacing: "-0.01em", lineHeight: "calc(1.4em + 4px)" }}
+            style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(0.95rem, 2vw, 1.4rem)", color: "var(--qi-text-secondary)", letterSpacing: "-0.01em", lineHeight: "calc(1.4em + 4px)" }}
           >
             Every productivity tool starts with output.<br />We start somewhere else:<br /><em className="text-gradient-pulse" data-text="if humans succeed, productivity follows." style={{ fontStyle: "italic" }}>if humans succeed, productivity follows.</em><br />Here&apos;s how we&apos;ll make that happen.
           </p>
@@ -495,11 +379,10 @@ export default function Home() {
         {/* ═══ VISION SECTION ═══ */}
         <section
           id="vision"
-          ref={aboutRef}
+          ref={visionRef}
           className="py-24 md:py-32 px-6 md:px-12 lg:px-20 relative"
-          style={{ borderTop: "1px solid var(--border)" }}
+          style={{ borderTop: "1px solid var(--qi-border)" }}
         >
-          {/* Subtle background glow */}
           <div className="absolute pointer-events-none" style={{ top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 700, height: 400, background: t.sectionGlow06 }} />
           <div className="max-w-[660px] mx-auto text-center relative z-10">
             <h2
@@ -508,7 +391,7 @@ export default function Home() {
             >
               <em className="text-gradient" style={{ fontStyle: "italic" }}>Human success</em>. That&apos;s the mission.
             </h2>
-            <div className="reveal-section text-sm md:text-base leading-[1.85] tracking-wide" style={{ color: "var(--text-secondary)", fontWeight: 300 }}>
+            <div className="reveal-section text-sm md:text-base leading-[1.85] tracking-wide" style={{ color: "var(--qi-text-secondary)", fontWeight: 300 }}>
               <p className="mb-6">
                 To us, human success is simple. It&apos;s being able to do it all, and still have something left for yourself. For the things that make you, you.
               </p>
@@ -531,9 +414,9 @@ export default function Home() {
         {/* ═══ SORT SECTION ═══ */}
         <section
           id="sort"
-          ref={howRef}
+          ref={sortRef}
           className="py-24 md:py-32 px-6 md:px-12 lg:px-20"
-          style={{ borderTop: "1px solid var(--border)", position: "relative", zIndex: 1 }}
+          style={{ borderTop: "1px solid var(--qi-border)", position: "relative", zIndex: 1 }}
         >
           <div className="max-w-[660px] mx-auto text-center">
             <h2
@@ -543,13 +426,13 @@ export default function Home() {
               The first thing we&apos;re solving?<br />The way we manage <em className="text-gradient-cool" style={{ fontStyle: "italic" }}>work and life</em> today.
             </h2>
 
-            <div className="reveal-section text-sm md:text-base leading-[1.85] tracking-wide mb-12" style={{ color: "var(--text-secondary)", fontWeight: 300 }}>
+            <div className="reveal-section text-sm md:text-base leading-[1.85] tracking-wide mb-12" style={{ color: "var(--qi-text-secondary)", fontWeight: 300 }}>
               <p>
                 Every day, you split yourself across calendars, task lists, and a dozen apps that don&apos;t talk to each other. You carry the mental load of work and life as two separate systems, constantly context-switching between them. That&apos;s where the energy goes, and why we end up zoning out on the couch after work instead of taking up pottery.
               </p>
             </div>
 
-            {/* Stats grid — the orb fractures behind these */}
+            {/* Stats grid */}
             <div id="sort-stats" className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 mb-16 max-w-[800px] mx-auto">
               {[
                 { stat: "1/4", label: "of work time lost to distraction. The fastest-growing cause? Life.", href: "https://impact.economist.com/new-globalisation/in-search-of-lost-focus-2023/", ref: "1" },
@@ -576,7 +459,7 @@ export default function Home() {
                         verticalAlign: "super",
                         fontSize: "0.65em",
                         textDecoration: "none",
-                        background: "linear-gradient(135deg, #D8C878, #E89050, #D07050)",
+                        background: "linear-gradient(135deg, #7D8E73, #8CA582, #5A7850)",
                         WebkitBackgroundClip: "text",
                         WebkitTextFillColor: "transparent",
                         backgroundClip: "text",
@@ -589,7 +472,7 @@ export default function Home() {
               ))}
             </div>
 
-            <div id="sort-solution" className="reveal-section text-sm md:text-base leading-[1.85] tracking-wide" style={{ color: "var(--text-secondary)", fontWeight: 300 }}>
+            <div id="sort-solution" className="reveal-section text-sm md:text-base leading-[1.85] tracking-wide" style={{ color: "var(--qi-text-secondary)", fontWeight: 300 }}>
               <p className="mb-6">
                 Sort builds your day around the energy you have today. Not yesterday. Not the version of you that optimistically planned six meetings and a gym session. Work, life, all of it, sorted around what you&apos;ve actually got. It keeps reminders of things you want to get to &mdash; so that you actually get to them.
               </p>
@@ -606,10 +489,10 @@ export default function Home() {
         {/* ═══ FOR LEADERS SECTION ═══ */}
         <section
           id="leaders"
+          ref={leadersRef}
           className="py-24 md:py-32 px-6 md:px-12 lg:px-20"
-          style={{ borderTop: "1px solid var(--border)", position: "relative", overflow: "visible" }}
+          style={{ borderTop: "1px solid var(--qi-border)", position: "relative", overflow: "visible" }}
         >
-          <LeadersOrb />
           <div className="max-w-[660px] mx-auto text-center" style={{ position: "relative", zIndex: 1 }}>
             <h2
               className="reveal-section leading-[1.15] tracking-[-0.025em] mb-8"
@@ -617,7 +500,7 @@ export default function Home() {
             >
               Built for your people. <em className="text-gradient-warm" style={{ fontStyle: "italic" }}>Signal for you</em>.
             </h2>
-            <div className="reveal-section text-sm md:text-base leading-[1.85] tracking-wide" style={{ color: "var(--text-secondary)", fontWeight: 300 }}>
+            <div className="reveal-section text-sm md:text-base leading-[1.85] tracking-wide" style={{ color: "var(--qi-text-secondary)", fontWeight: 300 }}>
               <p className="mb-6">
                 What if you could actually see how your people are doing? Not from a quarterly survey. Not from the hard work of asking around. From a tool your team chose to use because it helps them. Real signal on company energy, every day. The company you always said you wanted to build, where people-first and high-performing aren&apos;t a trade-off. Where you finally have the infrastructure to make both true.
               </p>
@@ -634,10 +517,10 @@ export default function Home() {
         {/* ═══ FOUNDERS SECTION ═══ */}
         <section
           id="founders"
+          ref={foundersRef}
           className="py-24 md:py-32 px-6 md:px-12 lg:px-20"
-          style={{ borderTop: "1px solid var(--border)", position: "relative", overflow: "visible" }}
+          style={{ borderTop: "1px solid var(--qi-border)", position: "relative", overflow: "visible" }}
         >
-          <FoundersOrb />
           <div className="max-w-[660px] mx-auto text-center" style={{ position: "relative", zIndex: 1 }}>
             <h2
               className="reveal-section leading-[1.1] tracking-[-0.025em] mb-8"
@@ -645,7 +528,7 @@ export default function Home() {
             >
               Who&apos;s <em className="text-gradient-cool" style={{ fontStyle: "italic" }}>building</em> this
             </h2>
-            <div className="reveal-section text-sm md:text-base leading-[1.85] tracking-wide" style={{ color: "var(--text-secondary)", fontWeight: 300 }}>
+            <div className="reveal-section text-sm md:text-base leading-[1.85] tracking-wide" style={{ color: "var(--qi-text-secondary)", fontWeight: 300 }}>
               <p className="mb-6">
                 Jessie has always worn the same hat, for different customers. In sales at Meltwater, it was the prospect. Launching new markets at Wolt, it was our restaurant partners, couriers and hungry people. As Head of People at Pleo, it was all about Pleo&apos;ers. Every time, the same focus: understand your customer, remove their pain, and offer them something that delights. Give them more than expected. After 7 years at Pleo, she realised the tools she&apos;d love to use didn&apos;t exist. So she&apos;s building them.
               </p>
@@ -665,21 +548,21 @@ export default function Home() {
         {/* ═══ FINAL CTA / CLOSER SECTION ═══ */}
         <section
           id="closer"
+          ref={closerRef}
           className="py-24 md:py-32 px-6 md:px-12 lg:px-20 text-center relative"
-          style={{ borderTop: "1px solid var(--border)", overflow: "visible" }}
+          style={{ borderTop: "1px solid var(--qi-border)", overflow: "visible" }}
         >
-          <CloserOrb />
           <div className="absolute pointer-events-none" style={{ top: 0, left: "50%", transform: "translateX(-50%)", width: 900, height: 500, background: t.sectionGlow06 }} />
           <div className="max-w-[500px] mx-auto relative z-10">
             <h2
               className="reveal-section leading-[1.1] tracking-[-0.025em] mb-4"
               style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1.1rem, 2.8vw, 2rem)" }}
             >
-              What are <span className="closer-orb-target">you</span> best at <em className="text-gradient-warm" style={{ fontStyle: "italic" }}>doing</em>?
+              What are you best at <em className="text-gradient-warm" style={{ fontStyle: "italic" }}>doing</em>?
             </h2>
             <p
               className="reveal-section text-sm md:text-base tracking-wide mb-8"
-              style={{ color: "var(--text-secondary)", fontWeight: 300 }}
+              style={{ color: "var(--qi-text-secondary)", fontWeight: 300 }}
             >
               We&apos;re building Joy so you can do more of it.
             </p>
@@ -728,8 +611,8 @@ export default function Home() {
                   style={{
                     fontFamily: "var(--font-display)",
                     background: t.inputBg,
-                    border: "1px solid var(--border)",
-                    color: "var(--text)",
+                    border: "1px solid var(--qi-border)",
+                    color: "var(--qi-text)",
                   }}
                 />
               </div>
@@ -741,8 +624,8 @@ export default function Home() {
                 }`}
                 style={{
                   fontFamily: "var(--font-display)",
-                  background: "var(--text)",
-                  color: "var(--bg)",
+                  background: "var(--qi-text)",
+                  color: "var(--qi-base)",
                   border: "none",
                   transition: "all 0.3s ease",
                 }}
@@ -768,46 +651,13 @@ export default function Home() {
           id="contact"
           ref={contactRef}
           className="flex flex-col items-center justify-center px-6 py-24 pb-32 md:px-12 lg:px-20 text-center relative"
-          style={{ borderTop: "1px solid var(--border)", overflow: "visible" }}
+          style={{ borderTop: "1px solid var(--qi-border)", overflow: "visible" }}
         >
-          <ContactOrb />
-          {/* Glow behind heading */}
           <div className="absolute pointer-events-none" style={{ bottom: 0, left: "50%", transform: "translateX(-50%)", width: 800, height: 400, background: t.sectionGlow08 }} />
 
-          {/* Joy logo with breathing orb */}
+          {/* Joy logo */}
           <div className="mb-8 md:mb-12 reveal-section relative inline-flex">
             <JoyLogo width={120} height={63} color={t.logoColor} />
-            <span className="absolute -top-2 -right-5 w-4 h-4 contact-section-orb section-orb" />
-            {/* Full orb replacement — shown when ContactOrb arrives */}
-            <div
-              className="absolute contact-orb-replacement pointer-events-none"
-              style={{ top: "-0.5rem", right: "-1.25rem", width: 16, height: 16, opacity: 0, zIndex: 2 }}
-            >
-              <div style={{ position: "relative", width: "100%", height: "100%" }}>
-                {/* Warm ambient glow — wide spread for small orb */}
-                <div className="absolute" style={{
-                  inset: "-300%",
-                  background: "radial-gradient(circle, rgba(232,180,106,0.50) 0%, rgba(212,165,116,0.25) 30%, rgba(212,165,116,0.08) 55%, transparent 70%)",
-                  filter: "blur(14px)",
-                  animation: "hero-orb-glow-swell 5.8s ease-in-out infinite",
-                }} />
-                {/* Heart glow — warm core pulse */}
-                <div className="absolute" style={{
-                  inset: "-80%",
-                  background: "radial-gradient(circle at 50% 40%, rgba(224,140,120,1) 0%, rgba(200,110,90,0.6) 35%, transparent 70%)",
-                  filter: "blur(6px) brightness(1.5)",
-                  animation: "hero-orb-heart 5.4s ease-in-out infinite",
-                  mixBlendMode: "screen",
-                }} />
-                {/* Solid warm core — no image at 16px to avoid ring artifact */}
-                <div className="absolute" style={{
-                  inset: "-10%",
-                  borderRadius: "50%",
-                  background: "radial-gradient(circle, rgba(250,245,224,0.9) 0%, rgba(232,180,106,0.6) 40%, transparent 70%)",
-                  animation: "hero-orb-breathe 5.5s ease-in-out infinite",
-                }} />
-              </div>
-            </div>
           </div>
           <h2
             className="reveal-section leading-[1.08] tracking-[-0.03em] mb-8 md:mb-12"
@@ -817,14 +667,14 @@ export default function Home() {
           </h2>
           <p
             className="reveal-section text-sm md:text-base leading-[1.75] tracking-wide max-w-[500px] relative z-10"
-            style={{ color: "var(--text-secondary)", fontWeight: 300 }}
+            style={{ color: "var(--qi-text-secondary)", fontWeight: 300 }}
           >
             Joy is early and being built in the open. If you have thoughts, questions, or feedback, we&apos;d love to hear from you.
             <br />
             <a
               href="mailto:hello@feeljoy.ai"
               className="inline-block mt-4 px-6 py-2.5 rounded-full text-sm font-medium tracking-wide btn-ghost"
-              style={{ fontFamily: "var(--font-display)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
+              style={{ fontFamily: "var(--font-display)", border: "1px solid var(--qi-border)", color: "var(--qi-text-secondary)" }}
             >
               hello@feeljoy.ai
             </a>
@@ -836,7 +686,7 @@ export default function Home() {
       {/* ═══ FOOTER ═══ */}
       <footer
         className="fixed bottom-0 left-0 right-0 z-[6] px-6 py-4 md:px-12"
-        style={{ opacity: 0.7, borderTop: "1px solid var(--border)", background: t.footerBg, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
+        style={{ opacity: 0.7 }}
       >
         <div className="max-w-[1400px] mx-auto">
           {/* Mobile: links centered */}
@@ -880,5 +730,3 @@ export default function Home() {
     </div>
   );
 }
-
-
