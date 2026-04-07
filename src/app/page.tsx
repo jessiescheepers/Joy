@@ -8,8 +8,7 @@ declare global {
 
 import React, { useState, useEffect, useRef } from "react";
 import JoyLogo from "./components/JoyLogo";
-import QiField from "./components/QiField";
-import TorusRing from "./components/TorusRing";
+import QiTorusField from "./components/QiTorusField";
 
 export type Register = "breathing" | "listening" | "thinking" | "talking" | "settling";
 
@@ -135,7 +134,7 @@ export default function Home() {
   return (
     <div className="relative min-h-screen overflow-x-hidden" style={{ color: "var(--qi-text)" }}>
       {/* Qi field — the living background */}
-      <QiField register={register} />
+      <QiTorusField register={register} />
 
       {/* Scroll progress indicator */}
       <div ref={scrollBarRef} className="scroll-progress" style={{ transform: "scaleX(0)" }} />
@@ -228,14 +227,10 @@ export default function Home() {
         <section
           id="hero"
           ref={heroRef}
-          className="min-h-screen flex flex-col items-center justify-center px-6 py-16 text-center relative overflow-hidden"
+          className="min-h-screen flex flex-col items-center px-6 text-center relative overflow-hidden"
+          style={{ paddingTop: "56vh" }}
         >
           <div className="w-full max-w-[900px] mx-auto flex flex-col items-center relative z-10">
-            {/* Torus ring — the heartbeat */}
-            <div className="mb-[32px] md:mb-[42px] animate-hero-1 relative inline-flex">
-              <TorusRing register={register} size={140} />
-            </div>
-
             {/* H1 */}
             <h1
               className="tracking-[-0.03em] mb-[10px] animate-hero-1"
