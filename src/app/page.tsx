@@ -127,8 +127,6 @@ export default function Home() {
     navDotShadow: "0 0 12px var(--qi-mote-glow), 0 0 30px rgba(125,142,115,0.3)",
     backdropSaturate: "blur(40px) saturate(1.2)",
     heroSubShadow: "0 0 34px rgba(140,165,130,0.15)",
-    earlyAccessBg: "#E8E5DB",
-    earlyAccessColor: "#2A2E24",
   };
 
   return (
@@ -142,27 +140,29 @@ export default function Home() {
       {/* Page content */}
       <div className="relative z-[5]">
 
-        {/* ═══ TOP NAV — floating on the field, no chrome ═══ */}
+        {/* ═══ TOP NAV — glass rail from Joy Day week rail ═══ */}
         <nav
           className="fixed top-0 left-0 right-0 z-50 px-6 md:px-12 h-16 flex items-center justify-between"
         >
-          {/* Logo left */}
+          {/* Logo left — punched into the field */}
           <a href="#hero" className="relative">
             <JoyLogo width={50} height={26} color={t.logoColor} />
           </a>
 
-          {/* Desktop links */}
-          <div className="hidden md:flex items-center gap-6 md:gap-8">
+          {/* Desktop links — horizontal glass rail */}
+          <div className="nav-glass-rail hidden md:flex items-center gap-1 px-2 py-1.5 relative">
             {navItems.map((item) => {
               const isActive = activeSection === item.id;
               return (
                 <a
                   key={item.id}
                   href={item.href}
-                  className={`nav-link text-xs md:text-sm tracking-wide transition-colors duration-300 ${
-                    isActive ? "active text-[var(--qi-text)]" : "text-[var(--qi-text-secondary)] hover:text-[var(--qi-text)]"
+                  className={`relative px-4 py-1.5 rounded-[7px] text-xs tracking-wide transition-all duration-300 ${
+                    isActive
+                      ? "nav-cutout text-[var(--qi-text)]"
+                      : "text-[var(--qi-text-secondary)] hover:text-[var(--qi-text)]"
                   }`}
-                  style={{ fontFamily: "var(--font-display)", fontWeight: 400 }}
+                  style={{ fontFamily: "var(--font-display)", fontWeight: isActive ? 500 : 400 }}
                 >
                   {item.label}
                 </a>
@@ -170,12 +170,8 @@ export default function Home() {
             })}
             <a
               href="#hero"
-              className="holo-border-pill px-5 py-2 rounded-full text-xs font-medium tracking-wide transition-all duration-300"
-              style={{
-                fontFamily: "var(--font-display)",
-                background: t.earlyAccessBg,
-                color: t.earlyAccessColor,
-              }}
+              className="cutout-chip ml-2 text-xs tracking-wide transition-all duration-300"
+              style={{ fontFamily: "var(--font-display)" }}
             >
               early access
             </a>
@@ -215,8 +211,8 @@ export default function Home() {
             <a
               href="#hero"
               onClick={() => setMobileMenuOpen(false)}
-              className="holo-border-pill mt-4 px-7 py-3 rounded-full text-sm font-medium tracking-wide"
-              style={{ fontFamily: "var(--font-display)", background: t.earlyAccessBg, color: t.earlyAccessColor }}
+              className="cutout-chip mt-4 text-sm tracking-wide"
+              style={{ fontFamily: "var(--font-display)", padding: "10px 24px" }}
             >
               early access
             </a>
@@ -262,10 +258,10 @@ export default function Home() {
               Your work, your life, your one OS
             </p>
 
-            {/* Waitlist form — glass pill + overlapping glass CTA orb */}
+            {/* Waitlist form — a day card from Joy Day, with cutout CTA */}
             <form
               id="waitlist"
-              className="animate-hero-cta relative mt-[50px] overflow-visible flex justify-center"
+              className="animate-hero-cta relative mt-[50px] flex justify-center"
               onSubmit={async (e) => {
                 e.preventDefault();
                 if (formStatus === "submitting" || formStatus === "joined") return;
@@ -296,52 +292,55 @@ export default function Home() {
                 }
               }}
             >
-              {/* Email input pill — this is the positioning anchor */}
-              <div className="glass-hero-pill relative flex items-center px-5 overflow-visible" style={{ width: "220px", height: "44px" }}>
+              {/* The card — exactly a .day-card from Joy Day */}
+              <div className="day-card flex items-center gap-3">
                 <input
                   type="email"
                   placeholder="your email"
                   value={formEmail}
                   onChange={(e) => { setFormEmail(e.target.value); if (formStatus === "error") setFormStatus("idle"); }}
                   required
-                  className="w-full text-sm tracking-wide outline-none placeholder:text-[var(--qi-text-secondary)] pr-2"
+                  className="outline-none placeholder:text-[rgba(40,35,30,0.35)]"
                   style={{
                     fontFamily: "var(--font-display)",
                     background: "transparent",
                     border: "none",
-                    color: "var(--qi-text)",
+                    color: "rgba(40, 35, 30, 0.72)",
+                    fontSize: "13px",
+                    fontWeight: 400,
+                    letterSpacing: "0.2px",
+                    width: "140px",
                   }}
                 />
 
-                {/* CTA — glass orb, positioned relative to pill, overlapping right edge */}
+                {/* CTA — cutout chip, punched into the card like sched-time */}
                 <button
                   ref={ctaRef}
                   type="submit"
                   disabled={formStatus === "submitting" || formStatus === "joined"}
-                  className={`glass-cta-orb absolute px-6 py-3 rounded-full text-sm md:text-base font-medium tracking-wide btn-magnetic whitespace-nowrap ${
-                    formStatus === "joined" ? "opacity-70 cursor-default" : formStatus === "submitting" ? "opacity-70 cursor-wait" : "cursor-pointer"
+                  className={`cutout-chip whitespace-nowrap btn-magnetic ${
+                    formStatus === "joined" ? "opacity-70 cursor-default" : formStatus === "submitting" ? "opacity-70 cursor-wait" : ""
                   }`}
-                  style={{ fontFamily: "var(--font-display)", right: "-100px", top: "50%", transform: "translateY(-50%)" }}
-                onMouseMove={(e) => {
-                  if (!ctaRef.current || isMobile) return;
-                  const rect = ctaRef.current.getBoundingClientRect();
-                  const x = e.clientX - rect.left - rect.width / 2;
-                  const y = e.clientY - rect.top - rect.height / 2;
-                  ctaRef.current.style.transform = `translateY(-50%) translate(${x * 0.08}px, ${y * 0.08}px)`;
-                }}
-                onMouseLeave={() => {
-                  if (ctaRef.current) ctaRef.current.style.transform = 'translateY(-50%)';
-                }}
-              >
-                {formStatus === "submitting" ? (
-                  <span className="inline-flex items-center gap-2">
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                  </span>
-                ) : formStatus === "joined" ? "joined!" : "get early access"}
-              </button>
+                  onMouseMove={(e) => {
+                    if (!ctaRef.current || isMobile) return;
+                    const rect = ctaRef.current.getBoundingClientRect();
+                    const x = e.clientX - rect.left - rect.width / 2;
+                    const y = e.clientY - rect.top - rect.height / 2;
+                    ctaRef.current.style.transform = `translate(${x * 0.06}px, ${y * 0.06}px)`;
+                  }}
+                  onMouseLeave={() => {
+                    if (ctaRef.current) ctaRef.current.style.transform = '';
+                  }}
+                >
+                  {formStatus === "submitting" ? (
+                    <span className="inline-flex items-center gap-2">
+                      <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    </span>
+                  ) : formStatus === "joined" ? "joined!" : "get early access"}
+                </button>
               </div>
             </form>
             {formError && (
@@ -596,45 +595,42 @@ export default function Home() {
                 }
               }}
             >
-              <div className="w-full sm:flex-1 min-w-0">
+              <div className="day-card flex items-center gap-3">
                 <input
                   type="email"
                   placeholder="your email"
                   value={formEmail}
                   onChange={(e) => { setFormEmail(e.target.value); if (formStatus === "error") setFormStatus("idle"); }}
                   required
-                  className="w-full px-5 py-3.5 rounded-full text-sm md:text-base tracking-wide outline-none"
+                  className="outline-none placeholder:text-[rgba(40,35,30,0.35)]"
                   style={{
                     fontFamily: "var(--font-display)",
-                    background: t.inputBg,
-                    border: "1px solid var(--qi-border)",
-                    color: "var(--qi-text)",
+                    background: "transparent",
+                    border: "none",
+                    color: "rgba(40, 35, 30, 0.72)",
+                    fontSize: "13px",
+                    fontWeight: 400,
+                    letterSpacing: "0.2px",
+                    width: "140px",
                   }}
                 />
+                <button
+                  type="submit"
+                  disabled={formStatus === "submitting" || formStatus === "joined"}
+                  className={`cutout-chip whitespace-nowrap ${
+                    formStatus === "joined" ? "opacity-70 cursor-default" : formStatus === "submitting" ? "opacity-70 cursor-wait" : ""
+                  }`}
+                >
+                  {formStatus === "submitting" ? (
+                    <span className="inline-flex items-center gap-2">
+                      <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    </span>
+                  ) : formStatus === "joined" ? "joined!" : "be first in line"}
+                </button>
               </div>
-              <button
-                type="submit"
-                disabled={formStatus === "submitting" || formStatus === "joined"}
-                className={`w-full sm:w-auto shrink-0 px-7 py-3.5 rounded-full text-sm md:text-base font-medium tracking-wide ${
-                  formStatus === "joined" ? "opacity-70 cursor-default" : formStatus === "submitting" ? "opacity-70 cursor-wait" : "cursor-pointer"
-                }`}
-                style={{
-                  fontFamily: "var(--font-display)",
-                  background: "var(--qi-text)",
-                  color: "var(--qi-base)",
-                  border: "none",
-                  transition: "all 0.3s ease",
-                }}
-              >
-                {formStatus === "submitting" ? (
-                  <span className="inline-flex items-center gap-2">
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                  </span>
-                ) : formStatus === "joined" ? "joined!" : "be first in line"}
-              </button>
             </form>
             {formError && (
               <p className="text-red-400 text-sm mt-3">{formError}</p>
