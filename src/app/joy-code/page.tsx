@@ -41,148 +41,136 @@ const principles = [
   },
 ];
 
-const navItems = [
-  { label: "home", href: "/" },
-  { label: "glow", href: "/#glow" },
-  { label: "how it works", href: "/#how" },
-  { label: "about", href: "/#about" },
-  { label: "contact", href: "/#contact" },
-];
-
-const footerItems = [
-  { label: "privacy policy", href: "/privacy-policy.pdf", external: true },
-  { label: "linkedin", href: "https://www.linkedin.com/company/feeljoy/", external: true },
-  { label: "joy code", href: "/joy-code", external: false },
-];
-
 export default function JoyCode() {
   return (
-    <div className="relative min-h-screen">
-      <div className="noise-overlay fixed inset-0 z-[2]" />
+    <div className="relative min-h-screen" style={{ background: "var(--qi-base)", color: "var(--qi-text)" }}>
 
-      {/* Page content */}
-      <div className="relative z-[3]">
+      {/* Nav — matches main site */}
+      <nav className="fixed top-0 left-0 right-0 z-50 px-6 md:px-12 h-16 flex items-center justify-between">
+        <a href="/" className="relative">
+          <JoyLogo width={50} height={26} color="#2A2E24" />
+        </a>
+        <a
+          href="/"
+          className="text-xs tracking-wide"
+          style={{ fontFamily: "var(--font-display)", fontWeight: 400, color: "var(--qi-text-secondary)" }}
+        >
+          back to joy
+        </a>
+      </nav>
 
-        {/* ═══ TOP NAV — glass morphism ═══ */}
-        <nav
-          className="fixed top-0 left-0 right-0 z-50 px-6 md:px-12 h-16 flex items-center justify-between"
+      {/* Content */}
+      <main className="max-w-[540px] mx-auto px-6 pt-32 pb-32">
+        <h1
+          className="mb-3"
           style={{
-            background: "rgba(8,11,20,0.6)",
-            backdropFilter: "blur(40px) saturate(1.8)",
-            WebkitBackdropFilter: "blur(40px) saturate(1.8)",
-            borderBottom: "1px solid var(--border)",
+            fontFamily: "var(--font-display)",
+            fontWeight: 300,
+            fontSize: "clamp(0.95rem, 2vw, 1.5rem)",
+            letterSpacing: "0.02em",
+            color: "var(--qi-text-secondary)",
           }}
         >
-          <a href="/" className="relative">
-            <JoyLogo width={50} height={26} color="#FFFFFF" />
-            <span
-              className="absolute -top-0.5 -right-2.5 w-[7px] h-[7px] rounded-full"
+          the joy{" "}
+          <em style={{
+            fontFamily: "'Source Serif 4', Georgia, serif",
+            fontWeight: 400,
+            fontStyle: "italic",
+            color: "var(--qi-text)",
+            letterSpacing: "-0.01em",
+          }}>
+            code
+          </em>
+        </h1>
+
+        <p
+          className="mb-12"
+          style={{
+            fontFamily: "'Source Serif 4', Georgia, serif",
+            fontWeight: 300,
+            fontStyle: "italic",
+            fontSize: "clamp(0.75rem, 1vw, 0.85rem)",
+            color: "var(--qi-text-tertiary)",
+            letterSpacing: "0.02em",
+          }}
+        >
+          v1.0 &middot; March 2026
+        </p>
+
+        {/* Intro */}
+        <div
+          className="leading-[1.9] tracking-wide mb-16"
+          style={{ fontWeight: 300, color: "var(--qi-text-secondary)", fontSize: "clamp(0.85rem, 1.1vw, 0.95rem)" }}
+        >
+          <p className="mb-6">
+            Joy is being built in a time of real change in how humans live and work. Humans are adaptable, social, creative, and capable of great things. But the systems around us don&apos;t always support this.
+          </p>
+          <p>
+            The Joy Code exists to make clear what Joy is for, what it protects, and what it will not do. We publish this code publicly and invite anyone to raise concerns directly with us.
+          </p>
+        </div>
+
+        {/* Principles */}
+        {principles.map((principle, index) => (
+          <div key={index} className="mb-14">
+            <h2
+              className="mb-4"
               style={{
-                background: "var(--glow-moon)",
-                boxShadow: "0 0 12px var(--glow-moon), 0 0 30px rgba(250,248,232,0.3)",
-                animation: "breathe 3s ease-in-out infinite",
+                fontFamily: "var(--font-display)",
+                fontWeight: 300,
+                fontSize: "clamp(0.9rem, 1.5vw, 1.15rem)",
+                letterSpacing: "0.01em",
+                color: "var(--qi-text)",
               }}
-            />
-          </a>
-
-          <div className="flex items-center gap-6 md:gap-8">
-            {navItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className="nav-link text-xs md:text-sm tracking-wide transition-colors duration-300 text-[var(--text-secondary)] hover:text-[var(--text)]"
-                style={{ fontFamily: "var(--font-display)", fontWeight: 400 }}
-              >
-                {item.label}
-              </a>
-            ))}
-          </div>
-        </nav>
-
-        {/* ═══ CONTENT ═══ */}
-        <main className="max-w-[600px] mx-auto px-6 pt-32 pb-32">
-          {/* Joy logo */}
-          <div className="mb-10 md:mb-14 relative inline-flex">
-            <JoyLogo width={120} height={63} color="#FFFFFF" />
-            <span className="absolute -top-2 -right-5 w-4 h-4 section-orb" />
-          </div>
-
-          {/* H1 */}
-          <h1
-            className="mb-8"
-            style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1.4rem, 3.5vw, 2.4rem)", letterSpacing: "-0.02em", color: "var(--text)" }}
-          >
-            the joy code
-          </h1>
-
-          <p
-            className="mb-8 -mt-4"
-            style={{ fontFamily: "var(--font-body)", fontWeight: 300, fontSize: "clamp(0.75rem, 1.2vw, 0.85rem)", letterSpacing: "0.04em", color: "var(--text-tertiary)" }}
-          >
-            v1.0 March 2026
-          </p>
-
-          {/* Intro */}
-          <div
-            className="leading-[1.75] tracking-wide mb-16"
-            style={{ fontFamily: "var(--font-body)", fontWeight: 300, color: "var(--text-secondary)", fontSize: "clamp(0.9rem, 1.5vw, 1.05rem)" }}
-          >
-            <p className="mb-6">
-              Joy is being built in a time of real change in how humans live and work. Humans are adaptable, social, creative, and capable of great things. But the systems around us don&apos;t always support this. Too often, they treat people like resources to be managed rather than humans to be supported.
-            </p>
-            <p>
-              The Joy Code exists to make clear what Joy is for, what it protects, and what it will not do. It applies to customers, community members, and anyone passing through. We publish this code publicly and invite anyone to raise concerns directly with us.
-            </p>
-          </div>
-
-          {/* Principles */}
-          {principles.map((principle, index) => (
-            <div key={index} className="mb-14 md:mb-18">
-              <h2
-                className="mb-4 md:mb-6"
-                style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1rem, 2.5vw, 1.6rem)", letterSpacing: "-0.01em", color: "var(--text)" }}
-              >
-                {principle.heading}
-              </h2>
-              <p
-                className="leading-[1.75] tracking-wide"
-                style={{ fontFamily: "var(--font-body)", fontWeight: 300, color: "var(--text-secondary)", fontSize: "clamp(0.9rem, 1.5vw, 1.05rem)" }}
-              >
-                {principle.body}
-              </p>
-            </div>
-          ))}
-
-          {/* Closing statement */}
-          <p
-            className="mb-24"
-            style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1rem, 2.5vw, 1.6rem)", letterSpacing: "-0.01em", color: "var(--text)" }}
-          >
-            The Joy Code exists to protect what makes us human, even as the world around us changes.
-          </p>
-        </main>
-
-      </div>
-
-      {/* ═══ FOOTER ═══ */}
-      <footer
-        className="fixed bottom-0 left-0 right-0 z-[4] px-6 py-4 md:px-12"
-        style={{ borderTop: "1px solid var(--border)", background: "rgba(8,11,20,0.6)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
-      >
-        <div className="max-w-[1400px] mx-auto flex flex-wrap items-center justify-center gap-6 md:gap-10 lg:justify-between">
-          {footerItems.map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-              className="text-xs md:text-sm tracking-wide transition-colors duration-300"
-              style={{ fontFamily: "var(--font-display)", color: "var(--text-tertiary)" }}
             >
-              {item.label}
-            </a>
-          ))}
+              {principle.heading}
+            </h2>
+            <p
+              className="leading-[1.9] tracking-wide"
+              style={{ fontWeight: 300, color: "var(--qi-text-secondary)", fontSize: "clamp(0.85rem, 1.1vw, 0.95rem)" }}
+            >
+              {principle.body}
+            </p>
+          </div>
+        ))}
 
-          <span className="text-xs" style={{ fontFamily: "var(--font-display)", color: "var(--text-tertiary)" }}>
+        {/* Closing */}
+        <p
+          className="mt-8 mb-16"
+          style={{
+            fontFamily: "'Source Serif 4', Georgia, serif",
+            fontWeight: 300,
+            fontStyle: "italic",
+            fontSize: "clamp(0.85rem, 1.2vw, 1rem)",
+            color: "var(--qi-text-secondary)",
+            letterSpacing: "0.02em",
+            lineHeight: 1.7,
+          }}
+        >
+          The Joy Code exists to protect what makes us human, even as the world around us changes.
+        </p>
+      </main>
+
+      {/* Footer — same whisper as main site */}
+      <footer className="relative z-[6] px-6 py-8 md:px-12">
+        <div className="max-w-[1400px] mx-auto flex items-center justify-center gap-6">
+          <a
+            href="/privacy-policy.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] tracking-widest uppercase"
+            style={{ fontFamily: "var(--font-display)", color: "var(--qi-text-tertiary)" }}
+          >
+            privacy
+          </a>
+          <a
+            href="/"
+            className="text-[10px] tracking-widest uppercase"
+            style={{ fontFamily: "var(--font-display)", color: "var(--qi-text-tertiary)" }}
+          >
+            home
+          </a>
+          <span className="text-[10px] tracking-widest uppercase" style={{ fontFamily: "var(--font-display)", color: "var(--qi-text-tertiary)" }}>
             &copy; 2026 Joy
           </span>
         </div>
