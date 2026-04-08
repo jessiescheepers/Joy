@@ -296,18 +296,6 @@ body {
   100% { background-position: 0% 50%; }
 }
 
-/* Scroll progress indicator — wood gradient */
-.scroll-progress {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  z-index: 200;
-  background: linear-gradient(90deg, var(--qi-mote-core), var(--qi-mote-glow), var(--qi-wash-sage));
-  transform-origin: left;
-  will-change: transform;
-}
 
 /* Section reveal on scroll */
 .reveal-section {
