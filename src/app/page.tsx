@@ -227,7 +227,7 @@ export default function Home() {
         <section
           id="hero"
           ref={heroRef}
-          className="min-h-screen flex flex-col items-center px-6 text-center relative overflow-hidden"
+          className="min-h-screen flex flex-col items-center px-6 text-center relative overflow-visible"
           style={{ paddingTop: "56vh" }}
         >
           <div className="w-full max-w-[900px] mx-auto flex flex-col items-center relative z-10">
@@ -262,10 +262,10 @@ export default function Home() {
               Your work, your life, your one OS
             </p>
 
-            {/* Waitlist form — liquid glass pill */}
+            {/* Waitlist form — glass pill + overlapping glass CTA orb */}
             <form
               id="waitlist"
-              className="animate-hero-cta flex items-center mt-[50px] w-full max-w-[480px] liquid-glass relative rounded-full pl-5 pr-2 py-2"
+              className="animate-hero-cta relative mt-[50px] overflow-visible flex justify-center"
               onSubmit={async (e) => {
                 e.preventDefault();
                 if (formStatus === "submitting" || formStatus === "joined") return;
@@ -296,42 +296,41 @@ export default function Home() {
                 }
               }}
             >
-              <input
-                type="email"
-                placeholder="your email"
-                value={formEmail}
-                onChange={(e) => { setFormEmail(e.target.value); if (formStatus === "error") setFormStatus("idle"); }}
-                required
-                className="flex-1 min-w-0 px-0 py-2 text-sm md:text-base tracking-wide outline-none"
-                style={{
-                  fontFamily: "var(--font-display)",
-                  background: "transparent",
-                  border: "none",
-                  color: "var(--qi-text)",
-                }}
-              />
-              <button
-                ref={ctaRef}
-                type="submit"
-                disabled={formStatus === "submitting" || formStatus === "joined"}
-                className={`shrink-0 px-6 py-2.5 rounded-full text-sm md:text-base font-medium tracking-wide btn-magnetic ${
-                  formStatus === "joined" ? "opacity-70 cursor-default" : formStatus === "submitting" ? "opacity-70 cursor-wait" : "cursor-pointer"
-                }`}
-                style={{
-                  fontFamily: "var(--font-display)",
-                  background: "var(--qi-text)",
-                  color: "var(--qi-base)",
-                  border: "none",
-                }}
+              {/* Email input pill — this is the positioning anchor */}
+              <div className="glass-hero-pill relative flex items-center px-5 overflow-visible" style={{ width: "220px", height: "44px" }}>
+                <input
+                  type="email"
+                  placeholder="your email"
+                  value={formEmail}
+                  onChange={(e) => { setFormEmail(e.target.value); if (formStatus === "error") setFormStatus("idle"); }}
+                  required
+                  className="w-full text-sm tracking-wide outline-none placeholder:text-[var(--qi-text-secondary)] pr-2"
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    background: "transparent",
+                    border: "none",
+                    color: "var(--qi-text)",
+                  }}
+                />
+
+                {/* CTA — glass orb, positioned relative to pill, overlapping right edge */}
+                <button
+                  ref={ctaRef}
+                  type="submit"
+                  disabled={formStatus === "submitting" || formStatus === "joined"}
+                  className={`glass-cta-orb absolute px-6 py-3 rounded-full text-sm md:text-base font-medium tracking-wide btn-magnetic whitespace-nowrap ${
+                    formStatus === "joined" ? "opacity-70 cursor-default" : formStatus === "submitting" ? "opacity-70 cursor-wait" : "cursor-pointer"
+                  }`}
+                  style={{ fontFamily: "var(--font-display)", right: "-100px", top: "50%", transform: "translateY(-50%)" }}
                 onMouseMove={(e) => {
                   if (!ctaRef.current || isMobile) return;
                   const rect = ctaRef.current.getBoundingClientRect();
                   const x = e.clientX - rect.left - rect.width / 2;
                   const y = e.clientY - rect.top - rect.height / 2;
-                  ctaRef.current.style.transform = `translate(${x * 0.12}px, ${y * 0.12}px)`;
+                  ctaRef.current.style.transform = `translateY(-50%) translate(${x * 0.08}px, ${y * 0.08}px)`;
                 }}
                 onMouseLeave={() => {
-                  if (ctaRef.current) ctaRef.current.style.transform = '';
+                  if (ctaRef.current) ctaRef.current.style.transform = 'translateY(-50%)';
                 }}
               >
                 {formStatus === "submitting" ? (
@@ -343,6 +342,7 @@ export default function Home() {
                   </span>
                 ) : formStatus === "joined" ? "joined!" : "get early access"}
               </button>
+              </div>
             </form>
             {formError && (
               <p className="text-red-400 text-sm mt-3">{formError}</p>

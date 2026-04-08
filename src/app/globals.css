@@ -391,6 +391,148 @@ body {
   to { --holo-angle: 360deg; }
 }
 
+/* ═══ Glass hero pill — reference: strong shine, deep shadow, luminous ═══ */
+.glass-hero-pill {
+  position: relative;
+  background: radial-gradient(
+    130% 90% at 30% 15%,
+    rgba(255, 255, 253, 0.35) 0%,
+    rgba(255, 255, 253, 0.18) 40%,
+    rgba(255, 255, 250, 0.10) 100%
+  );
+
+  backdrop-filter: blur(16px) saturate(1.6);
+  -webkit-backdrop-filter: blur(16px) saturate(1.6);
+
+  border-radius: 9999px;
+
+  /* Directional border — warm white top, invisible bottom */
+  border: 1px solid transparent;
+  border-top-color: rgba(255, 252, 240, 0.7);
+  border-left-color: rgba(255, 252, 240, 0.4);
+  border-bottom-color: rgba(200, 195, 188, 0.06);
+  border-right-color: rgba(200, 195, 188, 0.04);
+
+  box-shadow:
+    /* Hot top-edge shine */
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 2px 4px rgba(255, 252, 240, 0.20),
+    /* Inner bottom shadow for depth */
+    inset 0 -2px 6px rgba(0, 0, 0, 0.06),
+    /* Outer glow — the luminosity */
+    0 0 20px rgba(255, 255, 253, 0.15),
+    0 0 40px rgba(255, 255, 250, 0.06),
+    /* Drop shadow — deep, directional */
+    0 4px 8px rgba(0, 0, 0, 0.04),
+    0 8px 24px -4px rgba(0, 0, 0, 0.10),
+    0 16px 48px -8px rgba(0, 0, 0, 0.08);
+}
+
+/* Inner stroke ring — brighter than generic liquid-glass */
+.glass-hero-pill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.65) 0%,
+    rgba(255, 252, 240, 0.35) 20%,
+    rgba(255, 250, 235, 0.10) 45%,
+    transparent 70%,
+    transparent 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ═══ Glass CTA orb — luminous, overlapping, magnifying ═══ */
+.glass-cta-orb {
+  position: relative;
+  z-index: 2;
+  color: var(--qi-text);
+
+  /* Glass scrim — slightly denser for readability */
+  background: radial-gradient(
+    130% 100% at 35% 20%,
+    rgba(255, 255, 253, 0.42) 0%,
+    rgba(255, 255, 253, 0.24) 40%,
+    rgba(255, 255, 250, 0.14) 100%
+  );
+
+  /* Magnifying effect — higher blur + slight scale */
+  backdrop-filter: blur(24px) saturate(1.8);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+
+  border-radius: 9999px;
+
+  /* Directional border — bright top, warm */
+  border: 1px solid transparent;
+  border-top-color: rgba(255, 252, 240, 0.8);
+  border-left-color: rgba(255, 252, 240, 0.5);
+  border-bottom-color: rgba(200, 195, 188, 0.1);
+  border-right-color: rgba(200, 195, 188, 0.06);
+
+  box-shadow:
+    /* Hot top-edge shine — the "lit up" highlight */
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    inset 0 2px 8px rgba(255, 252, 240, 0.30),
+    /* Inner bottom shadow for glass depth */
+    inset 0 -2px 6px rgba(0, 0, 0, 0.05),
+    /* Outer luminous glow — the "bulb lights up" */
+    0 0 16px rgba(255, 255, 253, 0.25),
+    0 0 40px rgba(255, 255, 250, 0.12),
+    0 0 80px rgba(255, 255, 250, 0.06),
+    /* Depth shadow */
+    0 4px 12px rgba(0, 0, 0, 0.06),
+    0 12px 32px -4px rgba(0, 0, 0, 0.10);
+
+  transition: box-shadow 0.3s ease, transform 0.15s ease-out;
+}
+
+.glass-cta-orb:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 2px 10px rgba(255, 252, 240, 0.35),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.05),
+    /* Glow intensifies on hover */
+    0 0 24px rgba(255, 255, 253, 0.35),
+    0 0 56px rgba(255, 255, 250, 0.18),
+    0 0 100px rgba(255, 255, 250, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.06),
+    0 16px 40px -4px rgba(0, 0, 0, 0.12);
+}
+
+/* Inner stroke ring — brighter than the pill */
+.glass-cta-orb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.75) 0%,
+    rgba(255, 252, 240, 0.40) 18%,
+    rgba(255, 250, 235, 0.12) 42%,
+    transparent 65%,
+    transparent 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+
 /* ═══ Liquid Glass utility (Phase 2 — ready for use) ═══ */
 .liquid-glass {
   /* Stabilized plate — the scrim */
