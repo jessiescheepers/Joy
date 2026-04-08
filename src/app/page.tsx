@@ -241,6 +241,7 @@ export default function Home() {
                 letterSpacing: "-0.02em",
                 lineHeight: "calc(1.02em + 5px)",
                 textShadow: t.heroTextShadow,
+                marginTop: "10px",
               }}
             >
               OS for{" "}
@@ -249,20 +250,22 @@ export default function Home() {
             <p
               className="animate-hero-2 tracking-wide"
               style={{
-                fontFamily: "var(--font-display)",
-                fontWeight: 300,
+                fontFamily: "'Source Serif 4', Georgia, serif",
+                fontWeight: 400,
+                fontStyle: "italic",
                 fontSize: "clamp(0.85rem, 1.5vw, 1.05rem)",
                 color: "var(--qi-text-secondary)",
                 textShadow: t.heroSubShadow,
+                marginTop: "2px",
               }}
             >
               Your work, your life, your one OS
             </p>
 
-            {/* Waitlist form */}
+            {/* Waitlist form — liquid glass pill */}
             <form
               id="waitlist"
-              className="animate-hero-cta flex flex-col sm:flex-row items-center gap-3 mt-[50px] w-full max-w-[420px]"
+              className="animate-hero-cta flex items-center mt-[50px] w-full max-w-[480px] liquid-glass relative rounded-full pl-5 pr-2 py-2"
               onSubmit={async (e) => {
                 e.preventDefault();
                 if (formStatus === "submitting" || formStatus === "joined") return;
@@ -293,27 +296,25 @@ export default function Home() {
                 }
               }}
             >
-              <div className="w-full sm:flex-1 min-w-0">
-                <input
-                  type="email"
-                  placeholder="your email"
-                  value={formEmail}
-                  onChange={(e) => { setFormEmail(e.target.value); if (formStatus === "error") setFormStatus("idle"); }}
-                  required
-                  className="w-full px-5 py-3.5 rounded-full text-sm md:text-base tracking-wide outline-none"
-                  style={{
-                    fontFamily: "var(--font-display)",
-                    background: t.inputBg,
-                    border: "1px solid var(--qi-border)",
-                    color: "var(--qi-text)",
-                  }}
-                />
-              </div>
+              <input
+                type="email"
+                placeholder="your email"
+                value={formEmail}
+                onChange={(e) => { setFormEmail(e.target.value); if (formStatus === "error") setFormStatus("idle"); }}
+                required
+                className="flex-1 min-w-0 px-0 py-2 text-sm md:text-base tracking-wide outline-none"
+                style={{
+                  fontFamily: "var(--font-display)",
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--qi-text)",
+                }}
+              />
               <button
                 ref={ctaRef}
                 type="submit"
                 disabled={formStatus === "submitting" || formStatus === "joined"}
-                className={`w-full sm:w-auto shrink-0 px-7 py-3.5 rounded-full text-sm md:text-base font-medium tracking-wide btn-magnetic ${
+                className={`shrink-0 px-6 py-2.5 rounded-full text-sm md:text-base font-medium tracking-wide btn-magnetic ${
                   formStatus === "joined" ? "opacity-70 cursor-default" : formStatus === "submitting" ? "opacity-70 cursor-wait" : "cursor-pointer"
                 }`}
                 style={{

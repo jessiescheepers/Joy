@@ -556,7 +556,7 @@ export default function QiTorusField({ register }: QiTorusFieldProps) {
     // Wood rim tint
     const rimR = 0.82, rimG = 0.88, rimB = 0.72;
     const RING_Y = 0.25;
-    const ringScale = 1.0;
+    const ringScale = 0.8;
 
     function frame(now: number) {
       if (!glRef.current || !woodProgRef.current || !glassProgRef.current || !fboRef.current || !canvas) return;
