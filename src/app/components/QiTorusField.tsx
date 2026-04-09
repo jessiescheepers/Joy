@@ -171,6 +171,7 @@ uniform float uThinking;
 uniform float uListening;
 uniform float uSettling;
 uniform float uSettlePhase;
+uniform float uRingX;
 uniform float uRingY;
 uniform float uRingScale;
 
@@ -194,7 +195,7 @@ float gnoise(vec2 p) {
 
 // Register field distortion
 vec2 registerDistortion(vec2 uv) {
-  vec2 center = vec2(0.5, uRingY);
+  vec2 center = vec2(uRingX, uRingY);
   vec2 dir = uv - center;
   float dist = length(dir);
   vec2 normDir = dir / (dist + 0.0001);
@@ -343,7 +344,7 @@ void main() {
   vec2 ndc = (uv - 0.5) * 2.0;
   ndc.x *= uRes.x / uRes.y;
 
-  vec2 ringNDC = vec2(0.0, -(uRingY - 0.5) * 2.0);
+  vec2 ringNDC = vec2((uRingX - 0.5) * 2.0 * (uRes.x / uRes.y), -(uRingY - 0.5) * 2.0);
 
   vec3 ro = vec3(ringNDC.x, ringNDC.y, 3.0);
   vec3 rd = normalize(vec3(ndc - ringNDC, -1.5));
@@ -367,7 +368,7 @@ void main() {
   float settleExhale = smoothstep(0.85, 1.0, uSettlePhase) * uSettling;
   float settleSpread = 1.0 + settleExhale * 3.0;
   float safeDist = max(closestDist, 0.012);
-  float sharpness = 120.0 / (breathScale * breathScale * settleSpread);
+  float sharpness = 70.0 / (breathScale * breathScale * settleSpread);
   float prox = exp(-safeDist * safeDist * sharpness);
 
   float ringWebGLY = 1.0 - uRingY;
@@ -393,24 +394,32 @@ void main() {
 
     vec3 glowColor = uRimTint * 1.4;
 
-    glass += pow(edge, 2.0) * 0.15 * glowColor;
+    // Soft body glow — gentle, not a white band
+    glass += pow(edge, 3.0) * 0.08 * glowColor;
     float rimDir = dot(N, normalize(vec3(-0.5, 0.7, 0.3)));
-    float dirBoost = smoothstep(-0.3, 0.6, rimDir);
-    glass += pow(edge, 2.5) * 0.12 * glowColor * dirBoost;
-    glass += pow(edge, 5.0) * 0.25 * glowColor * dirBoost;
+    float dirBoost = smoothstep(-0.2, 0.6, rimDir);
+    // Directional edge — only on the light-facing side
+    glass += pow(edge, 4.0) * 0.10 * glowColor * dirBoost;
+    // Fine silhouette catch — narrow, not a thick band
+    glass += pow(edge, 7.0) * 0.18 * glowColor * dirBoost;
 
+    // Specular — tight glint
     vec3 L1 = normalize(vec3(-0.6, 1.0, 0.8));
     vec3 H1 = normalize(V + L1);
-    float spec = pow(max(dot(N, H1), 0.0), 128.0) * 0.5;
+    float spec = pow(max(dot(N, H1), 0.0), 180.0) * 0.4;
     glass += spec * vec3(1.0, 0.99, 0.96);
 
     vec3 lightDir = normalize(vec3(-0.5, 0.8, 0.6));
     float NdotL = dot(N, lightDir);
-    float formShadow = smoothstep(0.2, -0.6, NdotL) * 0.08;
-    glass *= (1.0 - formShadow);
+    // Form shadow — stronger on breathing/settling
+    float quietRegister = max(uBreathing, uSettling);
+    float breathBoost = 1.0 + quietRegister * 0.8;
+    float formAmt = smoothstep(0.2, -0.6, NdotL) * 0.08 * breathBoost;
+    glass -= formAmt;
 
+    // Inner hole — deeper
     float innerFace = smoothstep(0.25, 0.0, NdotV) * smoothstep(-0.1, -0.5, NdotL);
-    glass *= (1.0 - innerFace * 0.06);
+    glass -= innerFace * 0.08 * breathBoost;
 
     // Settling: dissolve into field
     float settled = smoothstep(0.8, 1.0, uSettlePhase) * uSettling;
@@ -520,6 +529,7 @@ export default function QiTorusField({ register }: QiTorusFieldProps) {
       uListening: gl.getUniformLocation(glassProg, "uListening"),
       uSettling: gl.getUniformLocation(glassProg, "uSettling"),
       uSettlePhase: gl.getUniformLocation(glassProg, "uSettlePhase"),
+      uRingX: gl.getUniformLocation(glassProg, "uRingX"),
       uRingY: gl.getUniformLocation(glassProg, "uRingY"),
       uRingScale: gl.getUniformLocation(glassProg, "uRingScale"),
     };
@@ -555,6 +565,7 @@ export default function QiTorusField({ register }: QiTorusFieldProps) {
 
     // Wood rim tint
     const rimR = 0.82, rimG = 0.88, rimB = 0.72;
+    const RING_X = 0.5;
     const RING_Y = 0.25;
     const ringScale = 0.8;
 
@@ -621,6 +632,7 @@ export default function QiTorusField({ register }: QiTorusFieldProps) {
       gl.uniform1f(locs.uListening!, weights.listening);
       gl.uniform1f(locs.uSettling!, weights.settling);
       gl.uniform1f(locs.uSettlePhase!, settlePhaseRef.current);
+      gl.uniform1f(locs.uRingX!, RING_X);
       gl.uniform1f(locs.uRingY!, RING_Y);
       gl.uniform1f(locs.uRingScale!, ringScale);
       gl.uniform3f(locs.uRimTint!, rimR, rimG, rimB);

@@ -6,7 +6,7 @@ declare global {
   }
 }
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import JoyLogo from "./components/JoyLogo";
 import QiTorusField from "./components/QiTorusField";
 
@@ -29,6 +29,7 @@ export default function Home() {
 
   // Section refs
   const heroRef = useRef<HTMLElement>(null);
+  const heroContentRef = useRef<HTMLDivElement>(null);
   const whyRef = useRef<HTMLElement>(null);
   const howRef = useRef<HTMLElement>(null);
   const whoRef = useRef<HTMLElement>(null);
@@ -37,7 +38,23 @@ export default function Home() {
   // CTA button ref for magnetic effect
   const ctaRef = useRef<HTMLButtonElement>(null);
 
-  // Intersection observer for active nav + register
+  // Hero content fades as you scroll — dissolves before reaching the torus
+  const handleScroll = useCallback(() => {
+    if (!heroContentRef.current) return;
+    const scrollY = window.scrollY;
+    const fadeStart = 50;
+    const fadeEnd = 350;
+    const progress = Math.min(Math.max((scrollY - fadeStart) / (fadeEnd - fadeStart), 0), 1);
+    heroContentRef.current.style.opacity = String(1 - progress);
+    heroContentRef.current.style.transform = `translateY(${progress * -20}px)`;
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [handleScroll]);
+
+  // Nav observer — low threshold so nav stays responsive
   useEffect(() => {
     const visibleSections = new Set<string>();
     const observer = new IntersectionObserver(
@@ -47,19 +64,11 @@ export default function Home() {
           else visibleSections.delete(entry.target.id);
         });
 
-        // Active nav
         if (visibleSections.has("end")) setActiveSection("end");
         else if (visibleSections.has("who")) setActiveSection("who");
         else if (visibleSections.has("how")) setActiveSection("how");
         else if (visibleSections.has("why")) setActiveSection("why");
         else if (visibleSections.has("hero")) setActiveSection("home");
-
-        // Register — the field changes quality, not appearance
-        if (visibleSections.has("end")) setRegister("settling");
-        else if (visibleSections.has("who")) setRegister("talking");
-        else if (visibleSections.has("how")) setRegister("thinking");
-        else if (visibleSections.has("why")) setRegister("listening");
-        else if (visibleSections.has("hero")) setRegister("breathing");
       },
       { threshold: 0.2 }
     );
@@ -69,6 +78,63 @@ export default function Home() {
       if (ref.current) observer.observe(ref.current);
     });
     return () => observer.disconnect();
+  }, []);
+
+  // Register — scrolling = thinking, settled = section register.
+  // Uses a ref to avoid re-renders on every scroll tick.
+  // Long debounce (800ms) so thinking persists after scroll stops.
+  useEffect(() => {
+    const sectionRefs: { id: string; ref: React.RefObject<HTMLElement | null> }[] = [
+      { id: "hero", ref: heroRef },
+      { id: "why", ref: whyRef },
+      { id: "how", ref: howRef },
+      { id: "who", ref: whoRef },
+      { id: "end", ref: endRef },
+    ];
+
+    const registerMap: Record<string, Register> = {
+      hero: "breathing",
+      why: "listening",
+      how: "talking",
+      who: "listening",
+      end: "settling",
+    };
+
+    let scrollTimer: ReturnType<typeof setTimeout> | null = null;
+    let currentReg: Register = "breathing";
+
+    const setReg = (r: Register) => {
+      if (r === currentReg) return; // no-op if unchanged — avoids re-renders
+      currentReg = r;
+      setRegister(r);
+    };
+
+    const resolveSectionRegister = () => {
+      const centerY = window.innerHeight * 0.5;
+      for (const { id, ref } of sectionRefs) {
+        if (!ref.current) continue;
+        const rect = ref.current.getBoundingClientRect();
+        if (rect.top <= centerY && rect.bottom >= centerY) {
+          setReg(registerMap[id]);
+          return;
+        }
+      }
+    };
+
+    const onScroll = () => {
+      setReg("thinking");
+
+      // Long debounce — thinking persists well after scroll stops
+      if (scrollTimer) clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(resolveSectionRegister, 800);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    resolveSectionRegister();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (scrollTimer) clearTimeout(scrollTimer);
+    };
   }, []);
 
   // Scroll-triggered reveals
@@ -119,18 +185,25 @@ export default function Home() {
     }
   };
 
+  // Shared serif italic style for human words in headings
+  const serifItalic: React.CSSProperties = {
+    fontFamily: "'Source Serif 4', Georgia, serif",
+    fontWeight: 400,
+    fontStyle: "italic",
+    color: "var(--qi-text)",
+    letterSpacing: "-0.01em",
+  };
+
   return (
     <div className="relative min-h-screen overflow-x-hidden" style={{ color: "var(--qi-text)" }}>
-      {/* The qi field — Joy IS the background */}
       <QiTorusField register={register} />
 
-      {/* Page content */}
       <div className="relative z-[5]">
 
-        {/* ═══ NAV — glass rail ═══ */}
+        {/* ═══ NAV ═══ */}
         <nav className="fixed top-0 left-0 right-0 z-50 px-6 md:px-12 h-16 flex items-center justify-between">
           <a href="#hero" className="relative">
-            <JoyLogo width={50} height={26} color="#2A2E24" />
+            <JoyLogo height={32} color="#2A2E24" />
           </a>
 
           <div className="nav-glass-rail hidden md:flex items-center gap-1 px-2 py-1.5 relative">
@@ -201,14 +274,20 @@ export default function Home() {
           </div>
         </div>
 
-        {/* ═══ HERO — breathing ═══ */}
+        {/* ═══ HERO — breathing ═══
+            Full viewport. Torus upper-center. Content below.
+            Content fades on scroll so it never reaches Alpher. */}
         <section
           id="hero"
           ref={heroRef}
           className="min-h-screen flex flex-col items-center px-6 text-center relative overflow-visible"
           style={{ paddingTop: "52vh" }}
         >
-          <div className="w-full max-w-[900px] mx-auto flex flex-col items-center relative z-10">
+          <div
+            ref={heroContentRef}
+            className="w-full max-w-[900px] mx-auto flex flex-col items-center relative z-10"
+            style={{ transition: "opacity 0.05s linear, transform 0.05s linear" }}
+          >
             <h1
               className="animate-hero-1"
               style={{
@@ -221,18 +300,7 @@ export default function Home() {
               }}
             >
               the OS for{" "}
-              <em
-                className="hero-accent"
-                style={{
-                  fontFamily: "'Source Serif 4', Georgia, serif",
-                  fontWeight: 400,
-                  fontStyle: "italic",
-                  color: "var(--qi-text)",
-                  letterSpacing: "-0.01em",
-                }}
-              >
-                human success
-              </em>
+              <em className="hero-accent" style={serifItalic}>human success</em>
             </h1>
 
             <p
@@ -308,38 +376,37 @@ export default function Home() {
               <p className="text-red-400 text-sm mt-3">{formError}</p>
             )}
           </div>
-
         </section>
+
+        {/* ═══ CONTENT — the companion layout ═══
+            After the hero, content lives in the left column.
+            Alpher breathes in the upper-right of the viewport.
+            They never overlap. Like Joy Day: schedule left, companion right.
+
+            On mobile: full-width centered, generous top padding. */}
 
         {/* ═══ WHY — listening ═══ */}
         <section
           id="why"
           ref={whyRef}
-          className="py-28 md:py-36 px-6 md:px-12 lg:px-20"
+          className="pt-[45vh] md:pt-40 pb-20 md:pb-28 px-6"
         >
-          <div className="max-w-[540px] mx-auto">
-            <h2
-              className="reveal-section text-center mb-10"
-              style={{
-                fontFamily: "var(--font-display)",
-                fontWeight: 300,
-                fontSize: "clamp(0.95rem, 2vw, 1.5rem)",
-                letterSpacing: "0.02em",
-                lineHeight: 1.4,
-                color: "var(--qi-text-secondary)",
-              }}
-            >
-              what is{" "}
-              <em style={{
-                fontFamily: "'Source Serif 4', Georgia, serif",
-                fontWeight: 400,
-                fontStyle: "italic",
-                color: "var(--qi-text)",
-                letterSpacing: "-0.01em",
-              }}>
-                human success
-              </em>?
-            </h2>
+          <div className="md:grid md:grid-cols-[1fr_1fr] md:gap-[30vw] md:items-start md:px-[4vw]">
+            <div className="mb-6 md:mb-0 md:sticky md:top-[50vh] md:-translate-y-1/2 reveal-section">
+              <div className="day-card inline-block">
+                <span
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    fontWeight: 300,
+                    fontSize: "clamp(0.85rem, 1.4vw, 1.1rem)",
+                    letterSpacing: "0.02em",
+                    color: "var(--qi-text-secondary)",
+                  }}
+                >
+                  what is <em style={serifItalic}>human success</em>?
+                </span>
+              </div>
+            </div>
 
             <div
               className="reveal-section leading-[1.9] tracking-wide"
@@ -362,82 +429,74 @@ export default function Home() {
         <section
           id="how"
           ref={howRef}
-          className="py-28 md:py-36 px-6 md:px-12 lg:px-20"
+          className="pt-[45vh] md:pt-40 pb-20 md:pb-28 px-6"
         >
-          <div className="max-w-[540px] mx-auto">
-            <h2
-              className="reveal-section text-center mb-10"
-              style={{
-                fontFamily: "var(--font-display)",
-                fontWeight: 300,
-                fontSize: "clamp(0.95rem, 2vw, 1.5rem)",
-                letterSpacing: "0.02em",
-                lineHeight: 1.4,
-                color: "var(--qi-text-secondary)",
-              }}
-            >
-              meet{" "}
-              <em style={{
-                fontFamily: "'Source Serif 4', Georgia, serif",
-                fontWeight: 400,
-                fontStyle: "italic",
-                color: "var(--qi-text)",
-                letterSpacing: "-0.01em",
-              }}>
-                Alpher
-              </em>
-            </h2>
-
-            <p
-              className="reveal-section leading-[1.9] tracking-wide mb-14"
-              style={{ color: "var(--qi-text-secondary)", fontWeight: 300, fontSize: "clamp(0.85rem, 1.1vw, 0.95rem)" }}
-            >
-              She builds your day around the energy you actually have. Work, life, all of it, in one place. She remembers the things you want to get to, so that you actually get to them.
-            </p>
-
-            {/* Stats — the evidence */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 mb-14 max-w-[660px] mx-auto">
-              {[
-                { stat: "1/4", label: "of work time lost to distraction. The fastest-growing cause? Life.", href: "https://impact.economist.com/new-globalisation/in-search-of-lost-focus-2023/", ref: "1" },
-                { stat: "55%", label: "of people can\u2019t switch off from work when they\u2019re home.", href: "https://www.bitc.org.uk/news/less-than-half-of-workers-feel-able-to-switch-off-from-work-new-research-shows/", ref: "2" },
-                { stat: "13%", label: "more output. The input? Happier people.", href: "https://www.ox.ac.uk/news/2019-10-24-happy-workers-are-13-more-productive", ref: "3" },
-              ].map((item, i) => (
-                <div key={i} className="text-center reveal-section">
-                  <p
-                    className="mb-3"
-                    style={{ fontFamily: "var(--font-display)", fontWeight: 300, fontSize: "clamp(1.8rem, 4vw, 2.8rem)", letterSpacing: "-0.03em" }}
-                  >
-                    {item.stat}
-                  </p>
-                  <p className="text-sm leading-[1.6] tracking-wide max-w-[240px] mx-auto" style={{ fontWeight: 300 }}>
-                    {item.label}{" "}
-                    <a
-                      href={item.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gradient"
-                      style={{ verticalAlign: "super", fontSize: "0.65em", textDecoration: "none" }}
-                    >
-                      {item.ref}
-                    </a>
-                  </p>
-                </div>
-              ))}
+          <div className="md:grid md:grid-cols-[1fr_1fr] md:gap-[30vw] md:items-start md:px-[4vw]">
+            <div className="mb-6 md:mb-0 md:sticky md:top-[50vh] md:-translate-y-1/2 reveal-section">
+              <div className="day-card inline-block">
+                <span
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    fontWeight: 300,
+                    fontSize: "clamp(0.85rem, 1.4vw, 1.1rem)",
+                    letterSpacing: "0.02em",
+                    color: "var(--qi-text-secondary)",
+                  }}
+                >
+                  meet <em style={serifItalic}>Alpher</em>
+                </span>
+              </div>
             </div>
 
-            <p
-              className="reveal-section text-center"
-              style={{
-                fontFamily: "'Source Serif 4', Georgia, serif",
-                fontWeight: 300,
-                fontStyle: "italic",
-                fontSize: "clamp(0.82rem, 1.1vw, 0.95rem)",
-                color: "var(--qi-text-secondary)",
-                letterSpacing: "0.02em",
-              }}
-            >
-              launching 2026
-            </p>
+            <div>
+              <p
+                className="reveal-section leading-[1.9] tracking-wide mb-10"
+                style={{ color: "var(--qi-text-secondary)", fontWeight: 300, fontSize: "clamp(0.85rem, 1.1vw, 0.95rem)" }}
+              >
+                She builds your day around the energy you actually have. Work, life, all of it, in one place. She remembers the things you want to get to, so that you actually get to them.
+              </p>
+
+              {/* Stats in day-cards */}
+              <div className="flex flex-col gap-3 mb-10">
+                {[
+                  { stat: "1/4", label: "of work time lost to distraction. The fastest-growing cause? Life.", href: "https://impact.economist.com/new-globalisation/in-search-of-lost-focus-2023/", ref: "1" },
+                  { stat: "55%", label: "of people can\u2019t switch off from work when they\u2019re home.", href: "https://www.bitc.org.uk/news/less-than-half-of-workers-feel-able-to-switch-off-from-work-new-research-shows/", ref: "2" },
+                  { stat: "13%", label: "more output. The input? Happier people.", href: "https://www.ox.ac.uk/news/2019-10-24-happy-workers-are-13-more-productive", ref: "3" },
+                ].map((item, i) => (
+                  <div key={i} className="day-card flex items-baseline gap-3 reveal-section">
+                    <span className="cutout-chip shrink-0" style={{ fontSize: "11px", fontWeight: 500, padding: "3px 10px" }}>
+                      {item.stat}
+                    </span>
+                    <span className="text-sm leading-[1.5] tracking-wide" style={{ fontWeight: 300, color: "var(--qi-text-secondary)" }}>
+                      {item.label}
+                      <a
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gradient"
+                        style={{ verticalAlign: "super", fontSize: "0.65em", textDecoration: "none", marginLeft: "2px" }}
+                      >
+                        {item.ref}
+                      </a>
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <p
+                className="reveal-section"
+                style={{
+                  fontFamily: "'Source Serif 4', Georgia, serif",
+                  fontWeight: 300,
+                  fontStyle: "italic",
+                  fontSize: "clamp(0.82rem, 1.1vw, 0.95rem)",
+                  color: "var(--qi-text-secondary)",
+                  letterSpacing: "0.02em",
+                }}
+              >
+                launching 2026
+              </p>
+            </div>
           </div>
         </section>
 
@@ -445,32 +504,24 @@ export default function Home() {
         <section
           id="who"
           ref={whoRef}
-          className="py-28 md:py-36 px-6 md:px-12 lg:px-20"
+          className="pt-[45vh] md:pt-40 pb-20 md:pb-28 px-6"
         >
-          <div className="max-w-[540px] mx-auto">
-            <h2
-              className="reveal-section text-center mb-10"
-              style={{
-                fontFamily: "var(--font-display)",
-                fontWeight: 300,
-                fontSize: "clamp(0.95rem, 2vw, 1.5rem)",
-                letterSpacing: "0.02em",
-                lineHeight: 1.4,
-                color: "var(--qi-text-secondary)",
-              }}
-            >
-              who&apos;s{" "}
-              <em style={{
-                fontFamily: "'Source Serif 4', Georgia, serif",
-                fontWeight: 400,
-                fontStyle: "italic",
-                color: "var(--qi-text)",
-                letterSpacing: "-0.01em",
-              }}>
-                building
-              </em>{" "}
-              this
-            </h2>
+          <div className="md:grid md:grid-cols-[1fr_1fr] md:gap-[30vw] md:items-start md:px-[4vw]">
+            <div className="mb-6 md:mb-0 md:sticky md:top-[50vh] md:-translate-y-1/2 reveal-section">
+              <div className="day-card inline-block">
+                <span
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    fontWeight: 300,
+                    fontSize: "clamp(0.85rem, 1.4vw, 1.1rem)",
+                    letterSpacing: "0.02em",
+                    color: "var(--qi-text-secondary)",
+                  }}
+                >
+                  who&apos;s <em style={serifItalic}>building</em> this
+                </span>
+              </div>
+            </div>
 
             <div
               className="reveal-section leading-[1.9] tracking-wide"
@@ -493,7 +544,7 @@ export default function Home() {
         <section
           id="end"
           ref={endRef}
-          className="py-28 md:py-36 px-6 text-center"
+          className="pt-[45vh] md:pt-40 pb-20 md:pb-28 px-6 text-center"
         >
           <div className="max-w-[400px] mx-auto">
             <p
@@ -524,37 +575,13 @@ export default function Home() {
 
       </div>
 
-      {/* Footer — a whisper at the bottom of the field */}
+      {/* Footer */}
       <footer className="relative z-[6] px-6 py-8 md:px-12">
         <div className="max-w-[1400px] mx-auto flex items-center justify-center gap-6">
-          <a
-            href="/privacy-policy.pdf"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[10px] tracking-widest uppercase"
-            style={{ fontFamily: "var(--font-display)", color: "var(--qi-text-tertiary)" }}
-          >
-            privacy
-          </a>
-          <a
-            href="/joy-code"
-            className="text-[10px] tracking-widest uppercase"
-            style={{ fontFamily: "var(--font-display)", color: "var(--qi-text-tertiary)" }}
-          >
-            joy code
-          </a>
-          <span className="text-[10px] tracking-widest uppercase" style={{ fontFamily: "var(--font-display)", color: "var(--qi-text-tertiary)" }}>
-            &copy; 2026 Joy
-          </span>
-          <a
-            href="https://www.linkedin.com/company/feeljoy/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[10px] tracking-widest uppercase"
-            style={{ fontFamily: "var(--font-display)", color: "var(--qi-text-tertiary)" }}
-          >
-            linkedin
-          </a>
+          <a href="/privacy-policy.pdf" target="_blank" rel="noopener noreferrer" className="text-[10px] tracking-widest uppercase" style={{ fontFamily: "var(--font-display)", color: "var(--qi-text-tertiary)" }}>privacy</a>
+          <a href="/joy-code" className="text-[10px] tracking-widest uppercase" style={{ fontFamily: "var(--font-display)", color: "var(--qi-text-tertiary)" }}>joy code</a>
+          <span className="text-[10px] tracking-widest uppercase" style={{ fontFamily: "var(--font-display)", color: "var(--qi-text-tertiary)" }}>&copy; 2026 Joy</span>
+          <a href="https://www.linkedin.com/company/feeljoy/" target="_blank" rel="noopener noreferrer" className="text-[10px] tracking-widest uppercase" style={{ fontFamily: "var(--font-display)", color: "var(--qi-text-tertiary)" }}>linkedin</a>
         </div>
       </footer>
     </div>

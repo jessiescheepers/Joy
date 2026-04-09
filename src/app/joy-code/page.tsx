@@ -48,7 +48,7 @@ export default function JoyCode() {
       {/* Nav — matches main site */}
       <nav className="fixed top-0 left-0 right-0 z-50 px-6 md:px-12 h-16 flex items-center justify-between">
         <a href="/" className="relative">
-          <JoyLogo width={50} height={26} color="#2A2E24" />
+          <JoyLogo height={32} color="#2A2E24" />
         </a>
         <a
           href="/"
