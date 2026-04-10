@@ -5,6 +5,12 @@ import type { Register } from "../page";
 
 interface QiTorusFieldProps {
   register: Register;
+  ringX?: number;
+  ringY?: number;
+  ringScale?: number;
+  devRotX?: number;
+  devRotY?: number;
+  devRotZ?: number;
 }
 
 // ─── Breath cycle: 4s in, 2s hold, 5s out ───
@@ -174,6 +180,9 @@ uniform float uSettlePhase;
 uniform float uRingX;
 uniform float uRingY;
 uniform float uRingScale;
+uniform float uDevRotX;
+uniform float uDevRotY;
+uniform float uDevRotZ;
 
 out vec4 fragColor;
 
@@ -275,7 +284,7 @@ float ringSDF(vec3 p) {
   float listenRock = sin(uTime * 1.4) * 0.04 * uListening;
   float listenTilt = cos(uTime * 1.1 + 0.5) * 0.03 * uListening;
 
-  p = rotZ(tumbleZ + talkSway + listenTilt) * rotY(tumbleY) * rotX(1.5708 + tumbleX + talkNod + listenRock) * p;
+  p = rotZ(tumbleZ + talkSway + listenTilt + uDevRotZ) * rotY(tumbleY + uDevRotY) * rotX(1.5708 + tumbleX + talkNod + listenRock + uDevRotX) * p;
 
   p /= uRingScale;
 
@@ -434,7 +443,7 @@ void main() {
 
 // ─── Component ───
 
-export default function QiTorusField({ register }: QiTorusFieldProps) {
+export default function QiTorusField({ register, ringX: propRingX, ringY: propRingY, ringScale: propRingScale, devRotX, devRotY, devRotZ }: QiTorusFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glRef = useRef<WebGL2RenderingContext | null>(null);
   const rafRef = useRef<number>(0);
@@ -446,6 +455,7 @@ export default function QiTorusField({ register }: QiTorusFieldProps) {
 
   const regWeightsRef = useRef({ breathing: 1, talking: 0, thinking: 0, listening: 0, settling: 0 });
   const regTargetsRef = useRef({ breathing: 1, talking: 0, thinking: 0, listening: 0, settling: 0 });
+  const ringPropsRef = useRef({ x: propRingX ?? 0.5, y: propRingY ?? 0.25, scale: propRingScale ?? 0.8, devRotX: devRotX ?? 0, devRotY: devRotY ?? 0, devRotZ: devRotZ ?? 0 });
 
   // FBO refs
   const fboRef = useRef<{ fbo: WebGLFramebuffer; tex: WebGLTexture } | null>(null);
@@ -462,6 +472,16 @@ export default function QiTorusField({ register }: QiTorusFieldProps) {
     for (const k in tgt) (tgt as Record<string, number>)[k] = 0;
     (tgt as Record<string, number>)[register] = 1;
   }, [register]);
+
+  // Update ring props
+  useEffect(() => {
+    ringPropsRef.current.x = propRingX ?? 0.5;
+    ringPropsRef.current.y = propRingY ?? 0.25;
+    ringPropsRef.current.scale = propRingScale ?? 0.8;
+    ringPropsRef.current.devRotX = devRotX ?? 0;
+    ringPropsRef.current.devRotY = devRotY ?? 0;
+    ringPropsRef.current.devRotZ = devRotZ ?? 0;
+  }, [propRingX, propRingY, propRingScale, devRotX, devRotY, devRotZ]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -532,6 +552,9 @@ export default function QiTorusField({ register }: QiTorusFieldProps) {
       uRingX: gl.getUniformLocation(glassProg, "uRingX"),
       uRingY: gl.getUniformLocation(glassProg, "uRingY"),
       uRingScale: gl.getUniformLocation(glassProg, "uRingScale"),
+      uDevRotX: gl.getUniformLocation(glassProg, "uDevRotX"),
+      uDevRotY: gl.getUniformLocation(glassProg, "uDevRotY"),
+      uDevRotZ: gl.getUniformLocation(glassProg, "uDevRotZ"),
     };
 
     function buildFBO(gl: WebGL2RenderingContext, w: number, h: number) {
@@ -565,9 +588,7 @@ export default function QiTorusField({ register }: QiTorusFieldProps) {
 
     // Wood rim tint
     const rimR = 0.82, rimG = 0.88, rimB = 0.72;
-    const RING_X = 0.5;
-    const RING_Y = 0.25;
-    const ringScale = 0.8;
+    // Ring position read from ref in frame loop (see ringPropsRef)
 
     function frame(now: number) {
       if (!glRef.current || !woodProgRef.current || !glassProgRef.current || !fboRef.current || !canvas) return;
@@ -632,10 +653,13 @@ export default function QiTorusField({ register }: QiTorusFieldProps) {
       gl.uniform1f(locs.uListening!, weights.listening);
       gl.uniform1f(locs.uSettling!, weights.settling);
       gl.uniform1f(locs.uSettlePhase!, settlePhaseRef.current);
-      gl.uniform1f(locs.uRingX!, RING_X);
-      gl.uniform1f(locs.uRingY!, RING_Y);
-      gl.uniform1f(locs.uRingScale!, ringScale);
+      gl.uniform1f(locs.uRingX!, ringPropsRef.current.x);
+      gl.uniform1f(locs.uRingY!, ringPropsRef.current.y);
+      gl.uniform1f(locs.uRingScale!, ringPropsRef.current.scale);
       gl.uniform3f(locs.uRimTint!, rimR, rimG, rimB);
+      gl.uniform1f(locs.uDevRotX!, ringPropsRef.current.devRotX ?? 0);
+      gl.uniform1f(locs.uDevRotY!, ringPropsRef.current.devRotY ?? 0);
+      gl.uniform1f(locs.uDevRotZ!, ringPropsRef.current.devRotZ ?? 0);
 
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, fboRef.current.tex);
