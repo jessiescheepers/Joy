@@ -9,6 +9,7 @@ declare global {
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import JoyLogo from "./components/JoyLogo";
 import QiTorusField from "./components/QiTorusField";
+import SunGlowLogo from "./components/SunGlowLogo";
 
 export type Register = "breathing" | "listening" | "thinking" | "talking" | "settling";
 
@@ -202,8 +203,9 @@ export default function Home() {
 
         {/* ═══ NAV ═══ */}
         <nav className="fixed top-0 left-0 right-0 z-50 px-6 md:px-12 h-16 flex items-center justify-between">
-          <a href="#hero" className="relative">
-            <JoyLogo height={32} color="#2A2E24" />
+          <a href="#hero" className="relative flex items-center gap-3">
+            <SunGlowLogo size={44} />
+            <span style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 400, fontSize: "18px", color: "#2A2E24", letterSpacing: "0.03em", alignSelf: "center" }}>joy</span>
           </a>
 
           <div className="nav-glass-rail hidden md:flex items-center gap-1 px-2 py-1.5 relative">
