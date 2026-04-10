@@ -298,6 +298,10 @@ float ringSDF(vec3 p) {
   float tubeR = 0.078 + breath * 0.10;
   float majorR = 0.288 - breath2 * 0.015;
 
+  // Flatten into a crepe — squash Y before SDF, scale back after
+  float flatness = 3.5;
+  p.y *= flatness;
+
   float majorAngle = atan(p.z, p.x);
   float radialDist = length(p.xz) - majorR;
   float tubeAngle = atan(p.y, radialDist);
@@ -322,7 +326,7 @@ float ringSDF(vec3 p) {
   float n3 = sin(majorAngle * 2.0 + tubeAngle * 4.0 + bowlT * 0.3) * 0.5;
   float bowlDisp = (n1 + n2 * 0.6 + n3) * uListening * 0.008;
 
-  return (sdTorus(p, vec2(majorR, tubeR)) + baseDisp + creasePinch + asymBulge + wobble + bowlDisp) * uRingScale;
+  return (sdTorus(p, vec2(majorR, tubeR)) / flatness + baseDisp + creasePinch + asymBulge + wobble + bowlDisp) * uRingScale;
 }
 
 vec3 calcNormal(vec3 p) {
@@ -372,71 +376,171 @@ void main() {
   float closestDist;
   float t = march(ro, rd, hitPos, closestDist);
 
-  // Contact shadow
+  // ── Orbiting backlight palette (computed for both hit and miss) ──
+  float lightTime = uTime * 0.75;
+  float PI2 = 6.28318;
+  float activeEnergy = uTalking * 0.5 + uThinking * 0.3;
+  float quietEnergy = uBreathing * 0.5 + uListening * 0.3 + uSettling * 0.4;
+
+  // Compute backlight glow at this screen position
+  // Use the closest approach point on the ray for light positions
+  vec3 nearPoint = ro + rd * max(t > 0.0 ? t : 3.0, 0.5);
+  // Seed accumulator like reference (bgColor * bgWeight)
+  vec3 backlightSum = bg * 0.025;
+  float backlightWeight = 0.025;
+
+  for (int i = 0; i < 8; i++) {
+    float fi = float(i);
+    float n = fi / 8.0;
+    float wave = sin(n * 3.14159 + lightTime) * 0.5 + 0.5;
+
+    float orbitAngle = n * PI2 + lightTime * 0.1;
+    float orbitR = 0.45 + wave * 0.1;
+    vec3 lightPos = vec3(
+      cos(orbitAngle) * orbitR,
+      sin(lightTime * 0.3 + fi * 0.7) * 0.12,
+      sin(orbitAngle) * orbitR
+    );
+
+    float distToLight = length(lightPos - nearPoint);
+    // Soft cutoff — smoothstep instead of hard threshold
+    float cutoff = smoothstep(0.05, 0.25, distToLight);
+    float angle = atan(lightPos.y - nearPoint.y, lightPos.x - nearPoint.x) / PI2 + 0.5;
+    angle += lightTime * 0.25;
+
+    // Much softer decay — diffuse washes, not orbs
+    float decayBase = mix(2.5, 5.0, wave);
+    float decay = decayBase - quietEnergy * 1.0 + activeEnergy * 1.0;
+    float distFactor = exp(-decay * distToLight) * cutoff;
+
+    // Warm palette rooted in qi field — golds, ambers, soft rose
+    // palD shifts the hue: warm base (0.0, 0.05, 0.15) keeps it gold/amber
+    vec3 palA = bg * 0.6 + uRimTint * 0.3 + 0.1;
+    vec3 palB = vec3(0.35, 0.30, 0.25);
+    vec3 palC = vec3(1.0, 0.8, 0.6);
+    vec3 palD = vec3(0.0, 0.05, 0.15);
+    vec3 col = palA + palB * cos(PI2 * (palC * (distFactor + angle) + palD));
+
+    backlightSum += col * distToLight * distFactor;
+    backlightWeight += distFactor * distToLight;
+  }
+
+  vec3 backlight = backlightSum / max(backlightWeight, 0.001);
+  backlight = pow(backlight, vec3(1.0 / 2.2));
+
+  // ── Contact shadow (neumorphic) ──
   float breathScale = 1.0 + uBreathAmt * 1.5;
   float settleExhale = smoothstep(0.85, 1.0, uSettlePhase) * uSettling;
   float settleSpread = 1.0 + settleExhale * 3.0;
   float safeDist = max(closestDist, 0.012);
   float sharpness = 70.0 / (breathScale * breathScale * settleSpread);
   float prox = exp(-safeDist * safeDist * sharpness);
-
-  float ringWebGLY = 1.0 - uRingY;
-  float vertOffset = (ringWebGLY - uv.y);
-  float dirWeight = 0.7 + 0.3 * smoothstep(-0.1, 0.15, vertOffset);
-  float cShadowStrength = 0.06 + settleExhale * 0.04;
   float ringScaleFade = smoothstep(0.05, 0.3, uRingScale);
-  float contactShadow = prox * dirWeight * cShadowStrength * ringScaleFade;
 
-  vec3 field = bg - contactShadow;
+  vec3 field = bg;
 
   if (t > 0.0) {
+    // ── HIT: Opaque neumorphic surface ──
     vec3 N = calcNormal(hitPos);
     vec3 V = normalize(ro - hitPos);
     float NdotV = max(dot(N, V), 0.0);
     float edge = 1.0 - NdotV;
 
-    vec3 rDir = refract(rd, N, 1.0/1.08);
-    vec2 lensUV = clamp(uv + (rDir.xy - rd.xy) * 0.4 + fieldOffset, 0.0, 1.0);
-    vec3 lensed = texture(uQi, lensUV).rgb;
+    // Base color — slightly recessed to compensate for additive terms
+    vec3 surface = bg - 0.008;
 
-    vec3 glass = mix(field, lensed, 0.25 + edge * 0.5);
-
-    vec3 glowColor = uRimTint * 1.4;
-
-    // Soft body glow — gentle, not a white band
-    glass += pow(edge, 3.0) * 0.08 * glowColor;
-    float rimDir = dot(N, normalize(vec3(-0.5, 0.7, 0.3)));
-    float dirBoost = smoothstep(-0.2, 0.6, rimDir);
-    // Directional edge — only on the light-facing side
-    glass += pow(edge, 4.0) * 0.10 * glowColor * dirBoost;
-    // Fine silhouette catch — narrow, not a thick band
-    glass += pow(edge, 7.0) * 0.18 * glowColor * dirBoost;
-
-    // Specular — tight glint
-    vec3 L1 = normalize(vec3(-0.6, 1.0, 0.8));
-    vec3 H1 = normalize(V + L1);
-    float spec = pow(max(dot(N, H1), 0.0), 180.0) * 0.4;
-    glass += spec * vec3(1.0, 0.99, 0.96);
-
+    // Neumorphic shading — shadow-dominant for light backgrounds
     vec3 lightDir = normalize(vec3(-0.5, 0.8, 0.6));
     float NdotL = dot(N, lightDir);
-    // Form shadow — stronger on breathing/settling
-    float quietRegister = max(uBreathing, uSettling);
-    float breathBoost = 1.0 + quietRegister * 0.8;
-    float formAmt = smoothstep(0.2, -0.6, NdotL) * 0.08 * breathBoost;
-    glass -= formAmt;
 
-    // Inner hole — deeper
+    // Light side: very subtle
+    surface += smoothstep(0.0, 0.8, NdotL) * 0.012;
+
+    // Shadow side: strong enough to read the form
+    surface -= smoothstep(0.2, -0.5, NdotL) * 0.10;
+
+    // Register depth
+    float quietRegister = max(uBreathing, uSettling);
+    float breathBoost = 1.0 + quietRegister * 0.6;
+    surface -= smoothstep(0.0, -0.4, NdotL) * 0.03 * breathBoost;
+
+    // Inner hole — deep recess
     float innerFace = smoothstep(0.25, 0.0, NdotV) * smoothstep(-0.1, -0.5, NdotL);
-    glass -= innerFace * 0.08 * breathBoost;
+    surface -= innerFace * 0.12 * breathBoost;
+
+    // ── Surface illumination from orbiting lights ──
+    vec3 surfLight = vec3(0.0);
+    float surfWeight = 0.0;
+    for (int i = 0; i < 8; i++) {
+      float fi = float(i);
+      float n = fi / 8.0;
+      float wave = sin(n * 3.14159 + lightTime) * 0.5 + 0.5;
+
+      float orbitAngle = n * PI2 + lightTime * 0.1;
+      float orbitR = 0.45 + wave * 0.1;
+      vec3 lp = vec3(
+        cos(orbitAngle) * orbitR,
+        sin(lightTime * 0.3 + fi * 0.7) * 0.12,
+        sin(orbitAngle) * orbitR
+      );
+
+      vec3 toL = lp - hitPos;
+      float dist = length(toL);
+      float cutoff2 = smoothstep(0.05, 0.25, dist);
+      vec3 L = normalize(toL);
+
+      float angle = atan(toL.y, toL.x) / PI2 + 0.5 + lightTime * 0.25;
+      float decayBase = mix(2.5, 5.0, wave);
+      float decay = decayBase - quietEnergy * 1.0 + activeEnergy * 1.0;
+      float sf = exp(-decay * dist) * cutoff2;
+
+      // Same warm palette as backlight
+      vec3 palA = bg * 0.6 + uRimTint * 0.3 + 0.1;
+      vec3 col = palA + vec3(0.35, 0.30, 0.25) * cos(PI2 * (vec3(1.0, 0.8, 0.6) * (sf + angle) + vec3(0.0, 0.05, 0.15)));
+
+      // Match reference: color * dist * distFactor, weighted by NdotL
+      float facing = max(dot(N, L), 0.0);
+      surfLight += col * dist * sf * facing;
+      surfWeight += sf * dist;
+    }
+    surfLight /= max(surfWeight, 0.001);
+
+    // Tint surface multiplicatively — no brightness shift
+    surface *= mix(vec3(1.0), surfLight * 2.0, 0.06);
+
+    // Edge backlight bleed — colored light leaks around the rim
+    float rimBleed = pow(edge, 3.0) * 0.5;
+    surface = mix(surface, backlight, rimBleed);
+
+    // Very thin bright rim where backlight catches the silhouette
+    float thinRim = pow(edge, 6.0) * 0.3;
+    surface += backlight * thinRim;
 
     // Settling: dissolve into field
     float settled = smoothstep(0.8, 1.0, uSettlePhase) * uSettling;
-    glass = mix(glass, field, settled * 0.45);
+    surface = mix(surface, field, settled * 0.45);
 
-    fragColor = vec4(glass, 1.0);
+    fragColor = vec4(surface, 1.0);
   } else {
-    fragColor = vec4(field, 1.0);
+    // ── MISS: Background with backlight halo behind the torus ──
+
+    // Proximity glow — backlight visible near the silhouette
+    float haloWidth = 0.04 * breathScale * settleSpread;
+    float halo = exp(-safeDist * safeDist / (haloWidth * haloWidth)) * ringScaleFade;
+
+    // Soft neumorphic shadow underneath
+    float ringWebGLY = 1.0 - uRingY;
+    float vertOffset = (ringWebGLY - uv.y);
+    float dirWeight = 0.7 + 0.3 * smoothstep(-0.1, 0.15, vertOffset);
+    float cShadowStrength = 0.05 + settleExhale * 0.03;
+    float contactShadow = prox * dirWeight * cShadowStrength * ringScaleFade;
+
+    vec3 result = field - contactShadow;
+
+    // Add colored halo glow behind the shape
+    result = mix(result, backlight, halo * 0.35);
+
+    fragColor = vec4(result, 1.0);
   }
 }
 `;
