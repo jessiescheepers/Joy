@@ -8,7 +8,7 @@ declare global {
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import JoyLogo from "./components/JoyLogo";
-import QiTorusField from "./components/QiTorusField";
+// import QiTorusField from "./components/QiTorusField";
 import SunGlowLogo from "./components/SunGlowLogo";
 
 export type Register = "breathing" | "listening" | "thinking" | "talking" | "settling";
@@ -197,7 +197,7 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen overflow-x-hidden" style={{ color: "var(--qi-text)" }}>
-      <QiTorusField register={register} />
+      {/* <QiTorusField register={register} /> */}
 
       <div className="relative z-[5]">
 
@@ -301,9 +301,10 @@ export default function Home() {
                 color: "var(--qi-text-secondary)",
               }}
             >
-              the OS for{" "}
-              <em className="hero-accent" style={serifItalic}>human success</em>
+              one OS for your{" "}
+              <em className="hero-accent" style={serifItalic}>whole life</em>
             </h1>
+
 
             <p
               className="animate-hero-2"
@@ -317,7 +318,7 @@ export default function Home() {
                 marginTop: "10px",
               }}
             >
-              your work, your life, one place for it all
+              do the things only you can do
             </p>
 
             <form
